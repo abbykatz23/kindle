@@ -28,7 +28,7 @@ def _push_subprocess(image_path: Path) -> None:
         check=True,
     )
     subprocess.run(
-        ["ssh"] + opts + [host, f"eips -f -g {Config.KINDLE_IMAGE_PATH}"],
+        ["ssh"] + opts + [host, f"/usr/sbin/eips -f -g {Config.KINDLE_IMAGE_PATH}"],
         check=True,
     )
 
@@ -46,7 +46,7 @@ def _push_paramiko(image_path: Path) -> None:
         with client.open_sftp() as sftp:
             sftp.put(str(image_path), Config.KINDLE_IMAGE_PATH)
         # eips: -f clears the screen first, -g renders a PNG
-        _exec(client, f"eips -f -g {Config.KINDLE_IMAGE_PATH}")
+        _exec(client, f"/usr/sbin/eips -f -g {Config.KINDLE_IMAGE_PATH}")
     finally:
         client.close()
 
