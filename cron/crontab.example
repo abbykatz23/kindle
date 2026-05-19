@@ -1,0 +1,16 @@
+# Kindle Dashboard — Pi crontab
+# Install with: crontab cron/crontab.example
+# Assumes project lives at /home/pi/kindle-dashboard
+
+PROJECT=/home/pi/kindle-dashboard
+PYTHON=/home/pi/kindle-dashboard/.venv/bin/python
+LOG=/home/pi/kindle-dashboard/logs/cron.log
+
+# 7am daily: full render + push to Kindle
+0 7 * * * cd $PROJECT && $PYTHON main.py >> $LOG 2>&1
+
+# Every 30 minutes: check Strava/LeetCode for changes, re-render if needed
+*/30 * * * * cd $PROJECT && $PYTHON scheduler/poller.py >> $LOG 2>&1
+
+# Every Sunday at 6am: generate next week's interview prep tasks
+0 6 * * 0 cd $PROJECT && $PYTHON scheduler/generate_week.py >> $LOG 2>&1

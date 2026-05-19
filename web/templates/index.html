@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Running Plan{% endblock %}
+
+{% block content %}
+<h1>Running Plan</h1>
+
+<section class="weeks">
+    {% for week_label in weeks %}
+    {% set monday = get_week_monday(week_label) %}
+    {% set sunday = monday + timedelta(days=6) %}
+    <div class="week-card {% if week_label == current_week %}week-card--current{% endif %}">
+        <div class="week-card__header">
+            <h2 class="week-card__label">{{ week_label }}</h2>
+            <span class="week-card__dates">{{ monday | datefmt('%b %-d') }} – {{ sunday | datefmt('%b %-d') }}</span>
+            <a href="{{ url_for('main.week', week_label=week_label) }}" class="btn">Edit</a>
+        </div>
+
+        {% set running = plan.get('running', {}).get(week_label) %}
+        {% if running %}
+        <div class="week-card__pills">
+            {% for day in days %}
+            {% set d = running.get(day, {}) %}
+            <div class="day-pill day-pill--{{ d.get('type', 'rest') }}" title="{{ d.get('notes', '') }}">
+                <span class="day-pill__name">{{ day[:3].title() }}</span>
+                <span class="day-pill__type">{{ d.get('type', '—') }}</span>
+                {% if d.get('distance_miles') %}
+                <span class="day-pill__dist">{{ d['distance_miles'] }}mi</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="week-card__empty">No plan entered yet.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+</section>
+
+{% if archive_weeks %}
+<details class="archive">
+    <summary>Archive ({{ archive_weeks | length }} week{{ 's' if archive_weeks | length != 1 }})</summary>
+    <ul class="archive__list">
+        {% for w in archive_weeks %}
+        <li><a href="{{ url_for('main.week', week_label=w) }}">{{ w }}</a></li>
+        {% endfor %}
+    </ul>
+</details>
+{% endif %}
+{% endblock %}

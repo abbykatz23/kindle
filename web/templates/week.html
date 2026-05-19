@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ week_label }} — Running Plan{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{{ url_for('main.index') }}" class="back-link">← All weeks</a>
+    <div class="page-header__row">
+        <div>
+            <h1>Week of {{ monday | datefmt('%B %-d, %Y') }}</h1>
+            <p class="week-label">{{ week_label }}</p>
+        </div>
+        <div class="week-total" aria-live="polite">
+            <span class="week-total__label">Week total</span>
+            <span class="week-total__value"><span data-week-total>0</span> mi</span>
+        </div>
+    </div>
+</div>
+
+<form method="POST" action="{{ url_for('main.week', week_label=week_label) }}">
+    <div class="days-grid">
+        {% for day in days %}
+        {% set d = week_data.get(day, {}) %}
+        <div class="day-form">
+            <h3 class="day-form__title">{{ day.title() }}</h3>
+
+            <label class="field">
+                <span class="field__label">Type</span>
+                <select name="{{ day }}_type" class="field__select">
+                    {% for wtype in workout_types %}
+                    <option value="{{ wtype }}"
+                        {% if d.get('type') == wtype %}selected{% endif %}>
+                        {{ wtype.title() }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label class="field">
+                <span class="field__label">Distance (miles)</span>
+                <input class="field__input" type="number" name="{{ day }}_distance"
+                       step="0.1" min="0"
+                       value="{{ d.get('distance_miles', '') }}">
+            </label>
+
+            <label class="field">
+                <span class="field__label">Notes</span>
+                <textarea class="field__textarea" name="{{ day }}_notes">{{ d.get('notes', '') }}</textarea>
+            </label>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn--primary">Save Week</button>
+        <a href="{{ url_for('main.index') }}" class="btn btn--ghost">Cancel</a>
+    </div>
+</form>
+{% endblock %}
