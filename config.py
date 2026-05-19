@@ -38,6 +38,6 @@ class Config:
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key-change-in-prod")
     DEBUG: bool = os.getenv("FLASK_DEBUG", "false").lower() == "true"
 
-    # Dashboard canvas
-    DASHBOARD_WIDTH: int = 800
-    DASHBOARD_HEIGHT: int = 600
+    # Dashboard canvas (Kindle Paperwhite 1 native portrait resolution)
+    DASHBOARD_WIDTH: int = 758
+    DASHBOARD_HEIGHT: int = 1024
