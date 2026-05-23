@@ -36,34 +36,34 @@ def _fetch_leetcode_completions_for_week(monday: date) -> set[tuple[str, str]]:
     return out
 
 
-def _build_week_tasks(today: date) -> dict[str, list[dict]]:
-    """Compute each day's tasks (Mon-Sun) with per-task completion attached."""
+def _build_week_task_lists(today: date) -> tuple[list[dict], list[dict]]:
+    """Return (leetcode_tasks, other_tasks) flattened across the whole week."""
     monday = today - timedelta(days=today.weekday())
     leetcode_done = _fetch_leetcode_completions_for_week(monday)
 
-    week_tasks: dict[str, list[dict]] = {}
+    leetcode_tasks: list[dict] = []
+    other_tasks: list[dict] = []
     for i in range(7):
         day = monday + timedelta(days=i)
         iso = day.isoformat()
         manual_done = get_manual_completions(day)
 
-        resolved = []
         for task in get_tasks_for_date(day):
             t = dict(task)
             if t.get("type") == "leetcode" and t.get("leetcode_slug"):
                 t["completed"] = (t["leetcode_slug"], iso) in leetcode_done
+                leetcode_tasks.append(t)
             else:
                 t["completed"] = t.get("task", "") in manual_done
-            resolved.append(t)
-        week_tasks[iso] = resolved
-    return week_tasks
+                other_tasks.append(t)
+    return leetcode_tasks, other_tasks
 
 
 def run(push: bool = True) -> None:
     today = date.today()
     last_refreshed_label = _format_now(datetime.now())
 
-    week_tasks = _build_week_tasks(today)
+    leetcode_tasks, other_tasks = _build_week_task_lists(today)
 
     run_plan = get_todays_run_plan(today)
     try:
@@ -75,8 +75,8 @@ def run(push: bool = True) -> None:
     birthdays = get_upcoming_birthdays(today, days_ahead=7)
 
     img = render_dashboard(
-        week_tasks=week_tasks,
-        today=today,
+        leetcode_tasks=leetcode_tasks,
+        other_tasks=other_tasks,
         run=run_plan,
         run_completed=run_completed,
         birthdays=birthdays,
