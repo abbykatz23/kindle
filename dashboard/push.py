@@ -6,6 +6,17 @@ import paramiko
 
 from config import Config
 
+# Kindle setup that runs on every push:
+#  - prevent the device from suspending while on AC (so it stays on indefinitely when plugged in)
+#  - stop the reader framework so the status bar / "My Kindle" don't overlay our image
+#  - flash-refresh the e-ink display with our PNG
+_PUSH_CMD = (
+    "lipc-set-prop com.lab126.powerd preventSuspendOnAC 1 2>/dev/null; "
+    "stop lab126_gui 2>/dev/null; "
+    "stop framework 2>/dev/null; "
+    f"/usr/sbin/eips -f -g {Config.KINDLE_IMAGE_PATH}"
+)
+
 
 def push_to_kindle(image_path: Path) -> None:
     """SCP the rendered image to the Kindle and trigger an e-ink display refresh."""
@@ -28,7 +39,7 @@ def _push_subprocess(image_path: Path) -> None:
         check=True,
     )
     subprocess.run(
-        ["ssh"] + opts + [host, f"stop lab126_gui 2>/dev/null; stop framework 2>/dev/null; /usr/sbin/eips -f -g {Config.KINDLE_IMAGE_PATH}"],
+        ["ssh"] + opts + [host, _PUSH_CMD],
         check=True,
     )
 
@@ -45,8 +56,7 @@ def _push_paramiko(image_path: Path) -> None:
         )
         with client.open_sftp() as sftp:
             sftp.put(str(image_path), Config.KINDLE_IMAGE_PATH)
-        # eips: -f clears the screen first, -g renders a PNG
-        _exec(client, f"stop lab126_gui 2>/dev/null; stop framework 2>/dev/null; /usr/sbin/eips -f -g {Config.KINDLE_IMAGE_PATH}")
+        _exec(client, _PUSH_CMD)
     finally:
         client.close()
 
