@@ -6,14 +6,15 @@ from config import Config
 
 # --- Layout constants (also imported by scheduler/poller.py to map tap y → task slot) ---
 PADDING_X = 40
-HEADER_HEIGHT = 130
-INTERVIEW_SECTION_HEIGHT = 380
-RUNNING_SECTION_HEIGHT = 280
-BIRTHDAYS_SECTION_HEIGHT = 234  # 1024 - 130 - 380 - 280
+TOP_PADDING = 30
+INTERVIEW_SECTION_HEIGHT = 410
+RUNNING_SECTION_HEIGHT = 300
+BIRTHDAYS_SECTION_HEIGHT = 234  # 1024 - 30 - 410 - 300 - 50 footer
+FOOTER_HEIGHT = 50
 
 # Interview section right-column (manually-completable tasks)
 RIGHT_COL_X_START = Config.DASHBOARD_WIDTH // 2 + 10
-INTERVIEW_TASKS_Y = HEADER_HEIGHT + 90   # under "OTHER" subsection label
+INTERVIEW_TASKS_Y = TOP_PADDING + 90   # under "OTHER" subsection label
 TASK_LINE_HEIGHT = 60
 MAX_TASKS_PER_SIDE = 3
 
@@ -53,20 +54,19 @@ def render_dashboard(
     run: dict | None,
     run_completed: bool,
     birthdays: list[dict],
-    today_label: str,
+    last_refreshed_label: str,
 ) -> Image.Image:
     """
     interview_tasks: list of dicts. Each must include `type`, `task`, and `completed` (bool).
                      LeetCode tasks may also include `leetcode_slug`.
                      `type == "leetcode"` goes in the left column; everything else right.
+    last_refreshed_label: timestamp string rendered in the bottom-right corner.
     """
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
     img = Image.new("L", (width, height), color=255)
     draw = ImageDraw.Draw(img)
 
-    _draw_header(draw, today_label, width)
-
-    y = HEADER_HEIGHT
+    y = TOP_PADDING
     _draw_interview_section(draw, y, width, interview_tasks)
     y += INTERVIEW_SECTION_HEIGHT
 
@@ -76,15 +76,19 @@ def render_dashboard(
     if birthdays:
         _draw_birthdays_section(draw, y, width, birthdays)
 
+    _draw_footer(draw, width, height, last_refreshed_label)
+
     return img
 
 
-def _draw_header(draw: ImageDraw.ImageDraw, label: str, width: int) -> None:
-    draw.text((PADDING_X, 30), label, font=_font(56, bold=True), fill=0)
-    draw.line(
-        [(PADDING_X, HEADER_HEIGHT - 4), (width - PADDING_X, HEADER_HEIGHT - 4)],
-        fill=0, width=3,
-    )
+def _draw_footer(draw: ImageDraw.ImageDraw, width: int, height: int, label: str) -> None:
+    font = _font(16)
+    text = f"Last refreshed: {label}"
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_w = bbox[2] - bbox[0]
+    x = width - PADDING_X - text_w
+    y = height - 28
+    draw.text((x, y), text, font=font, fill=130)
 
 
 def _draw_interview_section(
@@ -226,11 +230,12 @@ def _draw_birthdays_section(
         elif days == 1:
             when = "tomorrow"
         else:
-            when = f"in {days} days"
-        text = f"• {bday['name']} — {when}"
+            when = f"{days} days away"
+        date_str = bday.get("formatted_date", "")
+        text = f"• {bday['name']} — {date_str} ({when})"
         draw.text((PADDING_X, line_y), text,
-                  font=_font(34, bold=days == 0), fill=0)
-        line_y += 46
+                  font=_font(26, bold=days == 0), fill=0)
+        line_y += 38
 
 
 def _format_run(run: dict) -> dict:

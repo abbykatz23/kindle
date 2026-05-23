@@ -1,6 +1,6 @@
 """Render the dashboard and push it to the Kindle. Run from project root."""
 import sys
-from datetime import date
+from datetime import date, datetime
 
 from config import Config
 from dashboard.push import push_to_kindle
@@ -33,9 +33,16 @@ def _resolve_interview_tasks(today: date) -> list[dict]:
     return resolved
 
 
+def _format_now(now: datetime) -> str:
+    """e.g. 'Friday, May 22 at 8:42 PM' — cross-platform (no %-d / %-I)."""
+    date_part = f"{now.strftime('%A, %B')} {now.day}"
+    time_part = now.strftime("%I:%M %p").lstrip("0")
+    return f"{date_part} at {time_part}"
+
+
 def run(push: bool = True) -> None:
     today = date.today()
-    today_label = f"{today.strftime('%A, %B')} {today.day}"
+    last_refreshed_label = _format_now(datetime.now())
 
     interview_tasks = _resolve_interview_tasks(today)
 
@@ -53,7 +60,7 @@ def run(push: bool = True) -> None:
         run=run_plan,
         run_completed=run_completed,
         birthdays=birthdays,
-        today_label=today_label,
+        last_refreshed_label=last_refreshed_label,
     )
 
     image_path = save_dashboard(img)

@@ -60,5 +60,16 @@ def get_upcoming_birthdays(today: date, days_ahead: int = 2) -> list[dict]:
             continue  # Feb 29 on non-leap year
         delta = (birthday - today).days
         if 0 <= delta <= days_ahead:
-            upcoming.append({**entry, "days_until": delta})
+            upcoming.append({
+                **entry,
+                "days_until": delta,
+                "formatted_date": f"{birthday.strftime('%B')} {_ordinal(birthday.day)}",
+            })
     return upcoming
+
+
+def _ordinal(n: int) -> str:
+    """Day-of-month with English ordinal suffix: 1 → 1st, 22 → 22nd, 11 → 11th."""
+    if 11 <= n % 100 <= 13:
+        return f"{n}th"
+    return {1: f"{n}st", 2: f"{n}nd", 3: f"{n}rd"}.get(n % 10, f"{n}th")
