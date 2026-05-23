@@ -5,6 +5,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from config import Config
 from utils.plan import get_week_label, get_week_monday, load_plan
+from utils.tap_handler import handle_tap
 
 bp = Blueprint("main", __name__)
 
@@ -70,3 +71,15 @@ def week(week_label: str):
         days=DAYS,
         workout_types=WORKOUT_TYPES,
     )
+
+
+@bp.route("/tap")
+def tap():
+    """Called by the Kindle's tap_listener.sh. Routes the tap and re-renders if needed."""
+    try:
+        x = int(request.args.get("x", ""))
+        y = int(request.args.get("y", ""))
+    except (TypeError, ValueError):
+        return "Need integer x and y query params", 400
+
+    return handle_tap(x, y) + "\n", 200
