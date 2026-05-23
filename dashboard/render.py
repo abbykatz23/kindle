@@ -4,10 +4,20 @@ from PIL import Image, ImageDraw, ImageFont
 
 from config import Config
 
-_FONTS_DIR = Path(__file__).parent / "assets" / "fonts"
-_PADDING_X = 40
-_HEADER_HEIGHT = 130
+# --- Layout constants (also imported by scheduler/poller.py to map tap y → task slot) ---
+PADDING_X = 40
+HEADER_HEIGHT = 130
+INTERVIEW_SECTION_HEIGHT = 380
+RUNNING_SECTION_HEIGHT = 280
+BIRTHDAYS_SECTION_HEIGHT = 234  # 1024 - 130 - 380 - 280
 
+# Interview section right-column (manually-completable tasks)
+RIGHT_COL_X_START = Config.DASHBOARD_WIDTH // 2 + 10
+INTERVIEW_TASKS_Y = HEADER_HEIGHT + 90   # under "OTHER" subsection label
+TASK_LINE_HEIGHT = 60
+MAX_TASKS_PER_SIDE = 3
+
+_FONTS_DIR = Path(__file__).parent / "assets" / "fonts"
 _font_cache: dict[tuple[int, bool], ImageFont.ImageFont] = {}
 
 
@@ -39,81 +49,150 @@ def _font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 def render_dashboard(
-    interview_task: dict | None,
-    interview_completed: bool,
+    interview_tasks: list[dict],
     run: dict | None,
     run_completed: bool,
     birthdays: list[dict],
     today_label: str,
 ) -> Image.Image:
+    """
+    interview_tasks: list of dicts. Each must include `type`, `task`, and `completed` (bool).
+                     LeetCode tasks may also include `leetcode_slug`.
+                     `type == "leetcode"` goes in the left column; everything else right.
+    """
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
     img = Image.new("L", (width, height), color=255)
     draw = ImageDraw.Draw(img)
 
     _draw_header(draw, today_label, width)
 
-    available = height - _HEADER_HEIGHT
-    has_birthdays = bool(birthdays)
-    birthday_h = 220 if has_birthdays else 0
-    main_h = (available - birthday_h) // 2
+    y = HEADER_HEIGHT
+    _draw_interview_section(draw, y, width, interview_tasks)
+    y += INTERVIEW_SECTION_HEIGHT
 
-    y = _HEADER_HEIGHT
-    _draw_task_section(draw, y, main_h, width, "INTERVIEW PREP",
-                       _format_interview(interview_task), interview_completed)
-    y += main_h
-    _draw_task_section(draw, y, main_h, width, "RUNNING",
-                       _format_run(run), run_completed)
-    y += main_h
-    if has_birthdays:
-        _draw_birthdays_section(draw, y, birthday_h, width, birthdays)
+    _draw_running_section(draw, y, width, run, run_completed)
+    y += RUNNING_SECTION_HEIGHT
+
+    if birthdays:
+        _draw_birthdays_section(draw, y, width, birthdays)
 
     return img
 
 
 def _draw_header(draw: ImageDraw.ImageDraw, label: str, width: int) -> None:
-    draw.text((_PADDING_X, 30), label, font=_font(56, bold=True), fill=0)
+    draw.text((PADDING_X, 30), label, font=_font(56, bold=True), fill=0)
     draw.line(
-        [(_PADDING_X, _HEADER_HEIGHT - 4), (width - _PADDING_X, _HEADER_HEIGHT - 4)],
+        [(PADDING_X, HEADER_HEIGHT - 4), (width - PADDING_X, HEADER_HEIGHT - 4)],
         fill=0, width=3,
     )
 
 
-def _draw_task_section(
+def _draw_interview_section(
     draw: ImageDraw.ImageDraw,
     y: int,
-    height: int,
     width: int,
-    label: str,
-    content: dict | None,
-    completed: bool,
+    tasks: list[dict],
 ) -> None:
-    draw.text((_PADDING_X, y + 24), label, font=_font(24, bold=True), fill=80)
+    draw.text((PADDING_X, y + 22), "INTERVIEW PREP", font=_font(24, bold=True), fill=80)
 
-    if content and completed:
-        _draw_done_badge(draw, width - _PADDING_X, y + 22)
+    # Sort tasks into columns
+    left = [t for t in tasks if t.get("type") == "leetcode"][:MAX_TASKS_PER_SIDE]
+    right = [t for t in tasks if t.get("type") != "leetcode"][:MAX_TASKS_PER_SIDE]
 
-    if not content:
-        draw.text((_PADDING_X, y + 100), "Nothing planned for today",
-                  font=_font(34), fill=140)
-    else:
-        draw.text((_PADDING_X, y + 70), content["title"],
-                  font=_font(58, bold=True), fill=0)
+    # Subsection labels
+    sub_y = y + 60
+    draw.text((PADDING_X, sub_y), "LEETCODE", font=_font(18, bold=True), fill=120)
+    draw.text((RIGHT_COL_X_START, sub_y), "OTHER", font=_font(18, bold=True), fill=120)
 
-        cursor_y = y + 150
-        if content.get("subtitle"):
-            draw.text((_PADDING_X, cursor_y), content["subtitle"],
-                      font=_font(32), fill=70)
-            cursor_y += 50
+    # Vertical divider between columns
+    divider_x = width // 2
+    draw.line(
+        [(divider_x, sub_y - 4), (divider_x, y + INTERVIEW_SECTION_HEIGHT - 30)],
+        fill=210, width=2,
+    )
 
-        if content.get("notes"):
-            wrapped = _wrap_text(content["notes"], _font(24), width - 2 * _PADDING_X)
-            for line in wrapped[:3]:
-                draw.text((_PADDING_X, cursor_y), line, font=_font(24), fill=80)
-                cursor_y += 34
+    # Task lines
+    task_y = y + 90
+    _draw_task_column(draw, PADDING_X, task_y, divider_x - PADDING_X - 10, left)
+    _draw_task_column(draw, RIGHT_COL_X_START, task_y, width - PADDING_X - RIGHT_COL_X_START, right)
 
     # Section separator
     draw.line(
-        [(_PADDING_X, y + height - 1), (width - _PADDING_X, y + height - 1)],
+        [(PADDING_X, y + INTERVIEW_SECTION_HEIGHT - 1),
+         (width - PADDING_X, y + INTERVIEW_SECTION_HEIGHT - 1)],
+        fill=180, width=2,
+    )
+
+
+def _draw_task_column(
+    draw: ImageDraw.ImageDraw,
+    x: int,
+    y: int,
+    max_width: int,
+    tasks: list[dict],
+) -> None:
+    if not tasks:
+        draw.text((x, y), "—", font=_font(26), fill=160)
+        return
+
+    for i, task in enumerate(tasks):
+        line_y = y + i * TASK_LINE_HEIGHT
+        _draw_checkbox(draw, x, line_y + 4, task.get("completed", False))
+
+        text_x = x + 44
+        title = task.get("task", "")
+        title_font = _font(26)
+        title = _truncate(title, title_font, max_width - 44)
+        fill = 0 if task.get("completed") else 50
+        draw.text((text_x, line_y + 2), title, font=title_font, fill=fill)
+
+
+def _draw_checkbox(draw: ImageDraw.ImageDraw, x: int, y: int, checked: bool) -> None:
+    """Square checkbox: outlined if unchecked, filled with white check if checked."""
+    size = 28
+    box = [x, y, x + size, y + size]
+    if checked:
+        draw.rectangle(box, fill=0)
+        # White check stroke inside
+        draw.line([(x + 6, y + size // 2),
+                   (x + size // 2 - 1, y + size - 7),
+                   (x + size - 5, y + 6)], fill=255, width=3)
+    else:
+        draw.rectangle(box, outline=0, width=2)
+
+
+def _draw_running_section(
+    draw: ImageDraw.ImageDraw,
+    y: int,
+    width: int,
+    run: dict | None,
+    completed: bool,
+) -> None:
+    draw.text((PADDING_X, y + 22), "RUNNING", font=_font(24, bold=True), fill=80)
+
+    if run and completed:
+        _draw_done_badge(draw, width - PADDING_X, y + 22)
+
+    if not run:
+        draw.text((PADDING_X, y + 90), "Nothing planned for today",
+                  font=_font(34), fill=140)
+    else:
+        formatted = _format_run(run)
+        draw.text((PADDING_X, y + 70), formatted["title"], font=_font(54, bold=True), fill=0)
+        cursor_y = y + 140
+        if formatted.get("subtitle"):
+            draw.text((PADDING_X, cursor_y), formatted["subtitle"],
+                      font=_font(30), fill=70)
+            cursor_y += 44
+        if formatted.get("notes"):
+            wrapped = _wrap_text(formatted["notes"], _font(22), width - 2 * PADDING_X)
+            for line in wrapped[:2]:
+                draw.text((PADDING_X, cursor_y), line, font=_font(22), fill=80)
+                cursor_y += 30
+
+    draw.line(
+        [(PADDING_X, y + RUNNING_SECTION_HEIGHT - 1),
+         (width - PADDING_X, y + RUNNING_SECTION_HEIGHT - 1)],
         fill=180, width=2,
     )
 
@@ -134,11 +213,10 @@ def _draw_done_badge(draw: ImageDraw.ImageDraw, right_x: int, top_y: int) -> Non
 def _draw_birthdays_section(
     draw: ImageDraw.ImageDraw,
     y: int,
-    height: int,
     width: int,
     birthdays: list[dict],
 ) -> None:
-    draw.text((_PADDING_X, y + 22), "BIRTHDAYS", font=_font(24, bold=True), fill=80)
+    draw.text((PADDING_X, y + 22), "BIRTHDAYS", font=_font(24, bold=True), fill=80)
 
     line_y = y + 78
     for bday in birthdays[:3]:
@@ -150,44 +228,19 @@ def _draw_birthdays_section(
         else:
             when = f"in {days} days"
         text = f"• {bday['name']} — {when}"
-        draw.text((_PADDING_X, line_y), text,
-                  font=_font(36, bold=days == 0), fill=0)
-        line_y += 48
+        draw.text((PADDING_X, line_y), text,
+                  font=_font(34, bold=days == 0), fill=0)
+        line_y += 46
 
 
-def _format_interview(task: dict | None) -> dict | None:
-    if not task:
-        return None
-    type_labels = {
-        "leetcode": "LeetCode",
-        "system_design": "System Design",
-        "behavioral": "Behavioral",
-        "reading": "Reading",
-    }
-    raw_type = task.get("type", "")
-    subtitle = type_labels.get(raw_type, raw_type.replace("_", " ").title())
-    return {
-        "title": task.get("task", "Unknown task"),
-        "subtitle": subtitle,
-        "notes": task.get("notes", ""),
-    }
-
-
-def _format_run(run: dict | None) -> dict | None:
-    if not run:
-        return None
+def _format_run(run: dict) -> dict:
     type_str = run.get("type", "rest")
     distance = run.get("distance_miles", 0)
-
     if type_str == "rest":
         return {"title": "Rest day", "subtitle": None, "notes": run.get("notes", "")}
-
     type_labels = {
-        "easy": "Easy run",
-        "workout": "Workout",
-        "long": "Long run",
-        "race": "Race",
-        "other": "Run",
+        "easy": "Easy run", "workout": "Workout", "long": "Long run",
+        "race": "Race", "other": "Run",
     }
     title = type_labels.get(type_str, type_str.title())
     subtitle = f"{distance} mi" if distance else None
@@ -195,15 +248,13 @@ def _format_run(run: dict | None) -> dict | None:
 
 
 def _wrap_text(text: str, font: ImageFont.ImageFont, max_width: int) -> list[str]:
-    """Greedy word-wrap by pixel width."""
     if not text:
         return []
     lines: list[str] = []
     current: list[str] = []
     for word in text.split():
         candidate = " ".join(current + [word])
-        bbox = font.getbbox(candidate)
-        if bbox[2] - bbox[0] <= max_width:
+        if font.getbbox(candidate)[2] - font.getbbox(candidate)[0] <= max_width:
             current.append(word)
         else:
             if current:
@@ -212,6 +263,16 @@ def _wrap_text(text: str, font: ImageFont.ImageFont, max_width: int) -> list[str
     if current:
         lines.append(" ".join(current))
     return lines
+
+
+def _truncate(text: str, font: ImageFont.ImageFont, max_width: int) -> str:
+    bbox = font.getbbox(text)
+    if bbox[2] - bbox[0] <= max_width:
+        return text
+    ellipsis = "…"
+    while text and font.getbbox(text + ellipsis)[2] - font.getbbox(text + ellipsis)[0] > max_width:
+        text = text[:-1]
+    return text + ellipsis
 
 
 def save_dashboard(img: Image.Image) -> Path:

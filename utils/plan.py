@@ -38,10 +38,16 @@ def get_todays_run_plan(today: date) -> dict | None:
     return plan.get("running", {}).get(get_week_label(today), {}).get(day_name)
 
 
-def get_todays_interview_task(today: date) -> dict | None:
+def get_todays_interview_tasks(today: date) -> list[dict]:
+    """Return today's interview prep tasks as a list (may be empty).
+
+    Each task has at minimum a `type` and `task` field. LeetCode tasks also have
+    `leetcode_slug`. Non-LeetCode tasks may have `notes`.
+    """
     plan = load_plan()
     day_name = today.strftime("%A").lower()
-    return plan.get("interview_prep", {}).get(get_week_label(today), {}).get(day_name)
+    raw = plan.get("interview_prep", {}).get(get_week_label(today), {}).get(day_name, [])
+    return raw if isinstance(raw, list) else []
 
 
 def get_upcoming_birthdays(today: date, days_ahead: int = 2) -> list[dict]:

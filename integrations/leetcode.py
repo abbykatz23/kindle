@@ -16,7 +16,7 @@ query recentSubmissions($username: String!, $limit: Int!) {
 """
 
 
-def get_recent_accepted_submissions(username: str, limit: int = 10) -> list[dict]:
+def get_recent_accepted_submissions(username: str, limit: int = 50) -> list[dict]:
     resp = requests.post(
         _GRAPHQL_URL,
         json={
@@ -30,16 +30,26 @@ def get_recent_accepted_submissions(username: str, limit: int = 10) -> list[dict
     return resp.json()["data"]["recentAcSubmissionList"]
 
 
-def get_todays_submission(username: str) -> dict | None:
-    """Return the most recent accepted submission from today, or None."""
+def get_todays_submission(username: str, slug: str | None = None) -> dict | None:
+    """
+    Return today's accepted submission, optionally filtered to a specific problem.
+
+    If slug is given, returns the accepted submission for that exact problem from today.
+    If slug is None, returns the most recent accepted submission from today.
+    """
     today = date.today().isoformat()
     for sub in get_recent_accepted_submissions(username):
-        if date.fromtimestamp(int(sub["timestamp"])).isoformat() == today:
-            return sub
+        submitted_on = date.fromtimestamp(int(sub["timestamp"])).isoformat()
+        if submitted_on != today:
+            continue
+        if slug is not None and sub["titleSlug"] != slug:
+            continue
+        return sub
     return None
 
 
-def is_problem_completed_today(username: str) -> bool:
+def is_problem_completed_today(username: str, slug: str | None = None) -> bool:
+    """Return True iff (the specific problem `slug`, or any problem) was accepted today."""
     if not username:
         return False
-    return get_todays_submission(username) is not None
+    return get_todays_submission(username, slug) is not None
