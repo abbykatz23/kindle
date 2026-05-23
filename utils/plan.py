@@ -1,6 +1,6 @@
 """Read/write helpers for plan.json, birthdays.json, and derived lookups."""
 import json
-from datetime import date
+from datetime import date, timedelta
 
 from config import Config
 
@@ -49,6 +49,30 @@ def get_tasks_for_date(d: date) -> list[dict]:
 def get_todays_interview_tasks(today: date) -> list[dict]:
     """Backward-compatible alias used by the tap handler."""
     return get_tasks_for_date(today)
+
+
+def get_week_task_lists(today: date) -> tuple[list[dict], list[dict]]:
+    """Return (leetcode_tasks, other_tasks) for the current ISO week.
+
+    Tasks are returned in chronological order (Monday → Sunday). Each task dict
+    is annotated with a `date` field (ISO date string) so callers can map a
+    list position back to the underlying day. Completion status is NOT computed
+    here — that's the caller's responsibility.
+    """
+    monday = today - timedelta(days=today.weekday())
+    leetcode_tasks: list[dict] = []
+    other_tasks: list[dict] = []
+    for i in range(7):
+        day = monday + timedelta(days=i)
+        iso = day.isoformat()
+        for task in get_tasks_for_date(day):
+            t = dict(task)
+            t["date"] = iso
+            if t.get("type") == "leetcode":
+                leetcode_tasks.append(t)
+            else:
+                other_tasks.append(t)
+    return leetcode_tasks, other_tasks
 
 
 def get_upcoming_birthdays(today: date, days_ahead: int = 2) -> list[dict]:

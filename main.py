@@ -8,7 +8,7 @@ from dashboard.render import render_dashboard, save_dashboard
 from integrations.leetcode import get_recent_accepted_submissions
 from integrations.strava import is_run_completed_today
 from utils.completions import get_manual_completions
-from utils.plan import get_tasks_for_date, get_todays_run_plan, get_upcoming_birthdays
+from utils.plan import get_todays_run_plan, get_upcoming_birthdays, get_week_task_lists
 
 
 def _format_now(now: datetime) -> str:
@@ -36,26 +36,22 @@ def _fetch_leetcode_completions_for_week(monday: date) -> set[tuple[str, str]]:
     return out
 
 
-def _build_week_task_lists(today: date) -> tuple[list[dict], list[dict]]:
-    """Return (leetcode_tasks, other_tasks) flattened across the whole week."""
+def _attach_completion(today: date) -> tuple[list[dict], list[dict]]:
+    """Same as get_week_task_lists, but with a `completed` field on each task."""
     monday = today - timedelta(days=today.weekday())
     leetcode_done = _fetch_leetcode_completions_for_week(monday)
+    leetcode_tasks, other_tasks = get_week_task_lists(today)
 
-    leetcode_tasks: list[dict] = []
-    other_tasks: list[dict] = []
-    for i in range(7):
-        day = monday + timedelta(days=i)
-        iso = day.isoformat()
-        manual_done = get_manual_completions(day)
+    for t in leetcode_tasks:
+        if t.get("leetcode_slug"):
+            t["completed"] = (t["leetcode_slug"], t["date"]) in leetcode_done
+        else:
+            t["completed"] = False
 
-        for task in get_tasks_for_date(day):
-            t = dict(task)
-            if t.get("type") == "leetcode" and t.get("leetcode_slug"):
-                t["completed"] = (t["leetcode_slug"], iso) in leetcode_done
-                leetcode_tasks.append(t)
-            else:
-                t["completed"] = t.get("task", "") in manual_done
-                other_tasks.append(t)
+    for t in other_tasks:
+        manual_done = get_manual_completions(date.fromisoformat(t["date"]))
+        t["completed"] = t.get("task", "") in manual_done
+
     return leetcode_tasks, other_tasks
 
 
@@ -63,7 +59,7 @@ def run(push: bool = True) -> None:
     today = date.today()
     last_refreshed_label = _format_now(datetime.now())
 
-    leetcode_tasks, other_tasks = _build_week_task_lists(today)
+    leetcode_tasks, other_tasks = _attach_completion(today)
 
     run_plan = get_todays_run_plan(today)
     try:
