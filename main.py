@@ -46,7 +46,7 @@ def run(push: bool = True) -> None:
         print(f"Strava unavailable: {e}")
         run_completed = False
 
-    birthdays = get_upcoming_birthdays(today, days_ahead=2)
+    birthdays = get_upcoming_birthdays(today, days_ahead=7)
 
     img = render_dashboard(
         interview_tasks=interview_tasks,
