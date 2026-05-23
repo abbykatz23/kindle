@@ -1,4 +1,21 @@
 {
   "running": {},
-  "interview_prep": {}
+  "interview_prep": {
+    "2026-W21": {
+      "saturday": [
+        {"type": "reading", "task": "Watch Neetcode heap intro"},
+        {"type": "leetcode", "task": "#703 Kth Largest in a Stream", "leetcode_slug": "kth-largest-element-in-a-stream"}
+      ]
+    },
+    "2026-W22": {
+      "monday": [
+        {"type": "leetcode", "task": "#1046 Last Stone Weight", "leetcode_slug": "last-stone-weight"},
+        {"type": "leetcode", "task": "#973 K Closest Points to Origin", "leetcode_slug": "k-closest-points-to-origin"}
+      ],
+      "wednesday": [
+        {"type": "system_design", "task": "Alex Xu Ch 8: URL Shortener"},
+        {"type": "system_design", "task": "Sketch URL Shortener design from memory"}
+      ]
+    }
+  }
 }
