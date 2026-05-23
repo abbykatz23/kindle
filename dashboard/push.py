@@ -14,6 +14,7 @@ _PUSH_CMD = (
     "lipc-set-prop com.lab126.powerd preventSuspendOnAC 1 2>/dev/null; "
     "stop lab126_gui 2>/dev/null; "
     "stop framework 2>/dev/null; "
+    "killall -STOP cvm 2>/dev/null; "  # pause the Java VM (FW 5.3.3 reader UI)
     f"/usr/sbin/eips -f -g {Config.KINDLE_IMAGE_PATH}"
 )
 
