@@ -38,16 +38,17 @@ def get_todays_run_plan(today: date) -> dict | None:
     return plan.get("running", {}).get(get_week_label(today), {}).get(day_name)
 
 
-def get_todays_interview_tasks(today: date) -> list[dict]:
-    """Return today's interview prep tasks as a list (may be empty).
-
-    Each task has at minimum a `type` and `task` field. LeetCode tasks also have
-    `leetcode_slug`. Non-LeetCode tasks may have `notes`.
-    """
+def get_tasks_for_date(d: date) -> list[dict]:
+    """Return interview prep tasks for the given date (may be empty list)."""
     plan = load_plan()
-    day_name = today.strftime("%A").lower()
-    raw = plan.get("interview_prep", {}).get(get_week_label(today), {}).get(day_name, [])
+    day_name = d.strftime("%A").lower()
+    raw = plan.get("interview_prep", {}).get(get_week_label(d), {}).get(day_name, [])
     return raw if isinstance(raw, list) else []
+
+
+def get_todays_interview_tasks(today: date) -> list[dict]:
+    """Backward-compatible alias used by the tap handler."""
+    return get_tasks_for_date(today)
 
 
 def get_upcoming_birthdays(today: date, days_ahead: int = 2) -> list[dict]:

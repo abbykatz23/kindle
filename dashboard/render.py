@@ -1,29 +1,32 @@
+from datetime import date, timedelta
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
 from config import Config
 
-# --- Layout constants (also imported by scheduler/poller.py to map tap y → task slot) ---
+# --- Layout constants ---
 PADDING_X = 40
 TOP_PADDING = 30
-INTERVIEW_SECTION_HEIGHT = 410
-RUNNING_SECTION_HEIGHT = 300
-BIRTHDAYS_SECTION_HEIGHT = 234  # 1024 - 30 - 410 - 300 - 50 footer
+INTERVIEW_SECTION_HEIGHT = 480
+RUNNING_SECTION_HEIGHT = 280
+BIRTHDAYS_SECTION_HEIGHT = 184  # 1024 - 30 - 480 - 280 - 50 footer
 FOOTER_HEIGHT = 50
 
-# Interview section right-column (manually-completable tasks)
-RIGHT_COL_X_START = Config.DASHBOARD_WIDTH // 2 + 10
-INTERVIEW_TASKS_Y = TOP_PADDING + 90   # under "OTHER" subsection label
-TASK_LINE_HEIGHT = 60
-MAX_TASKS_PER_SIDE = 3
+# Week-view layout (used by both renderer and tap handler if/when we map taps to days)
+INTERVIEW_ROWS_Y_START = TOP_PADDING + 56  # under the "INTERVIEW PREP" label
+DAY_ROW_HEIGHT = 58
+DAY_LABEL_WIDTH = 64
+TASK_GAP = 12
+CHECKBOX_SIZE = 24
+
+MAX_BIRTHDAYS = 3
 
 _FONTS_DIR = Path(__file__).parent / "assets" / "fonts"
 _font_cache: dict[tuple[int, bool], ImageFont.ImageFont] = {}
 
 
 def _font(size: int, bold: bool = False) -> ImageFont.ImageFont:
-    """Find a TrueType font across project bundle, Windows, and Linux paths."""
     key = (size, bold)
     if key in _font_cache:
         return _font_cache[key]
@@ -50,24 +53,24 @@ def _font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 def render_dashboard(
-    interview_tasks: list[dict],
+    week_tasks: dict[str, list[dict]],
+    today: date,
     run: dict | None,
     run_completed: bool,
     birthdays: list[dict],
     last_refreshed_label: str,
 ) -> Image.Image:
     """
-    interview_tasks: list of dicts. Each must include `type`, `task`, and `completed` (bool).
-                     LeetCode tasks may also include `leetcode_slug`.
-                     `type == "leetcode"` goes in the left column; everything else right.
-    last_refreshed_label: timestamp string rendered in the bottom-right corner.
+    week_tasks: dict mapping ISO date string (YYYY-MM-DD) to a list of task dicts for that day.
+                Each task dict has at minimum `type`, `task`, `completed`.
+    today:      today's date, used to highlight the current row.
     """
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
     img = Image.new("L", (width, height), color=255)
     draw = ImageDraw.Draw(img)
 
     y = TOP_PADDING
-    _draw_interview_section(draw, y, width, interview_tasks)
+    _draw_interview_week(draw, y, width, week_tasks, today)
     y += INTERVIEW_SECTION_HEIGHT
 
     _draw_running_section(draw, y, width, run, run_completed)
@@ -81,44 +84,41 @@ def render_dashboard(
     return img
 
 
-def _draw_footer(draw: ImageDraw.ImageDraw, width: int, height: int, label: str) -> None:
-    font = _font(16)
-    text = f"Last refreshed: {label}"
-    bbox = draw.textbbox((0, 0), text, font=font)
-    text_w = bbox[2] - bbox[0]
-    x = width - PADDING_X - text_w
-    y = height - 28
-    draw.text((x, y), text, font=font, fill=130)
-
-
-def _draw_interview_section(
+def _draw_interview_week(
     draw: ImageDraw.ImageDraw,
     y: int,
     width: int,
-    tasks: list[dict],
+    week_tasks: dict[str, list[dict]],
+    today: date,
 ) -> None:
-    draw.text((PADDING_X, y + 22), "INTERVIEW PREP", font=_font(24, bold=True), fill=80)
+    draw.text((PADDING_X, y + 14), "INTERVIEW PREP", font=_font(24, bold=True), fill=80)
 
-    # Sort tasks into columns
-    left = [t for t in tasks if t.get("type") == "leetcode"][:MAX_TASKS_PER_SIDE]
-    right = [t for t in tasks if t.get("type") != "leetcode"][:MAX_TASKS_PER_SIDE]
+    monday = today - timedelta(days=today.weekday())
 
-    # Subsection labels
-    sub_y = y + 60
-    draw.text((PADDING_X, sub_y), "LEETCODE", font=_font(18, bold=True), fill=120)
-    draw.text((RIGHT_COL_X_START, sub_y), "OTHER", font=_font(18, bold=True), fill=120)
+    for i in range(7):
+        day = monday + timedelta(days=i)
+        row_y = INTERVIEW_ROWS_Y_START + i * DAY_ROW_HEIGHT
+        is_today = (day == today)
+        is_past = (day < today)
 
-    # Vertical divider between columns
-    divider_x = width // 2
-    draw.line(
-        [(divider_x, sub_y - 4), (divider_x, y + INTERVIEW_SECTION_HEIGHT - 30)],
-        fill=210, width=2,
-    )
+        # Day label (e.g. "MON")
+        label = day.strftime("%a").upper()
+        label_fill = 0 if is_today else (140 if is_past else 60)
+        draw.text((PADDING_X, row_y + 4),
+                  label, font=_font(22, bold=is_today), fill=label_fill)
 
-    # Task lines
-    task_y = y + 90
-    _draw_task_column(draw, PADDING_X, task_y, divider_x - PADDING_X - 10, left)
-    _draw_task_column(draw, RIGHT_COL_X_START, task_y, width - PADDING_X - RIGHT_COL_X_START, right)
+        # Today marker — small filled bar to the left of the label
+        if is_today:
+            draw.rectangle(
+                [PADDING_X - 14, row_y + 6, PADDING_X - 8, row_y + 32],
+                fill=0,
+            )
+
+        # Tasks for that day
+        tasks = week_tasks.get(day.isoformat(), [])
+        _draw_day_tasks(draw, PADDING_X + DAY_LABEL_WIDTH, row_y,
+                        width - PADDING_X - (PADDING_X + DAY_LABEL_WIDTH),
+                        tasks, is_past)
 
     # Section separator
     draw.line(
@@ -128,39 +128,50 @@ def _draw_interview_section(
     )
 
 
-def _draw_task_column(
+def _draw_day_tasks(
     draw: ImageDraw.ImageDraw,
     x: int,
     y: int,
     max_width: int,
     tasks: list[dict],
+    is_past: bool,
 ) -> None:
     if not tasks:
-        draw.text((x, y), "—", font=_font(26), fill=160)
+        draw.text((x, y + 4), "—", font=_font(20), fill=180)
         return
 
-    for i, task in enumerate(tasks):
-        line_y = y + i * TASK_LINE_HEIGHT
-        _draw_checkbox(draw, x, line_y + 4, task.get("completed", False))
+    cursor_x = x
+    task_font = _font(20)
+    for task in tasks:
+        completed = task.get("completed", False)
+        name = task.get("task", "")
+        text_w = task_font.getbbox(name)[2] - task_font.getbbox(name)[0]
+        item_w = CHECKBOX_SIZE + 8 + text_w + TASK_GAP
 
-        text_x = x + 44
-        title = task.get("task", "")
-        title_font = _font(26)
-        title = _truncate(title, title_font, max_width - 44)
-        fill = 0 if task.get("completed") else 50
-        draw.text((text_x, line_y + 2), title, font=title_font, fill=fill)
+        # If this task wouldn't fit, truncate it inline and stop
+        if cursor_x + item_w > x + max_width:
+            ellipsis_w = task_font.getbbox("…")[2] - task_font.getbbox("…")[0]
+            avail = (x + max_width) - cursor_x - CHECKBOX_SIZE - 8 - ellipsis_w
+            if avail < 30:
+                # Not enough room for any more tasks
+                draw.text((cursor_x, y + 4), "…", font=task_font, fill=120)
+                return
+            name = _truncate_to_width(name, task_font, avail)
+
+        _draw_checkbox(draw, cursor_x, y + 6, completed)
+        text_fill = 0 if completed else (140 if is_past else 50)
+        draw.text((cursor_x + CHECKBOX_SIZE + 8, y + 4), name,
+                  font=task_font, fill=text_fill)
+        cursor_x += item_w
 
 
 def _draw_checkbox(draw: ImageDraw.ImageDraw, x: int, y: int, checked: bool) -> None:
-    """Square checkbox: outlined if unchecked, filled with white check if checked."""
-    size = 28
-    box = [x, y, x + size, y + size]
+    box = [x, y, x + CHECKBOX_SIZE, y + CHECKBOX_SIZE]
     if checked:
         draw.rectangle(box, fill=0)
-        # White check stroke inside
-        draw.line([(x + 6, y + size // 2),
-                   (x + size // 2 - 1, y + size - 7),
-                   (x + size - 5, y + 6)], fill=255, width=3)
+        draw.line([(x + 5, y + CHECKBOX_SIZE // 2),
+                   (x + CHECKBOX_SIZE // 2 - 1, y + CHECKBOX_SIZE - 6),
+                   (x + CHECKBOX_SIZE - 4, y + 5)], fill=255, width=3)
     else:
         draw.rectangle(box, outline=0, width=2)
 
@@ -220,10 +231,10 @@ def _draw_birthdays_section(
     width: int,
     birthdays: list[dict],
 ) -> None:
-    draw.text((PADDING_X, y + 22), "BIRTHDAYS", font=_font(24, bold=True), fill=80)
+    draw.text((PADDING_X, y + 14), "BIRTHDAYS", font=_font(22, bold=True), fill=80)
 
-    line_y = y + 78
-    for bday in birthdays[:3]:
+    line_y = y + 56
+    for bday in birthdays[:MAX_BIRTHDAYS]:
         days = bday.get("days_until", 0)
         if days == 0:
             when = "today"
@@ -234,8 +245,18 @@ def _draw_birthdays_section(
         date_str = bday.get("formatted_date", "")
         text = f"• {bday['name']} — {date_str} ({when})"
         draw.text((PADDING_X, line_y), text,
-                  font=_font(26, bold=days == 0), fill=0)
-        line_y += 38
+                  font=_font(22, bold=days == 0), fill=0)
+        line_y += 34
+
+
+def _draw_footer(draw: ImageDraw.ImageDraw, width: int, height: int, label: str) -> None:
+    font = _font(16)
+    text = f"Last refreshed: {label}"
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_w = bbox[2] - bbox[0]
+    x = width - PADDING_X - text_w
+    y = height - 28
+    draw.text((x, y), text, font=font, fill=130)
 
 
 def _format_run(run: dict) -> dict:
@@ -270,14 +291,12 @@ def _wrap_text(text: str, font: ImageFont.ImageFont, max_width: int) -> list[str
     return lines
 
 
-def _truncate(text: str, font: ImageFont.ImageFont, max_width: int) -> str:
-    bbox = font.getbbox(text)
-    if bbox[2] - bbox[0] <= max_width:
+def _truncate_to_width(text: str, font: ImageFont.ImageFont, max_width: int) -> str:
+    if font.getbbox(text)[2] - font.getbbox(text)[0] <= max_width:
         return text
-    ellipsis = "…"
-    while text and font.getbbox(text + ellipsis)[2] - font.getbbox(text + ellipsis)[0] > max_width:
+    while text and font.getbbox(text + "…")[2] - font.getbbox(text + "…")[0] > max_width:
         text = text[:-1]
-    return text + ellipsis
+    return text + "…"
 
 
 def save_dashboard(img: Image.Image) -> Path:

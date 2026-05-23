@@ -11,10 +11,18 @@ from config import Config
 #  - stop the reader framework so the status bar / "My Kindle" don't overlay our image
 #  - flash-refresh the e-ink display with our PNG
 _PUSH_CMD = (
+    # Tell powerd to keep us awake while on AC and never invoke the screensaver
     "lipc-set-prop com.lab126.powerd preventSuspendOnAC 1 2>/dev/null; "
+    "lipc-set-prop com.lab126.powerd preventScreenSaver 1 2>/dev/null; "
+    # Stop every reader-side process that might redraw on top of us
     "stop lab126_gui 2>/dev/null; "
     "stop framework 2>/dev/null; "
-    "killall -STOP cvm 2>/dev/null; "  # pause the Java VM (FW 5.3.3 reader UI)
+    "stop pmond 2>/dev/null; "
+    "stop tmd 2>/dev/null; "
+    "stop webreader 2>/dev/null; "
+    # Pause the Java VM (the actual Kindle reader UI on FW 5.3.3)
+    "killall -STOP cvm 2>/dev/null; "
+    "killall -STOP awesome 2>/dev/null; "
     f"/usr/sbin/eips -f -g {Config.KINDLE_IMAGE_PATH}"
 )
 
