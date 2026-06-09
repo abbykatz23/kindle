@@ -16,6 +16,44 @@ query recentSubmissions($username: String!, $limit: Int!) {
 """
 
 
+_PROBLEM_LOOKUP_QUERY = """
+query problemLookup($skip: Int!) {
+    problemsetQuestionListV2(
+        categorySlug: "algorithms"
+        limit: 1
+        skip: $skip
+    ) {
+        questions {
+            questionFrontendId
+            title
+            titleSlug
+        }
+    }
+}
+"""
+
+
+def get_problem_by_number(number: int) -> dict | None:
+    """Return {questionFrontendId, title, titleSlug} for the given problem number, or None."""
+    resp = requests.post(
+        _GRAPHQL_URL,
+        json={
+            "query": _PROBLEM_LOOKUP_QUERY,
+            "variables": {"skip": number - 1},
+        },
+        headers={
+            "Content-Type": "application/json",
+            "Referer": "https://leetcode.com/problemset/",
+        },
+        timeout=10,
+    )
+    resp.raise_for_status()
+    questions = resp.json()["data"]["problemsetQuestionListV2"]["questions"]
+    if questions and questions[0]["questionFrontendId"] == str(number):
+        return questions[0]
+    return None
+
+
 def get_recent_accepted_submissions(username: str, limit: int = 50) -> list[dict]:
     resp = requests.post(
         _GRAPHQL_URL,

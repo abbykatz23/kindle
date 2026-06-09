@@ -1,31 +1,263 @@
 {% extends "base.html" %}
-{% block title %}Running Plan{% endblock %}
+{% block title %}{% endblock %}
 
 {% block content %}
-<h1>Running Plan</h1>
+<div class="tabs card card--spacious" role="tablist" aria-label="Main tabs">
+    <div class="row" style="gap:.5rem;">
+        <button type="button" class="tab-button btn {% if default_tab == 'interview' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'interview' %}true{% else %}false{% endif %}" data-target="#interview">Interview Prep</button>
+        <button type="button" class="tab-button btn {% if default_tab == 'running' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'running' %}true{% else %}false{% endif %}" data-target="#running">Running Plan</button>
+        <button type="button" class="tab-button btn {% if default_tab == 'birthdays' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'birthdays' %}true{% else %}false{% endif %}" data-target="#birthdays">Birthdays</button>
+        <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center;">
+            <div class="countdown-badge{% if default_tab != 'interview' %} countdown-badge--hidden{% endif %}" id="days-countdown-badge" style="margin-left:0">
+                <span class="countdown-badge__num" id="countdown-days">—</span>
+                <span class="countdown-badge__label">days until 2027</span>
+            </div>
+            <div class="countdown-badge{% if default_tab != 'running' %} countdown-badge--hidden{% endif %}" id="race-countdown-badge" style="margin-left:0">
+                <span class="countdown-badge__num" id="race-countdown-days">—</span>
+                <span class="countdown-badge__label">days until Oct 10</span>
+            </div>
+        </div>
+    </div>
 
-<section class="weeks">
-    {% for week_label in weeks %}
+    <div class="tab-contents" style="margin-top:.75rem">
+
+        {# ── Interview Prep tab ── #}
+        <section id="interview" class="tab-content" aria-hidden="{% if default_tab == 'interview' %}false{% else %}true{% endif %}">
+
+            {# Overview — hidden while Claude is generating #}
+            <div class="interview-overview">
+                <section class="weeks">
+
+                {# Past interview weeks collapsible #}
+                {% if interview_past_weeks %}
+                <details class="past-weeks">
+                    <summary class="past-weeks__summary">Past weeks ({{ interview_past_weeks | length }})</summary>
+                    <div class="weeks" style="margin-top:.75rem;">
+                    {% for wl in interview_past_weeks %}
+                    {% set wmonday = get_week_monday(wl) %}
+                    {% set wsunday = wmonday + timedelta(days=6) %}
+                    {% set stats = interview_week_stats.get(wl, {}) %}
+                    {% set total = stats.get('total', 0) %}
+                    {% set done = stats.get('done', 0) %}
+                    <div class="week-card week-card--past">
+                        <div class="week-card__header">
+                            <h2 class="week-card__label">Week {{ wl.split('-W')[-1] }}</h2>
+                            <span class="week-card__dates">{{ wmonday | datefmt('%b %-d') }} – {{ wsunday | datefmt('%b %-d') }}</span>
+                            <a href="{{ url_for('main.interview_week', week_label=wl) }}" class="btn">Edit</a>
+                        </div>
+                        {% if total > 0 %}
+                        <div class="iweek-pills">
+                            {% for type, count in stats.get('by_type', {}).items() %}
+                            <span class="itask-pill itask-pill--{{ type }}">{{ count }} {{ type.replace('_',' ') }}</span>
+                            {% endfor %}
+                        </div>
+                        {% set pct = ((done / total * 100)|int) %}
+                        <div class="prog-bar"><div class="prog-bar__fill{% if pct == 100 %} prog-bar__fill--done{% endif %}" style="width:{{ pct }}%"></div></div>
+                        <span class="muted" style="font-size:.78rem;">{{ done }}/{{ total }} done</span>
+                        {% else %}
+                        <p class="week-card__empty">No tasks yet.</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    </div>
+                </details>
+                {% endif %}
+
+                {# Current week hero #}
+                {% set imonday = get_week_monday(current_week) %}
+                {% set isunday = imonday + timedelta(days=6) %}
+                {% set current_interview = plan.get('interview_prep', {}).get(current_week, {}) %}
+                {% set cstats = interview_week_stats.get(current_week, {'total': 0, 'done': 0, 'by_type': {}}) %}
+                <div class="week-card week-card--hero">
+                    <div class="week-card__header" style="flex-wrap:wrap;gap:.5rem;">
+                        <div style="display:flex;flex-direction:column;gap:.55rem;">
+                            <span class="hero-badge">This week</span>
+                            <h2 class="week-card__label" style="font-size:1.15rem;">Week {{ current_week.split('-W')[-1] }} &nbsp;<span class="week-card__dates">{{ imonday | datefmt('%b %-d') }} – {{ isunday | datefmt('%b %-d') }}</span></h2>
+                        </div>
+                        <div style="display:flex;gap:.5rem;align-items:center;margin-left:auto;flex-wrap:wrap;">
+                            <button class="btn btn--claude" data-generate-week="{{ current_week }}" data-generate-type="interview" data-has-plan="{{ 'true' if cstats.total > 0 else 'false' }}" onclick="return handleClaudeGenerate(this)">✦ Generate with Claude</button>
+                            <a href="{{ url_for('main.interview_week', week_label=current_week) }}" class="btn btn--primary">Edit</a>
+                        </div>
+                    </div>
+
+                    {# 7-day pill grid with today emphasis #}
+                    <div class="week-card__days-hero">
+                        {% for day in days %}
+                        {% set day_tasks = current_interview.get(day, []) %}
+                        {% set is_today = day == today.strftime('%A').lower() %}
+                        <div class="day-pill-hero{% if is_today %} day-pill-hero--today{% endif %}">
+                            <span class="day-pill-hero__name">{{ day[:3].title() }}</span>
+                            {% if day_tasks %}
+                            <span class="day-pill-hero__type">{{ day_tasks|length }} task{% if day_tasks|length != 1 %}s{% endif %}</span>
+                            {% else %}
+                            <span class="day-pill-hero__type" style="color:var(--muted)">—</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if cstats.total > 0 %}
+                    <div class="iweek-pills">
+                        {% for type, count in cstats.by_type.items() %}
+                        <span class="itask-pill itask-pill--{{ type }}">{{ count }} {{ type.replace('_',' ') }}</span>
+                        {% endfor %}
+                    </div>
+                    {% set cpct = ((cstats.done / cstats.total * 100)|int) %}
+                    <div class="prog-bar"><div class="prog-bar__fill{% if cpct == 100 %} prog-bar__fill--done{% endif %}" style="width:{{ cpct }}%"></div></div>
+                    <span class="muted" style="font-size:.78rem;">{{ cstats.done }}/{{ cstats.total }} done</span>
+                    {% endif %}
+                </div>
+
+
+                </section>
+            </div>{# /interview-overview #}
+
+            {# Skeleton shown during Claude generation #}
+            <div id="claude-skeleton" style="display:none;padding:.25rem 0;">
+                <div class="weeks">
+                    {% for i in range(7) %}
+                    <div class="iday">
+                        <div class="skel" style="height:.85rem;width:22%;margin-bottom:.75rem;"></div>
+                        <div class="skel" style="height:2.75rem;"></div>
+                        {% if loop.index0 % 2 == 0 %}
+                        <div class="skel" style="height:2.75rem;margin-top:.4rem;"></div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="skel-status">
+                    <span class="spinner"></span>
+                    Claude is generating your week...
+                </div>
+            </div>
+
+        </section>
+
+        {# ── Running Plan tab ── #}
+        <section id="running" class="tab-content" aria-hidden="{% if default_tab == 'running' %}false{% else %}true{% endif %}">
+            <section class="weeks">
+
+    {# Running plan header — full-plan generate button #}
+    <div style="display:flex;justify-content:flex-end;margin-bottom:.75rem;">
+        <button class="btn btn--claude"
+                data-generate-type="running-full"
+                data-has-plan="{{ 'true' if running_has_plan else 'false' }}"
+                onclick="return handleClaudeGenerate(this)">
+            {% if running_has_plan %}✦ Regenerate Full Plan{% else %}✦ Generate Training Plan{% endif %}
+        </button>
+    </div>
+
+    {% if past_weeks %}
+    <details class="past-weeks">
+        <summary class="past-weeks__summary">Past weeks ({{ past_weeks | length }})</summary>
+        <div class="weeks" style="margin-top:.75rem;">
+        {% for week_label in past_weeks %}
+        {% set monday = get_week_monday(week_label) %}
+        {% set sunday = monday + timedelta(days=6) %}
+        <div class="week-card week-card--past">
+            <div class="week-card__header">
+                {% set week_num = week_label.split('-W')[-1] %}
+                <h2 class="week-card__label">Week {{ week_num }}</h2>
+                <span class="week-card__dates">{{ monday | datefmt('%b %-d') }} – {{ sunday | datefmt('%b %-d') }}</span>
+                <a href="{{ url_for('main.week', week_label=week_label) }}" class="btn">Edit</a>
+            </div>
+            {% set running = plan.get('running', {}).get(week_label) %}
+            {% if running %}
+            <div class="week-card__pills">
+                {% for day in days %}
+                {% set d = running.get(day, {}) %}
+                <div class="day-pill{% if d %} day-pill--{{ d.get('type', 'rest') }}{% endif %}">
+                    <span class="day-pill__name">{{ day[:3].title() }}</span>
+                    <span class="day-pill__type">{{ d.get('type', '—') }}</span>
+                    {% if d.get('distance_miles') %}<span class="day-pill__dist">{{ d['distance_miles'] }}mi</span>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="week-card__empty">No plan entered yet.</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+        </div>
+    </details>
+    {% endif %}
+
+    {# Current week hero #}
+    {% set monday = get_week_monday(current_week) %}
+    {% set sunday = monday + timedelta(days=6) %}
+    {% set running = plan.get('running', {}).get(current_week) %}
+    <div class="week-card week-card--hero" id="running-week-hero">
+        <div class="week-card__header" style="flex-wrap:wrap;gap:.5rem;">
+            <div style="display:flex;flex-direction:column;gap:.55rem;">
+                <span class="hero-badge">This week</span>
+                <h2 class="week-card__label" style="font-size:1.15rem;">Week {{ current_week.split('-W')[-1] }} &nbsp;<span class="week-card__dates">{{ monday | datefmt('%b %-d') }} – {{ sunday | datefmt('%b %-d') }}</span></h2>
+            </div>
+            {% if running %}
+            {% set ns = namespace(total=0) %}
+            {% for day in days %}{% set d = running.get(day, {}) %}{% if d.get('distance_miles') %}{% set ns.total = ns.total + d['distance_miles'] %}{% endif %}{% endfor %}
+            {% if ns.total > 0 %}<span class="hero-total">{{ "%.1f"|format(ns.total)|replace('.0','') }} mi</span>{% endif %}
+            {% endif %}
+            <div style="display:flex;gap:.5rem;align-items:center;margin-left:auto;flex-wrap:wrap;">
+                <button class="btn btn--claude" data-generate-week="{{ current_week }}" data-generate-type="running-edit" data-has-plan="{{ 'true' if running else 'false' }}" onclick="return handleClaudeGenerate(this)">✦ Edit with Claude</button>
+                <a href="{{ url_for('main.week', week_label=current_week) }}" class="btn btn--primary">Edit</a>
+            </div>
+        </div>
+        <div class="week-card__days-hero">
+            {% for day in days %}
+            {% set d = (running or {}).get(day, {}) %}
+            {% set is_today = day == today.strftime('%A').lower() %}
+            <div class="day-pill-hero{% if d %} day-pill-hero--{{ d.get('type', 'rest') }}{% endif %}{% if is_today %} day-pill-hero--today{% endif %}">
+                <span class="day-pill-hero__name">{{ day[:3].title() }}</span>
+                {% if d %}
+                <span class="day-pill-hero__type">{{ d.get('type', 'rest') }}</span>
+                {% if d.get('distance_miles') %}<span class="day-pill-hero__dist">{{ d['distance_miles'] }}mi</span>{% endif %}
+                {% else %}
+                <span class="day-pill-hero__type" style="color:var(--muted)">—</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# Running skeleton — shown during Claude generation #}
+    <div id="running-skeleton" style="display:none;">
+        <div class="week-card week-card--hero">
+            <div class="week-card__days-hero">
+                {% for i in range(7) %}
+                <div style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.8rem .4rem;border-radius:12px;background:var(--glass);border:1px solid var(--border);">
+                    <div class="skel" style="height:.65rem;width:65%;border-radius:4px;"></div>
+                    <div class="skel" style="height:.85rem;width:50%;border-radius:4px;"></div>
+                    <div class="skel" style="height:.75rem;width:40%;border-radius:4px;"></div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="skel-status">
+                <span class="spinner"></span>
+                Claude is generating your running plan...
+            </div>
+        </div>
+    </div>
+
+    {# Future weeks #}
+    {% for week_label in future_weeks %}
     {% set monday = get_week_monday(week_label) %}
     {% set sunday = monday + timedelta(days=6) %}
-    <div class="week-card {% if week_label == current_week %}week-card--current{% endif %}">
+    <div class="week-card">
         <div class="week-card__header">
-            <h2 class="week-card__label">{{ week_label }}</h2>
+            <h2 class="week-card__label">Week {{ week_label.split('-W')[-1] }}</h2>
             <span class="week-card__dates">{{ monday | datefmt('%b %-d') }} – {{ sunday | datefmt('%b %-d') }}</span>
+            <button class="btn btn--claude" data-generate-week="{{ week_label }}" data-generate-type="running-edit" data-has-plan="{{ 'true' if plan.get('running', {}).get(week_label) else 'false' }}" onclick="return handleClaudeGenerate(this)" style="font-size:.875rem;padding:.45rem .7rem;">✦ Edit with Claude</button>
             <a href="{{ url_for('main.week', week_label=week_label) }}" class="btn">Edit</a>
         </div>
-
         {% set running = plan.get('running', {}).get(week_label) %}
         {% if running %}
         <div class="week-card__pills">
             {% for day in days %}
             {% set d = running.get(day, {}) %}
-            <div class="day-pill day-pill--{{ d.get('type', 'rest') }}" title="{{ d.get('notes', '') }}">
+            <div class="day-pill day-pill--{{ d.get('type', 'rest') }}">
                 <span class="day-pill__name">{{ day[:3].title() }}</span>
                 <span class="day-pill__type">{{ d.get('type', '—') }}</span>
-                {% if d.get('distance_miles') %}
-                <span class="day-pill__dist">{{ d['distance_miles'] }}mi</span>
-                {% endif %}
+                {% if d.get('distance_miles') %}<span class="day-pill__dist">{{ d['distance_miles'] }}mi</span>{% endif %}
             </div>
             {% endfor %}
         </div>
@@ -34,16 +266,68 @@
         {% endif %}
     </div>
     {% endfor %}
-</section>
 
-{% if archive_weeks %}
-<details class="archive">
-    <summary>Archive ({{ archive_weeks | length }} week{{ 's' if archive_weeks | length != 1 }})</summary>
-    <ul class="archive__list">
-        {% for w in archive_weeks %}
-        <li><a href="{{ url_for('main.week', week_label=w) }}">{{ w }}</a></li>
-        {% endfor %}
-    </ul>
-</details>
-{% endif %}
+            </section>
+        </section>
+
+        {# ── Birthdays tab ── #}
+        <section id="birthdays" class="tab-content" aria-hidden="{% if default_tab == 'birthdays' %}false{% else %}true{% endif %}">
+            <div class="tab-section-card">
+                <h2 style="margin-bottom:1rem;">Birthdays</h2>
+                <form action="{{ url_for('main.add_birthday') }}" method="post" class="birthday-form">
+                    <input class="field__input" type="text" name="name" placeholder="Name" required style="flex:1;min-width:0;">
+                    {% set month_names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] %}
+                    <select class="field__input" name="month" required style="max-width:108px;">
+                        <option value="">Month</option>
+                        {% for m in range(1,13) %}
+                        <option value="{{ '%02d' % m }}">{{ month_names[m-1] }}</option>
+                        {% endfor %}
+                    </select>
+                    <select class="field__input" name="day" required style="max-width:88px;">
+                        <option value="">Day</option>
+                        {% for d in range(1,32) %}
+                        <option value="{{ '%02d' % d }}">{{ '%02d' % d }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn--primary">Add</button>
+                </form>
+
+                {% if birthdays %}
+                <ul class="birthdays__list">
+                    {% for b in birthdays %}
+                    <li class="birthdays__item birthday-item--{{ b.date.split('-')[0] }}">
+                        <form action="{{ url_for('main.update_birthday') }}" method="post" class="birthday-edit-form">
+                            <input type="hidden" name="index" value="{{ loop.index0 }}">
+                            <input class="field__input" type="text" name="name" value="{{ b.name }}" required style="flex:1;min-width:0;">
+                            {% set month, day = b.date.split('-') %}
+                            {% set month_names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"] %}
+                            <select class="field__input" name="month" required style="max-width:108px;">
+                                <option value="">Month</option>
+                                {% for m in range(1,13) %}
+                                <option value="{{ '%02d' % m }}" {% if '%02d' % m == month %}selected{% endif %}>{{ month_names[m-1] }}</option>
+                                {% endfor %}
+                            </select>
+                            <select class="field__input" name="day" required style="max-width:88px;">
+                                <option value="">Day</option>
+                                {% for d in range(1,32) %}
+                                <option value="{{ '%02d' % d }}" {% if '%02d' % d == day %}selected{% endif %}>{{ '%02d' % d }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn">Save</button>
+                        </form>
+                        <form action="{{ url_for('main.delete_birthday') }}" method="post" style="display:inline">
+                            <input type="hidden" name="index" value="{{ loop.index0 }}">
+                            <button type="submit" class="btn btn--danger" onclick="return confirm('Delete {{ b.name }}\'s birthday?')">Delete</button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="muted">No birthdays saved yet.</p>
+                {% endif %}
+            </div>
+        </section>
+
+    </div>
+</div>
 {% endblock %}

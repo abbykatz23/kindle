@@ -8,7 +8,6 @@
 </head>
 <body>
     <nav class="nav">
-        <a class="nav__brand" href="{{ url_for('main.index') }}">Running Plan</a>
     </nav>
 
     <main class="main">
@@ -22,5 +21,33 @@
     </main>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    {# ── Claude generation modal (shared across all pages) ── #}
+    <div id="claude-modal-overlay" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="claude-modal-title">
+        <div class="modal">
+            <h2 class="modal__title" id="claude-modal-title">✦ Generate with Claude</h2>
+
+            <div id="claude-modal-warning" class="modal__warning" style="display:none;"></div>
+
+            <div class="modal__section" id="claude-modal-intensity">
+                <label class="modal__label">Week intensity</label>
+                <div class="intensity-toggle" role="group" aria-label="Week intensity">
+                    <button type="button" class="intensity-btn" data-intensity="light">Light</button>
+                    <button type="button" class="intensity-btn intensity-btn--active" data-intensity="normal">Normal</button>
+                    <button type="button" class="intensity-btn" data-intensity="intense">Intense</button>
+                </div>
+            </div>
+
+            <div class="modal__section">
+                <label class="modal__label" for="claude-custom-prompt">Custom instructions <span class="modal__optional">(optional)</span></label>
+                <textarea id="claude-custom-prompt" class="modal__textarea" placeholder="e.g. Exclude Wednesday from scheduling and redistribute those tasks across the remaining days." rows="3"></textarea>
+            </div>
+
+            <div class="modal__actions">
+                <button type="button" class="btn btn--ghost" id="claude-modal-cancel">Cancel</button>
+                <button type="button" class="btn btn--claude" id="claude-modal-confirm">Generate</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

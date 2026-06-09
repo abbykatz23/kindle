@@ -22,17 +22,12 @@ class Config:
     KINDLE_PASSWORD: str = os.getenv("KINDLE_PASSWORD", "")
     KINDLE_IMAGE_PATH: str = os.getenv("KINDLE_IMAGE_PATH", "/tmp/dashboard.png")
 
-    # Strava
-    STRAVA_CLIENT_ID: str = os.getenv("STRAVA_CLIENT_ID", "")
-    STRAVA_CLIENT_SECRET: str = os.getenv("STRAVA_CLIENT_SECRET", "")
-    STRAVA_REFRESH_TOKEN: str = os.getenv("STRAVA_REFRESH_TOKEN", "")
-
     # LeetCode
     LEETCODE_USERNAME: str = os.getenv("LEETCODE_USERNAME", "")
 
     # Claude
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
-    CLAUDE_MODEL: str = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6")
+    CLAUDE_MODEL: str = os.getenv("CLAUDE_MODEL", "claude-opus-4-8")
 
     # Flask
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key-change-in-prod")

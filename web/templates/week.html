@@ -7,7 +7,6 @@
     <div class="page-header__row">
         <div>
             <h1>Week of {{ monday | datefmt('%B %-d, %Y') }}</h1>
-            <p class="week-label">{{ week_label }}</p>
         </div>
         <div class="week-total" aria-live="polite">
             <span class="week-total__label">Week total</span>
@@ -20,7 +19,8 @@
     <div class="days-grid">
         {% for day in days %}
         {% set d = week_data.get(day, {}) %}
-        <div class="day-form">
+        {% set is_today = current_week_label == week_label and day == today.strftime('%A').lower() %}
+        <div class="day-form{% if is_today %} day-form--today{% endif %}">
             <h3 class="day-form__title">{{ day.title() }}</h3>
 
             <label class="field">

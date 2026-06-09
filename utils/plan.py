@@ -1,4 +1,5 @@
 """Read/write helpers for plan.json, birthdays.json, and derived lookups."""
+import calendar
 import json
 from datetime import date, timedelta
 
@@ -20,6 +21,12 @@ def load_birthdays() -> list[dict]:
     if Config.BIRTHDAYS_FILE.exists():
         return json.loads(Config.BIRTHDAYS_FILE.read_text())
     return []
+
+
+def save_birthdays(birthdays: list[dict]) -> None:
+    """Persist the birthdays list to disk (overwrites file)."""
+    Config.DATA_DIR.mkdir(parents=True, exist_ok=True)
+    Config.BIRTHDAYS_FILE.write_text(json.dumps(birthdays, indent=2))
 
 
 def get_week_label(d: date) -> str:
@@ -75,14 +82,17 @@ def get_week_task_lists(today: date) -> tuple[list[dict], list[dict]]:
     return leetcode_tasks, other_tasks
 
 
-def get_upcoming_birthdays(today: date, days_ahead: int = 2) -> list[dict]:
+def get_upcoming_birthdays(today: date, days_ahead: int = 7) -> list[dict]:
     upcoming = []
     for entry in load_birthdays():
         month, day = map(int, entry["date"].split("-"))
-        try:
-            birthday = date(today.year, month, day)
-        except ValueError:
-            continue  # Feb 29 on non-leap year
+        if month == 2 and day == 29 and not calendar.isleap(today.year):
+            birthday = date(today.year, 3, 1)
+        else:
+            try:
+                birthday = date(today.year, month, day)
+            except ValueError:
+                continue
         delta = (birthday - today).days
         if 0 <= delta <= days_ahead:
             upcoming.append({

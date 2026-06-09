@@ -1,0 +1,90 @@
+{
+  "start_date": "2026-06-01",
+  "target_date": "2026-11-22",
+  "total_weeks": 26,
+  "goal": "Software engineering interviews at Google-level companies (Google, Meta, Apple, Amazon, Microsoft)",
+  "resources": {
+    "OSTEP": "OS: Three Easy Pieces — core OS concepts (processes, virtual memory, concurrency, persistence). Free at ostep.org.",
+    "SysDesign": "System Design Interview Vol 1 — Alex Xu — interview framework and 16 case studies.",
+    "DDIA": "Designing Data-Intensive Applications — Martin Kleppmann — the definitive guide to distributed systems depth.",
+    "SRE": "Google SRE Book — free at sre.google — how Google thinks about reliability, SLOs, toil. Google-specific.",
+    "EPI": "Elements of Programming Interviews in Python — rigorous algorithm patterns, harder than CtCI."
+  },
+  "problem_set": "EPI + targeted LeetCode by topic (not Neetcode 150 — go deep on topics rather than skimming a broad list)",
+  "phases": [
+    {
+      "name": "Foundation",
+      "weeks_start": 1,
+      "weeks_end": 4,
+      "focus": "Core data structures and algorithms: arrays, strings, hashmaps, two pointers, sliding window, binary search, linked lists, trees, BST, graph BFS/DFS, heaps. Easy and medium LeetCode. Begin OSTEP (virtualization section, chapters 1-20). Start identifying behavioral stories.",
+      "lc_difficulty": "easy and medium",
+      "lc_weekly_target": 5,
+      "books": "OSTEP chapters 1-20 (virtualization: processes, direct execution, scheduling, address spaces, paging)",
+      "system_design_depth": "light — read the introduction chapter of System Design Interview only, no full design sessions yet",
+      "behavioral_focus": "Identify 6-8 STAR story candidates from past experience. Just brainstorm — no need to write them fully yet."
+    },
+    {
+      "name": "Build",
+      "weeks_start": 5,
+      "weeks_end": 12,
+      "focus": "Medium and hard LeetCode. System Design Interview (Alex Xu) — all chapters, one per week. DDIA chapters 1-6 (data models, storage engines, encoding, replication, partitioning). OSTEP chapters 21-40 (concurrency, locks, semaphores, condition variables, persistence). Write and refine behavioral stories.",
+      "lc_difficulty": "medium and hard",
+      "lc_weekly_target": 5,
+      "books": "OSTEP ch 21-40, System Design Interview (Alex Xu) all chapters, DDIA ch 1-6",
+      "system_design_depth": "medium — read and summarize one Alex Xu chapter per week; design one system from the book each week",
+      "behavioral_focus": "Write out all 8 STAR stories in full. Practice out loud for 2-3 per week."
+    },
+    {
+      "name": "Depth",
+      "weeks_start": 13,
+      "weeks_end": 18,
+      "focus": "Hard LeetCode: DP (1D then 2D), tries, advanced graphs (topological sort, Dijkstra, union-find), intervals, bit manipulation. DDIA chapters 7-12 (transactions, distributed systems problems, batch processing, stream processing). Selected SRE Book chapters (ch 1-4, 8-11, 17). EPI advanced chapters for extra rigor.",
+      "lc_difficulty": "hard",
+      "lc_weekly_target": 4,
+      "books": "DDIA ch 7-12, Google SRE Book (ch 1-4, 8-11, 17), EPI advanced sections",
+      "system_design_depth": "deep — design full systems from scratch without reference. Time yourself. Review and compare to Alex Xu solution.",
+      "behavioral_focus": "Polish all 8 stories. Practice with a timer (2 minutes per story). Record yourself if possible."
+    },
+    {
+      "name": "Polish",
+      "weeks_start": 19,
+      "weeks_end": 26,
+      "focus": "Mock interviews on Pramp and interviewing.io. Targeted LeetCode on weak areas from earlier phases. Full behavioral mock interviews. Full system design mocks (design from scratch, then review). Simulate complete interview loops. Review all past material. Focus on communication and speed, not new material.",
+      "lc_difficulty": "mixed review — identify weak topics from phases 1-3 and drill those",
+      "lc_weekly_target": 5,
+      "books": "Review DDIA and SRE book weak chapters only; no new reading",
+      "system_design_depth": "mock interview mode — full loops, no reference material, timed",
+      "behavioral_focus": "Full mock behavioral interviews with a friend or on Pramp. Polish stories based on feedback."
+    }
+  ],
+  "lc_topic_order": [
+    "arrays and strings",
+    "hashmaps and sets",
+    "two pointers",
+    "sliding window",
+    "binary search",
+    "linked lists",
+    "trees and BST",
+    "graph BFS and DFS",
+    "heaps and priority queues",
+    "tries",
+    "backtracking",
+    "dynamic programming 1D",
+    "dynamic programming 2D",
+    "greedy algorithms",
+    "intervals",
+    "bit manipulation",
+    "advanced graphs: topological sort, Dijkstra, union-find"
+  ],
+  "behavioral_stories_target": 8,
+  "behavioral_story_themes": [
+    "Handled a conflict or disagreement with a teammate or manager",
+    "Led or drove a project with ambiguous or changing requirements",
+    "Made a significant mistake and how you recovered from it",
+    "Most technically challenging problem you have solved",
+    "Influenced a decision without direct authority — convinced others",
+    "Delivered something under a tight or unexpected deadline",
+    "Gave or received difficult feedback constructively",
+    "Took initiative beyond your role — went above and beyond"
+  ]
+}

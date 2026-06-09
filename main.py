@@ -6,7 +6,6 @@ from config import Config
 from dashboard.push import push_to_kindle
 from dashboard.render import render_dashboard, save_dashboard
 from integrations.leetcode import get_recent_accepted_submissions
-from integrations.strava import is_run_completed_today
 from utils.completions import get_manual_completions
 from utils.plan import get_todays_run_plan, get_upcoming_birthdays, get_week_task_lists
 
@@ -62,11 +61,7 @@ def run(push: bool = True) -> None:
     leetcode_tasks, other_tasks = _attach_completion(today)
 
     run_plan = get_todays_run_plan(today)
-    try:
-        run_completed = is_run_completed_today()
-    except Exception as e:
-        print(f"Strava unavailable: {e}")
-        run_completed = False
+    run_completed = False
 
     birthdays = get_upcoming_birthdays(today, days_ahead=7)
 
