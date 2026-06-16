@@ -45,6 +45,20 @@ def _normalize_birthday_date(month_str: str, day_str: str, date_str: str | None 
     return f"{month:02d}-{day:02d}"
 
 
+def _get_plan_week_monday(start_date_str: str, week_num: int) -> date:
+    start = date.fromisoformat(start_date_str)
+    start_monday = start - timedelta(days=start.weekday())
+    return start_monday + timedelta(weeks=(week_num - 1))
+
+
+def _get_current_plan_week(start_date_str: str, today: date) -> int:
+    start = date.fromisoformat(start_date_str)
+    start_monday = start - timedelta(days=start.weekday())
+    today_monday = today - timedelta(days=today.weekday())
+    delta = (today_monday - start_monday).days // 7
+    return max(1, delta + 1)
+
+
 def _save_plan(plan: dict) -> None:
     Config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     Config.PLAN_FILE.write_text(json.dumps(plan, indent=2))
@@ -52,6 +66,28 @@ def _save_plan(plan: dict) -> None:
 
 def _load_sorted_birthdays() -> list[dict]:
     return sorted(load_birthdays(), key=lambda b: b.get("date", ""))
+
+
+def _get_next_birthday(birthdays: list[dict], today: date) -> dict | None:
+    best: dict | None = None
+    best_days: int | None = None
+    for b in birthdays:
+        try:
+            month, day = map(int, b["date"].split("-"))
+        except (ValueError, KeyError):
+            continue
+        for year_offset in [0, 1]:
+            try:
+                bday = date(today.year + year_offset, month, day)
+            except ValueError:
+                bday = date(today.year + year_offset, 3, 1)  # Feb 29 fallback
+            days_until = (bday - today).days
+            if days_until >= 0:
+                if best_days is None or days_until < best_days:
+                    best_days = days_until
+                    best = {"name": b.get("name", ""), "days_until": days_until}
+                break
+    return best
 
 
 def _interview_week_stats(week_data: dict) -> dict:
@@ -73,43 +109,70 @@ def _interview_redirect(week_label: str):
     return redirect(url_for("main.index", tab="interview"))
 
 
-def _running_generate_thread(job_id: str, week_label: str, intensity: str, custom_prompt: str) -> None:
+def _running_generate_thread(job_id: str, week_num: int, custom_prompt: str) -> None:
     try:
         from integrations.running_claude_api import edit_weekly_running_plan
         plan = load_plan()
-        running_profile = {}
-        rp_path = Config.DATA_DIR / "running_profile.json"
-        if rp_path.exists():
-            running_profile = json.loads(rp_path.read_text())
+        running = plan.get("running", {})
+        active_plan = running.get("active") if isinstance(running, dict) else None
+        if not active_plan:
+            raise ValueError("No active running plan found.")
         result = edit_weekly_running_plan(
-            week_label=week_label,
-            plan=plan,
-            profile=running_profile,
+            week_num=week_num,
+            active_plan=active_plan,
             custom_prompt=custom_prompt,
         )
         fresh_plan = load_plan()
-        fresh_plan.setdefault("running", {})[week_label] = result
-        _save_plan(fresh_plan)
+        if fresh_plan.get("running", {}).get("active"):
+            fresh_plan["running"]["active"]["weeks"][str(week_num)] = result
+            _save_plan(fresh_plan)
         job_store.mark_done(job_id)
     except Exception as e:
         job_store.mark_failed(job_id, str(e))
 
 
-def _running_generate_full_thread(job_id: str, custom_prompt: str) -> None:
+def _running_generate_full_thread(job_id: str, intake: dict) -> None:
     try:
         from integrations.running_claude_api import generate_full_running_plan
-        plan = load_plan()
-        running_profile = {}
-        rp_path = Config.DATA_DIR / "running_profile.json"
-        if rp_path.exists():
-            running_profile = json.loads(rp_path.read_text())
-        weeks_data = generate_full_running_plan(
-            plan=plan,
-            profile=running_profile,
-            custom_prompt=custom_prompt,
-        )
+
+        def _progress(msg: str):
+        job_store.mark_progress(job_id, msg)
+
+        weeks_data = generate_full_running_plan(intake, progress_cb=_progress)
+
+        today = date.today()
+        try:
+            race_miles_f = float(intake.get("race_miles") or 0)
+            if intake.get("race_distance_unit") == "km":
+                race_miles_f = round(race_miles_f * 0.621371, 1)
+        except (TypeError, ValueError):
+            race_miles_f = 0
+
+        new_active = {
+            "id": f"plan_{today.strftime('%Y%m%d')}",
+            "created_at": today.isoformat(),
+            "start_date": intake.get("start_date", today.isoformat()),
+            "race_date": intake.get("race_date", ""),
+            "race_name": intake.get("race_name", ""),
+            "race_miles": race_miles_f,
+            "days_per_week": int(intake.get("days_per_week") or 4),
+            "current_weekly_mileage": float(intake.get("current_weekly_mileage") or 0),
+            "notes": intake.get("notes", ""),
+            "weeks": weeks_data,
+        }
+
         fresh_plan = load_plan()
-        fresh_plan.setdefault("running", {}).update(weeks_data)
+        running = fresh_plan.setdefault("running", {})
+        if not isinstance(running, dict) or "active" not in running:
+            running = {"active": None, "archived": []}
+            fresh_plan["running"] = running
+
+        if running.get("active"):
+            existing = running["active"]
+            existing["archived_at"] = today.isoformat()
+            running.setdefault("archived", []).insert(0, existing)
+
+        running["active"] = new_active
         _save_plan(fresh_plan)
         job_store.mark_done(job_id)
     except Exception as e:
@@ -149,19 +212,7 @@ def index():
 
     default_tab = (request.args.get("tab") or "interview").lower()
 
-    # Load running profile for race date and future weeks computation
-    running_profile: dict = {}
-    rp_path = Config.DATA_DIR / "running_profile.json"
-    if rp_path.exists():
-        running_profile = json.loads(rp_path.read_text())
-    race_date_str = running_profile.get("race_date", "2026-10-10")
-    race_date_dt = date.fromisoformat(race_date_str)
-
-    past_weeks = sorted(
-        [w for w in plan.get("running", {}) if w < current_week],
-        reverse=True,
-    )
-
+    # Interview prep
     interview_past_weeks = sorted(
         [w for w in plan.get("interview_prep", {}) if w < current_week],
         reverse=True,
@@ -171,20 +222,42 @@ def index():
         for w, data in plan.get("interview_prep", {}).items()
     }
 
-    # Future running weeks: next week through race date
-    future_weeks = []
-    wdt = get_week_monday(current_week) + timedelta(weeks=1)
-    while wdt <= race_date_dt:
-        future_weeks.append(get_week_label(wdt))
-        wdt += timedelta(weeks=1)
+    # Running plan — new data model: {active: {...}, archived: [...]}
+    running_section = plan.get("running", {})
+    if isinstance(running_section, dict) and "active" in running_section:
+        active_plan = running_section.get("active")
+        archived_plans = running_section.get("archived", [])
+    else:
+        active_plan = None
+        archived_plans = []
 
-    running_has_plan = bool(plan.get("running"))
+    if active_plan:
+        start_date = active_plan["start_date"]
+        total_plan_weeks = len(active_plan.get("weeks", {}))
+        current_plan_week = _get_current_plan_week(start_date, today)
+        current_plan_week = min(max(1, current_plan_week), total_plan_weeks) if total_plan_weeks else 1
+        race_date_str = active_plan.get("race_date", "")
+        race_name = active_plan.get("race_name", "")
+        past_plan_weeks = list(range(1, current_plan_week))
+        future_plan_weeks = list(range(current_plan_week + 1, total_plan_weeks + 1))
+        week_dates = {}
+        for wnum in range(1, total_plan_weeks + 1):
+            mon = _get_plan_week_monday(start_date, wnum)
+            week_dates[wnum] = {"monday": mon, "sunday": mon + timedelta(days=6)}
+    else:
+        total_plan_weeks = 0
+        current_plan_week = None
+        race_date_str = ""
+        race_name = ""
+        past_plan_weeks = []
+        future_plan_weeks = []
+        week_dates = {}
+
+    next_birthday = _get_next_birthday(birthdays, today)
 
     return render_template(
         "index.html",
         current_week=current_week,
-        future_weeks=future_weeks,
-        past_weeks=past_weeks,
         interview_past_weeks=interview_past_weeks,
         interview_week_stats=interview_week_stats,
         plan=plan,
@@ -197,9 +270,16 @@ def index():
         today=today,
         timedelta=timedelta,
         get_week_monday=get_week_monday,
-        running_has_plan=running_has_plan,
-        running_profile=running_profile,
+        active_plan=active_plan,
+        archived_plans=archived_plans,
+        current_plan_week=current_plan_week,
+        total_plan_weeks=total_plan_weeks,
+        past_plan_weeks=past_plan_weeks,
+        future_plan_weeks=future_plan_weeks,
+        week_dates=week_dates,
         race_date_str=race_date_str,
+        race_name=race_name,
+        next_birthday=next_birthday,
     )
 
 
@@ -227,13 +307,20 @@ def add_birthday():
     return redirect(url_for("main.index", tab="birthdays"))
 
 
-@bp.route("/week/<week_label>", methods=["GET", "POST"])
-def week(week_label: str):
+@bp.route("/running/week/<int:week_num>", methods=["GET", "POST"])
+def running_week(week_num: int):
     today = date.today()
-    current_week_label = get_week_label(today)
     plan = load_plan()
+    running = plan.get("running", {})
+    active_plan = running.get("active") if isinstance(running, dict) else None
+
+    if not active_plan:
+        return redirect(url_for("main.index", tab="running"))
+
+    start_date = active_plan["start_date"]
+
     if request.method == "POST":
-        running_week = {
+        week_data = {
             day: {
                 "type": request.form.get(f"{day}_type", "rest"),
                 "distance_miles": float(request.form.get(f"{day}_distance") or 0),
@@ -241,19 +328,24 @@ def week(week_label: str):
             }
             for day in DAYS
         }
-        plan.setdefault("running", {})[week_label] = running_week
+        plan["running"]["active"]["weeks"][str(week_num)] = week_data
         _save_plan(plan)
-        flash(f"Saved plan for {week_label}.", "success")
-        return redirect(url_for("main.week", week_label=week_label))
+        flash(f"Saved Week {week_num}.", "success")
+        return redirect(url_for("main.running_week", week_num=week_num))
+
+    week_data = active_plan.get("weeks", {}).get(str(week_num), {})
+    monday = _get_plan_week_monday(start_date, week_num)
+    current_plan_week = _get_current_plan_week(start_date, today)
+
     return render_template(
         "week.html",
-        week_label=week_label,
-        week_data=plan.get("running", {}).get(week_label, {}),
-        monday=get_week_monday(week_label),
+        week_num=week_num,
+        week_data=week_data,
+        monday=monday,
         days=DAYS,
         workout_types=WORKOUT_TYPES,
         today=today,
-        current_week_label=current_week_label,
+        is_current_week=(week_num == current_plan_week),
     )
 
 
@@ -313,15 +405,94 @@ def delete_birthday():
     return redirect(url_for("main.index", tab="birthdays"))
 
 
+@bp.route("/running/unarchive-plan", methods=["POST"])
+def unarchive_running_plan():
+    try:
+        idx = int(request.form.get("index", ""))
+    except (TypeError, ValueError):
+        flash("Invalid plan index.", "error")
+        return redirect(url_for("main.index", tab="running"))
+    plan = load_plan()
+    running = plan.get("running", {})
+    if not isinstance(running, dict):
+        running = {"active": None, "archived": []}
+        plan["running"] = running
+    archived = running.get("archived", [])
+    if not (0 <= idx < len(archived)):
+        flash("Archived plan not found.", "error")
+        return redirect(url_for("main.index", tab="running"))
+    today = date.today()
+    restoring = archived.pop(idx)
+    restoring.pop("archived_at", None)
+    if running.get("active"):
+        existing = running["active"]
+        existing["archived_at"] = today.isoformat()
+        archived.insert(0, existing)
+    running["active"] = restoring
+    running["archived"] = archived
+    _save_plan(plan)
+    flash("Plan restored as active.", "success")
+    return redirect(url_for("main.index", tab="running"))
+
+
+@bp.route("/running/archive-plan", methods=["POST"])
+def archive_running_plan():
+    plan = load_plan()
+    running = plan.get("running", {})
+    if isinstance(running, dict) and running.get("active"):
+        active = running["active"]
+        active["archived_at"] = date.today().isoformat()
+        running.setdefault("archived", []).insert(0, active)
+        running["active"] = None
+        plan["running"] = running
+        _save_plan(plan)
+        flash("Plan archived.", "success")
+    return redirect(url_for("main.index", tab="running"))
+
+
+@bp.route("/running/intake-questions", methods=["POST"])
+def running_intake_questions():
+    if not Config.ANTHROPIC_API_KEY:
+        return jsonify({"error": "ANTHROPIC_API_KEY is not set."}), 400
+    intake = {
+        "race_name": request.form.get("race_name", "").strip(),
+        "race_date": request.form.get("race_date", "").strip(),
+        "race_miles": request.form.get("race_miles", "").strip(),
+        "race_distance_unit": request.form.get("race_distance_unit", "miles").strip(),
+        "days_per_week": request.form.get("days_per_week", "4").strip(),
+        "current_weekly_mileage": request.form.get("current_weekly_mileage", "").strip(),
+        "notes": request.form.get("notes", "").strip(),
+        "recent_race_result": request.form.get("recent_race_result", "").strip(),
+        "start_date": date.today().isoformat(),
+    }
+    try:
+        from integrations.running_claude_api import generate_intake_questions
+        questions = generate_intake_questions(intake)
+        return jsonify({"questions": questions})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @bp.route("/running/generate-full-plan", methods=["POST"])
 def generate_running_full_plan():
     if not Config.ANTHROPIC_API_KEY:
         return jsonify({"error": "ANTHROPIC_API_KEY is not set."}), 400
-    custom_prompt = request.form.get("custom_prompt", "").strip()
+    intake = {
+        "race_name": request.form.get("race_name", "").strip(),
+        "race_date": request.form.get("race_date", "").strip(),
+        "race_miles": request.form.get("race_miles", "").strip(),
+        "race_distance_unit": request.form.get("race_distance_unit", "miles").strip(),
+        "days_per_week": request.form.get("days_per_week", "4").strip(),
+        "current_weekly_mileage": request.form.get("current_weekly_mileage", "").strip(),
+        "notes": request.form.get("notes", "").strip(),
+        "recent_race_result": request.form.get("recent_race_result", "").strip(),
+        "qa_context": request.form.get("qa_context", "").strip(),
+        "start_date": date.today().isoformat(),
+    }
     job_id = job_store.create("running-full")
     thread = threading.Thread(
         target=_running_generate_full_thread,
-        args=(job_id, custom_prompt),
+        args=(job_id, intake),
         daemon=True,
     )
     thread.start()
@@ -341,19 +512,19 @@ def generate_running_full_plan_status():
 def generate_running_ai():
     if not Config.ANTHROPIC_API_KEY:
         return jsonify({"error": "ANTHROPIC_API_KEY is not set."}), 400
-    week_label = request.form.get("week_label") or get_week_label(date.today())
-    intensity = request.form.get("intensity", "normal").strip().lower()
-    if intensity not in ("light", "normal", "intense"):
-        intensity = "normal"
+    try:
+        week_num = int(request.form.get("week_num", ""))
+    except (TypeError, ValueError):
+        return jsonify({"error": "week_num is required."}), 400
     custom_prompt = request.form.get("custom_prompt", "").strip()
-    job_id = job_store.create(week_label)
+    job_id = job_store.create(f"running-week-{week_num}")
     thread = threading.Thread(
         target=_running_generate_thread,
-        args=(job_id, week_label, intensity, custom_prompt),
+        args=(job_id, week_num, custom_prompt),
         daemon=True,
     )
     thread.start()
-    return jsonify({"job_id": job_id, "week_label": week_label})
+    return jsonify({"job_id": job_id, "week_num": week_num})
 
 
 @bp.route("/running/generate-ai/status")

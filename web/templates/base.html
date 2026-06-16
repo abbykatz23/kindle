@@ -22,7 +22,7 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
-    {# ── Claude generation modal (shared across all pages) ── #}
+    {# ── Claude generation modal (interview prep + running edit) ── #}
     <div id="claude-modal-overlay" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="claude-modal-title">
         <div class="modal">
             <h2 class="modal__title" id="claude-modal-title">✦ Generate with Claude</h2>
@@ -46,6 +46,85 @@
             <div class="modal__actions">
                 <button type="button" class="btn btn--ghost" id="claude-modal-cancel">Cancel</button>
                 <button type="button" class="btn btn--claude" id="claude-modal-confirm">Generate</button>
+            </div>
+        </div>
+    </div>
+
+    {# ── New training plan intake modal ── #}
+    <div id="new-plan-modal-overlay" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="np-modal-title">
+        <div class="modal" style="max-width:520px;">
+            <h2 class="modal__title" id="np-modal-title">✦ New Training Plan</h2>
+            <p class="modal__step-indicator" id="np-step-indicator" style="font-size:.8rem;color:var(--muted);margin-bottom:1rem;margin-top:-.5rem;letter-spacing:.04em;text-transform:uppercase;">Step 1 of 2 — Your details</p>
+
+            {# Step 1: intake form #}
+            <div id="np-step-1">
+                <div class="modal__section">
+                    <label class="modal__label" for="np-race-name">Race or goal event <span class="modal__optional">(optional)</span></label>
+                    <input type="text" id="np-race-name" class="modal__input" placeholder="e.g. local 10K, 50-mile ultra, general fitness">
+                </div>
+
+                <div class="modal__section" style="display:flex;gap:.75rem;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:130px;">
+                        <label class="modal__label" for="np-race-date">Race date <span class="modal__optional">(opt.)</span></label>
+                        <input type="date" id="np-race-date" class="modal__input">
+                    </div>
+                    <div style="flex:1;min-width:130px;">
+                        <label class="modal__label">Distance <span class="modal__optional">(opt.)</span></label>
+                        <div style="display:flex;gap:.35rem;">
+                            <input type="number" id="np-race-distance" class="modal__input" placeholder="42" style="flex:1;min-width:0;" step="0.1" min="0">
+                            <select id="np-race-distance-unit" class="modal__input" style="max-width:68px;padding-right:.25rem;">
+                                <option value="miles">mi</option>
+                                <option value="km">km</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal__section" style="display:flex;gap:.75rem;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:130px;">
+                        <label class="modal__label" for="np-days-per-week">Training days/week</label>
+                        <select id="np-days-per-week" class="modal__input">
+                            <option value="3">3 days</option>
+                            <option value="4" selected>4 days</option>
+                            <option value="5">5 days</option>
+                            <option value="6">6 days</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;min-width:130px;">
+                        <label class="modal__label" for="np-current-mileage">Current weekly mileage <span class="modal__optional">(opt.)</span></label>
+                        <input type="number" id="np-current-mileage" class="modal__input" placeholder="e.g. 30" step="0.5" min="0">
+                    </div>
+                </div>
+
+                <div class="modal__section">
+                    <label class="modal__label" for="np-recent-race">Recent race result <span class="modal__optional">(opt.)</span></label>
+                    <input type="text" id="np-recent-race" class="modal__input" placeholder="e.g. 10K in 52:30, half marathon in 1:58:00">
+                </div>
+
+                <div class="modal__section">
+                    <label class="modal__label" for="np-notes">Anything else Claude should know <span class="modal__optional">(optional)</span></label>
+                    <textarea id="np-notes" class="modal__textarea" placeholder="e.g. recovering from a knee injury, can't run Wednesdays, training on trails..." rows="2"></textarea>
+                </div>
+
+                <div class="modal__actions">
+                    <button type="button" class="btn btn--ghost" id="np-cancel">Cancel</button>
+                    <button type="button" class="btn btn--claude" id="np-continue">Continue →</button>
+                </div>
+            </div>
+
+            {# Step 2: Claude's questions + user answers #}
+            <div id="np-step-2" style="display:none;">
+                <div id="np-questions-block" class="modal__questions-block"></div>
+
+                <div class="modal__section">
+                    <label class="modal__label" for="np-answers">Your answers</label>
+                    <textarea id="np-answers" class="modal__textarea" placeholder="Answer each question above..." rows="5"></textarea>
+                </div>
+
+                <div class="modal__actions">
+                    <button type="button" class="btn btn--ghost" id="np-back">← Back</button>
+                    <button type="button" class="btn btn--claude" id="np-confirm">Generate Plan</button>
+                </div>
             </div>
         </div>
     </div>

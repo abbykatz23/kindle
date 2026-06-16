@@ -12,10 +12,18 @@
                 <span class="countdown-badge__num" id="countdown-days">—</span>
                 <span class="countdown-badge__label">days until 2027</span>
             </div>
+            {% if active_plan and race_date_str %}
             <div class="countdown-badge{% if default_tab != 'running' %} countdown-badge--hidden{% endif %}" id="race-countdown-badge" style="margin-left:0">
                 <span class="countdown-badge__num" id="race-countdown-days">—</span>
-                <span class="countdown-badge__label">days until Oct 10</span>
+                <span class="countdown-badge__label">days until {{ race_name or 'race' }}</span>
             </div>
+            {% endif %}
+            {% if next_birthday %}
+            <div class="countdown-badge{% if default_tab != 'birthdays' %} countdown-badge--hidden{% endif %}" id="birthday-countdown-badge" style="margin-left:0">
+                <span class="countdown-badge__num">{{ next_birthday.days_until }}</span>
+                <span class="countdown-badge__label">{% if next_birthday.days_until == 0 %}today · {{ next_birthday.name }}{% else %}days · {{ next_birthday.name }}{% endif %}</span>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -137,31 +145,50 @@
         <section id="running" class="tab-content" aria-hidden="{% if default_tab == 'running' %}false{% else %}true{% endif %}">
             <section class="weeks">
 
-    {# Running plan header — full-plan generate button #}
-    <div style="display:flex;justify-content:flex-end;margin-bottom:.75rem;">
-        <button class="btn btn--claude"
-                data-generate-type="running-full"
-                data-has-plan="{{ 'true' if running_has_plan else 'false' }}"
-                onclick="return handleClaudeGenerate(this)">
-            {% if running_has_plan %}✦ Regenerate Full Plan{% else %}✦ Generate Training Plan{% endif %}
-        </button>
+    {# Plan header row: plan info + Archive + New Plan buttons #}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem;">
+        {% if active_plan %}
+        <div style="line-height:1.4;">
+            <div style="font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Active plan</div>
+            <div style="font-weight:600;font-size:.95rem;">
+                {{ active_plan.race_name or 'Training Plan' }}
+                {% if active_plan.race_date %}<span class="muted" style="font-weight:400;font-size:.85rem;"> · {{ active_plan.race_date }}</span>{% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div></div>
+        {% endif %}
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+            {% if active_plan %}
+            <form method="post" action="{{ url_for('main.archive_running_plan') }}" style="display:inline">
+                <button type="submit" class="btn" onclick="return confirm('Archive this plan? You can still view it below.')">Archive</button>
+            </form>
+            {% endif %}
+            <button class="btn btn--claude" onclick="return handleNewPlan(this)" data-has-plan="{{ 'true' if active_plan else 'false' }}">✦ New Plan</button>
+        </div>
     </div>
 
-    {% if past_weeks %}
+    {# Wrap all plan content so it can be hidden during full-plan generation #}
+    <div id="running-plan-content">
+
+    {% if active_plan %}
+
+    {# Past plan weeks collapsible #}
+    {% if past_plan_weeks %}
     <details class="past-weeks">
-        <summary class="past-weeks__summary">Past weeks ({{ past_weeks | length }})</summary>
+        <summary class="past-weeks__summary">Past weeks ({{ past_plan_weeks | length }})</summary>
         <div class="weeks" style="margin-top:.75rem;">
-        {% for week_label in past_weeks %}
-        {% set monday = get_week_monday(week_label) %}
-        {% set sunday = monday + timedelta(days=6) %}
+        {% for wnum in past_plan_weeks %}
+        {% set wdates = week_dates.get(wnum, {}) %}
+        {% set wmon = wdates.get('monday') %}
+        {% set wsun = wdates.get('sunday') %}
+        {% set running = active_plan.get('weeks', {}).get(wnum|string) %}
         <div class="week-card week-card--past">
             <div class="week-card__header">
-                {% set week_num = week_label.split('-W')[-1] %}
-                <h2 class="week-card__label">Week {{ week_num }}</h2>
-                <span class="week-card__dates">{{ monday | datefmt('%b %-d') }} – {{ sunday | datefmt('%b %-d') }}</span>
-                <a href="{{ url_for('main.week', week_label=week_label) }}" class="btn">Edit</a>
+                <h2 class="week-card__label">Week {{ wnum }}</h2>
+                {% if wmon %}<span class="week-card__dates">{{ wmon | datefmt('%b %-d') }} – {{ wsun | datefmt('%b %-d') }}</span>{% endif %}
+                <a href="{{ url_for('main.running_week', week_num=wnum) }}" class="btn">Edit</a>
             </div>
-            {% set running = plan.get('running', {}).get(week_label) %}
             {% if running %}
             <div class="week-card__pills">
                 {% for day in days %}
@@ -183,14 +210,18 @@
     {% endif %}
 
     {# Current week hero #}
-    {% set monday = get_week_monday(current_week) %}
-    {% set sunday = monday + timedelta(days=6) %}
-    {% set running = plan.get('running', {}).get(current_week) %}
+    {% set wdates = week_dates.get(current_plan_week, {}) %}
+    {% set hero_mon = wdates.get('monday') %}
+    {% set hero_sun = wdates.get('sunday') %}
+    {% set running = active_plan.get('weeks', {}).get(current_plan_week|string) %}
     <div class="week-card week-card--hero" id="running-week-hero">
         <div class="week-card__header" style="flex-wrap:wrap;gap:.5rem;">
             <div style="display:flex;flex-direction:column;gap:.55rem;">
                 <span class="hero-badge">This week</span>
-                <h2 class="week-card__label" style="font-size:1.15rem;">Week {{ current_week.split('-W')[-1] }} &nbsp;<span class="week-card__dates">{{ monday | datefmt('%b %-d') }} – {{ sunday | datefmt('%b %-d') }}</span></h2>
+                <h2 class="week-card__label" style="font-size:1.15rem;">
+                    Week {{ current_plan_week }}{% if total_plan_weeks %}<span class="muted" style="font-weight:400;font-size:.82rem;"> of {{ total_plan_weeks }}</span>{% endif %}
+                    &nbsp;<span class="week-card__dates">{% if hero_mon %}{{ hero_mon | datefmt('%b %-d') }} – {{ hero_sun | datefmt('%b %-d') }}{% endif %}</span>
+                </h2>
             </div>
             {% if running %}
             {% set ns = namespace(total=0) %}
@@ -198,14 +229,14 @@
             {% if ns.total > 0 %}<span class="hero-total">{{ "%.1f"|format(ns.total)|replace('.0','') }} mi</span>{% endif %}
             {% endif %}
             <div style="display:flex;gap:.5rem;align-items:center;margin-left:auto;flex-wrap:wrap;">
-                <button class="btn btn--claude" data-generate-week="{{ current_week }}" data-generate-type="running-edit" data-has-plan="{{ 'true' if running else 'false' }}" onclick="return handleClaudeGenerate(this)">✦ Edit with Claude</button>
-                <a href="{{ url_for('main.week', week_label=current_week) }}" class="btn btn--primary">Edit</a>
+                <button class="btn btn--claude" data-generate-week="{{ current_plan_week }}" data-generate-type="running-edit" data-has-plan="{{ 'true' if running else 'false' }}" onclick="return handleClaudeGenerate(this)">✦ Edit with Claude</button>
+                <a href="{{ url_for('main.running_week', week_num=current_plan_week) }}" class="btn btn--primary">Edit</a>
             </div>
         </div>
         <div class="week-card__days-hero">
             {% for day in days %}
             {% set d = (running or {}).get(day, {}) %}
-            {% set is_today = day == today.strftime('%A').lower() %}
+            {% set is_today = day == today.strftime('%A').lower() and hero_mon and today >= hero_mon and today <= hero_sun %}
             <div class="day-pill-hero{% if d %} day-pill-hero--{{ d.get('type', 'rest') }}{% endif %}{% if is_today %} day-pill-hero--today{% endif %}">
                 <span class="day-pill-hero__name">{{ day[:3].title() }}</span>
                 {% if d %}
@@ -219,37 +250,19 @@
         </div>
     </div>
 
-    {# Running skeleton — shown during Claude generation #}
-    <div id="running-skeleton" style="display:none;">
-        <div class="week-card week-card--hero">
-            <div class="week-card__days-hero">
-                {% for i in range(7) %}
-                <div style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.8rem .4rem;border-radius:12px;background:var(--glass);border:1px solid var(--border);">
-                    <div class="skel" style="height:.65rem;width:65%;border-radius:4px;"></div>
-                    <div class="skel" style="height:.85rem;width:50%;border-radius:4px;"></div>
-                    <div class="skel" style="height:.75rem;width:40%;border-radius:4px;"></div>
-                </div>
-                {% endfor %}
-            </div>
-            <div class="skel-status">
-                <span class="spinner"></span>
-                Claude is generating your running plan...
-            </div>
-        </div>
-    </div>
-
-    {# Future weeks #}
-    {% for week_label in future_weeks %}
-    {% set monday = get_week_monday(week_label) %}
-    {% set sunday = monday + timedelta(days=6) %}
+    {# Future plan weeks #}
+    {% for wnum in future_plan_weeks %}
+    {% set wdates = week_dates.get(wnum, {}) %}
+    {% set wmon = wdates.get('monday') %}
+    {% set wsun = wdates.get('sunday') %}
+    {% set running = active_plan.get('weeks', {}).get(wnum|string) %}
     <div class="week-card">
         <div class="week-card__header">
-            <h2 class="week-card__label">Week {{ week_label.split('-W')[-1] }}</h2>
-            <span class="week-card__dates">{{ monday | datefmt('%b %-d') }} – {{ sunday | datefmt('%b %-d') }}</span>
-            <button class="btn btn--claude" data-generate-week="{{ week_label }}" data-generate-type="running-edit" data-has-plan="{{ 'true' if plan.get('running', {}).get(week_label) else 'false' }}" onclick="return handleClaudeGenerate(this)" style="font-size:.875rem;padding:.45rem .7rem;">✦ Edit with Claude</button>
-            <a href="{{ url_for('main.week', week_label=week_label) }}" class="btn">Edit</a>
+            <h2 class="week-card__label">Week {{ wnum }}</h2>
+            {% if wmon %}<span class="week-card__dates">{{ wmon | datefmt('%b %-d') }} – {{ wsun | datefmt('%b %-d') }}</span>{% endif %}
+            <button class="btn btn--claude" data-generate-week="{{ wnum }}" data-generate-type="running-edit" data-has-plan="{{ 'true' if running else 'false' }}" onclick="return handleClaudeGenerate(this)" style="font-size:.875rem;padding:.45rem .7rem;">✦ Edit with Claude</button>
+            <a href="{{ url_for('main.running_week', week_num=wnum) }}" class="btn">Edit</a>
         </div>
-        {% set running = plan.get('running', {}).get(week_label) %}
         {% if running %}
         <div class="week-card__pills">
             {% for day in days %}
@@ -266,6 +279,61 @@
         {% endif %}
     </div>
     {% endfor %}
+
+    {% else %}
+    {# No active plan — empty state #}
+    <div class="week-card" style="text-align:center;padding:2.5rem 1rem;">
+        <p style="font-size:1.05rem;color:var(--muted);">No active training plan. Click <strong>✦ New Plan</strong> to get started.</p>
+    </div>
+    {% endif %}
+
+    </div>{# /running-plan-content #}
+
+    {# Running skeleton — shown while Claude is generating #}
+    <div id="running-skeleton" style="display:none;">
+        <div class="week-card week-card--hero">
+            <div class="week-card__days-hero">
+                {% for i in range(7) %}
+                <div style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.8rem .4rem;border-radius:12px;background:var(--glass);border:1px solid var(--border);">
+                    <div class="skel" style="height:.65rem;width:65%;border-radius:4px;"></div>
+                    <div class="skel" style="height:.85rem;width:50%;border-radius:4px;"></div>
+                    <div class="skel" style="height:.75rem;width:40%;border-radius:4px;"></div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="skel-status">
+                <span class="spinner"></span>
+                Claude is generating your training plan...
+            </div>
+        </div>
+    </div>
+
+    {# Archived plans #}
+    {% if archived_plans %}
+    <details class="past-weeks" style="margin-top:1.5rem;">
+        <summary class="past-weeks__summary">Archived plans ({{ archived_plans | length }})</summary>
+        <div style="margin-top:.75rem;display:flex;flex-direction:column;gap:.5rem;">
+        {% for ap in archived_plans %}
+        <div class="week-card week-card--past" style="padding:.85rem 1rem;display:flex;align-items:center;gap:.75rem;">
+            <div style="flex:1;min-width:0;">
+                <div style="font-weight:600;font-size:.9rem;">{{ ap.race_name or 'Training Plan' }}</div>
+                <div style="font-size:.78rem;color:var(--muted);margin-top:.2rem;">
+                    Created {{ ap.created_at }}{% if ap.archived_at %} · Archived {{ ap.archived_at }}{% endif %}{% if ap.race_date %} · Race: {{ ap.race_date }}{% endif %}{% if ap.weeks %} · {{ ap.weeks|length }} weeks{% endif %}
+                </div>
+            </div>
+            <form method="post" action="{{ url_for('main.unarchive_running_plan') }}" style="flex-shrink:0;">
+                <input type="hidden" name="index" value="{{ loop.index0 }}">
+                <button type="submit" class="btn" style="font-size:.8rem;padding:.4rem .7rem;"
+                        onclick="return confirm('Restore this plan as active?{% if active_plan %} Your current plan will be archived.{% endif %}')">Restore</button>
+            </form>
+        </div>
+        {% endfor %}
+        </div>
+    </details>
+    {% endif %}
+
+    {# Inject race date for JS countdown #}
+    <script>window.RACE_DATE = "{{ race_date_str }}";</script>
 
             </section>
         </section>

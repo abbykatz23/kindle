@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}{{ week_label }} — Running Plan{% endblock %}
+{% block title %}Week {{ week_num }} — Running Plan{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <a href="{{ url_for('main.index') }}" class="back-link">← All weeks</a>
+    <a href="{{ url_for('main.index', tab='running') }}" class="back-link">← All weeks</a>
     <div class="page-header__row">
         <div>
-            <h1>Week of {{ monday | datefmt('%B %-d, %Y') }}</h1>
+            <h1>Week {{ week_num }} &nbsp;<span style="font-weight:400;font-size:.85em;color:var(--muted)">{{ monday | datefmt('%B %-d, %Y') }}</span></h1>
         </div>
         <div class="week-total" aria-live="polite">
             <span class="week-total__label">Week total</span>
@@ -15,11 +15,11 @@
     </div>
 </div>
 
-<form method="POST" action="{{ url_for('main.week', week_label=week_label) }}">
+<form method="POST" action="{{ url_for('main.running_week', week_num=week_num) }}">
     <div class="days-grid">
         {% for day in days %}
         {% set d = week_data.get(day, {}) %}
-        {% set is_today = current_week_label == week_label and day == today.strftime('%A').lower() %}
+        {% set is_today = is_current_week and day == today.strftime('%A').lower() %}
         <div class="day-form{% if is_today %} day-form--today{% endif %}">
             <h3 class="day-form__title">{{ day.title() }}</h3>
 
@@ -52,7 +52,7 @@
 
     <div class="form-actions">
         <button type="submit" class="btn btn--primary">Save Week</button>
-        <a href="{{ url_for('main.index') }}" class="btn btn--ghost">Cancel</a>
+        <a href="{{ url_for('main.index', tab='running') }}" class="btn btn--ghost">Cancel</a>
     </div>
 </form>
 {% endblock %}

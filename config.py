@@ -3,7 +3,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 BASE_DIR = Path(__file__).parent
 
@@ -28,6 +28,10 @@ class Config:
     # Claude
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
     CLAUDE_MODEL: str = os.getenv("CLAUDE_MODEL", "claude-opus-4-8")
+
+    # Intervals.icu
+    INTERVALS_API_KEY: str = os.getenv("INTERVALS_API_KEY", "")
+    INTERVALS_ATHLETE_ID: str = os.getenv("INTERVALS_ATHLETE_ID", "i0")
 
     # Flask
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key-change-in-prod")

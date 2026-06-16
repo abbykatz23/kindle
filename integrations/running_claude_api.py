@@ -7,206 +7,612 @@ from config import Config
 
 _DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
-_FULL_PLAN_SYSTEM = """\
-You are an expert ultramarathon coach who follows evidence-based, periodized training principles.
+# ── Core science ──────────────────────────────────────────────────────────────
+
+_SEILER_FRAMEWORK = """\
+TRAINING PHILOSOPHY — SEILER'S POLARIZED MODEL:
+
+Stephen Seiler's research across elite endurance athletes (runners, cyclists, rowers,
+cross-country skiers) consistently finds that ~80% of training volume is performed at
+LOW intensity and ~20% at HIGH intensity, with very little in between. This is the
+most rigorously studied intensity distribution in endurance sport.
+
+THREE-ZONE MODEL:
+  Zone 1 (easy, ~80% of all training): Below the first ventilatory threshold (VT1).
+    - Athlete can speak in complete, comfortable sentences
+    - Nose-breathing is possible
+    - RPE 3–4/10
+    - This is NOT "medium easy" — it feels almost too easy
+  Zone 2 (moderate, avoid): Between VT1 and lactate threshold (LT2/VT2).
+    - The "grey zone" or "black hole" — accumulates fatigue without the specific
+      adaptations of either easy OR hard work
+    - Most recreational athletes spend too much time here, thinking it's productive
+    - Elite athletes almost never train in Zone 2
+  Zone 3 (hard, ~20% of training): Above lactate threshold (LT2).
+    - Genuine discomfort; only a few words possible between breaths
+    - RPE 7–9/10
+    - Tempo runs, threshold repeats, hill intervals
+
+THE MODERATE INTENSITY TRAP:
+Most recreational runners over-train in Zone 2 ("comfortably hard") because it feels
+purposeful. This is one of the biggest training mistakes. Seiler's data shows it
+blunts both aerobic base adaptations AND quality work quality by leaving athletes
+chronically fatigued. If a run is easy, it should be genuinely easy. If it is a
+workout, it should be genuinely hard.
+
+LONG RUNS:
+Always performed in Zone 1 — slow enough to converse freely. Long runs build
+mitochondrial density, fat oxidation, cardiac stroke volume, and connective tissue
+resilience. Pace is irrelevant; time on feet is the stimulus. For ultras, this is
+especially true: a 3-hour easy run builds more ultra-specific fitness than a
+2-hour moderate run.
+"""
+
+_VDOT_FRAMEWORK = """\
+VDOT TRAINING PACES (Jack Daniels' system — use for marathon and shorter only):
+
+VDOT derives athlete-specific training paces from a recent race result. This anchors
+every workout to current fitness rather than aspirational targets.
+
+STEP 1 — Compute race pace per mile:
+  race_pace_sec = finish_time_in_seconds / race_miles
+
+STEP 2 — Convert to marathon-equivalent pace (MP):
+  Marathon (26.2 mi):     MP = race_pace_sec
+  Half marathon (13.1 mi): MP = race_pace_sec × 1.08
+  10K (6.21 mi):          MP = race_pace_sec × 1.15
+  5K (3.11 mi):           MP = race_pace_sec × 1.22
+  1 mile:                 MP = race_pace_sec × 1.40
+
+STEP 3 — Derive training paces from MP (seconds per mile):
+  Easy (E)  / Zone 1:    MP + 75–90s   (use +90s for newer/lower-mileage runners)
+  Marathon (M) pace:     MP            (race-specific sessions in peak phase only)
+  Threshold (T) / tempo: MP − 40s      (Zone 3 tempo, ~lactate threshold)
+  Interval (I):          MP − 75s      (Zone 3 repeats, ~5K race effort)
+  Repetition (R):        MP − 110s     (strides and short reps, ~mile effort)
+
+STEP 4 — Express all paces as MM:SS/mi in workout notes.
+
+Example: 10K in 50:00 (8:03/mi)
+  MP ≈ 8:03 × 1.15 = 9:16/mi (556 sec)
+  Easy:       10:46–11:01/mi
+  Marathon:   9:16/mi
+  Threshold:  8:36/mi
+  Interval:   8:01/mi
+  Reps/strides: 7:26/mi
+
+SEILER ↔ VDOT MAPPING:
+  Zone 1 easy runs = E pace
+  Zone 3 tempo runs = T pace
+  Zone 3 interval repeats = I pace
+  Strides = R pace
+  Marathon-pace miles (final miles of long run, peak phase only) = M pace
+
+If no recent race result was provided, estimate conservatively from the athlete's
+stated current weekly mileage and experience. State the assumed VDOT basis in the
+first week's notes so the athlete can verify.
+"""
+
+_PERIODIZATION_PRINCIPLES = """\
+PERIODIZATION AND PROGRESSION:
+
+Progressive overload:
+  - Increase weekly mileage no more than 10% week-over-week
+  - Cutback (recovery) week every 3–4 weeks: reduce mileage ~20–25%
+  - Adaptation happens during recovery, not during the hard weeks
+  - Pattern: build → build → build → cut back → build higher → repeat
+
+Phases:
+  Base (~40% of training cycle): Zone 1 only. No quality sessions.
+    Build aerobic infrastructure. This phase is longer than most athletes want.
+  Build (~35%): Introduce one Zone 3 quality session per week.
+    Mileage continues to grow. Quality sessions earn their place because the base
+    is now large enough to absorb them.
+  Peak (~15%): Highest mileage. Back-to-back long runs for ultras.
+    One quality session/week. Race-specific simulation.
+  Taper (final 3 weeks): 70% → 50% → 30% of peak weekly volume.
+    Maintain SOME intensity (don't go all-easy — detraining starts in 10 days).
+
+Ultra-specific protocols:
+  - Back-to-back long runs in peak phase (e.g. 15mi Sat + 10mi Sun): running on
+    tired legs simulates the back half of a 50-mile race
+  - Measure long runs by time, not miles — "3 hours easy" beats "20 miles"
+  - Practice power hiking uphills — this is a genuine racing skill for ultras,
+    not a fallback; elites walk the steep climbs by design
+  - Nutrition practice during any run over 75–90 minutes
+  - Peak long run should reach ~50–60% of race distance
+
+Taper science:
+  - Three-week taper is well-supported by research
+  - Volume drops but intensity stays — do NOT go all-easy in taper
+  - Last long run 3 weeks before race; nothing over 14–16 miles after that
+  - Complete rest 1–2 days before race
+
+Injury prevention:
+  - The most common cause of overuse injury is too-rapid mileage increases
+  - Easy runs being too fast is the second most common cause
+  - Two hard sessions on consecutive days: never
+  - After any race, allow 1 easy recovery week before resuming normal training
+"""
+
+# ── System prompts ────────────────────────────────────────────────────────────
+
+_QUESTIONS_SYSTEM = """\
+You are an elite running coach conducting a brief intake interview before designing
+a personalized training plan. The athlete has filled out a basic intake form.
+
+Ask 3–4 targeted questions that would most meaningfully improve the plan.
+Do NOT re-ask things already covered in the intake. Focus on high-impact unknowns.
+
+Prioritize in this order:
+1. Recent race result (if training for marathon or shorter and not provided) — essential
+   for calculating VDOT training paces. E.g.: "What's your most recent race result?
+   Please include the distance and finish time (e.g. 10K in 52:30)."
+2. Injury history — recurring issues that constrain training choices (IT band, Achilles,
+   stress fractures). What aggravates them and what modifications help.
+3. Schedule constraints — specific days that are off-limits, work travel, early mornings
+   vs evenings, any weeks with unusual schedules.
+4. Training background — what training structure they've used before, what's worked,
+   what's caused problems.
+5. Terrain (especially for ultras) — trails vs roads, typical elevation in training,
+   race course profile.
+6. Tune-up races — any shorter races planned during the training cycle.
+
+FORMAT: Return a plain numbered list. No preamble. No sign-off.
+1. ...
+2. ...
+3. ...
+4. ... (optional)
+"""
+
+_SKELETON_SYSTEM = f"""\
+You are an expert endurance running coach designing a periodized training plan skeleton.
+
+{_SEILER_FRAMEWORK}
+
+{_PERIODIZATION_PRINCIPLES}
+
+Your task: given an athlete profile, produce a week-by-week mileage and structure plan.
+This skeleton will be reviewed and then used to generate a full daily training schedule.
+
+OUTPUT FORMAT:
+Return ONLY valid JSON — no markdown fences, no explanation.
+Keys are week number strings ("1", "2", ...). All weeks must be present.
+
+Week object schema:
+{{
+  "phase": "base" | "build" | "peak" | "taper" | "race",
+  "weekly_miles": <number>,
+  "long_run_miles": <number>,
+  "quality_sessions": <0 or 1>
+}}
+
+Rules:
+- Base phase: quality_sessions = 0 always
+- Build/peak: quality_sessions = 1 (one Zone 3 session per week, never two)
+- Taper: weekly_miles drops to ~70% / ~50% / ~30% of peak over 3 weeks; quality_sessions = 1
+- Race week: phase = "race", weekly_miles = minimal (race day + easy shakeout only)
+- Never increase weekly_miles > 10% week-over-week
+- Include a cutback week (20–25% reduction) every 3–4 weeks
+"""
+
+_CRITIQUE_SYSTEM = """\
+You are a sports science reviewer evaluating a running training plan skeleton for safety,
+scientific soundness, and alignment with polarized training research.
+
+Check the following and flag any issues:
+1. Weekly mileage progression: does any week increase >10% over the prior week?
+2. Cutback weeks: is there a recovery week (20–25% reduction) at least every 4 weeks?
+3. Phase distribution: is the base phase at least 35–40% of total weeks?
+4. Quality sessions: are they zero during base, and no more than one per week after?
+5. Taper: do the final 3 weeks before the race show roughly 70%/50%/30% of peak mileage?
+6. Starting mileage: is it reasonable given the athlete's stated current mileage?
+7. Peak mileage: does it realistically follow from the starting point?
+8. Long run: does it reach ~50–60% of race distance at peak?
+
+Be specific. Name the exact week numbers if you flag an issue.
+If the skeleton looks good, say so briefly. Keep your response under 300 words.
+"""
+
+_FULL_PLAN_SYSTEM_BASE = f"""\
+You are an elite endurance running coach with deep expertise in exercise physiology.
+
+{_SEILER_FRAMEWORK}
+
+{_PERIODIZATION_PRINCIPLES}
+
+You will receive a validated periodization skeleton (weekly mileage targets and phase
+labels) plus a science review of that skeleton. Your job is to fill in the daily detail
+— specific workouts for each day of each week — while respecting the skeleton's structure.
+
+QUALITY SESSION TYPES (Zone 3, used only in build and peak phases, one per week max):
+  - Tempo run: 20–40 min at comfortably hard effort (LT2 pace, ~RPE 7/10)
+  - Hill repeats: 6–10 × 60–90s uphill hard, walk/jog recovery
+  - Progression run: start easy, finish the last 15–20 min at tempo effort
+  - (For ultras) Long hill repeat: 3–4 × 10–15 min moderate uphill at effort
 
 OUTPUT FORMAT:
 Return ONLY valid JSON — no markdown fences, no explanation, no extra text.
-The JSON is an object keyed by ISO week labels (e.g. "2026-W24").
-Each week maps lowercase day names (monday–sunday) to day objects. ALL 7 days must be present for every week.
+Keys are week number strings ("1", "2", ...). All weeks must appear.
+Each week maps lowercase day names (monday–sunday) to day objects. All 7 days required.
 
-Day object schema (all fields required):
-{
+Day object schema:
+{{
   "type": "easy" | "workout" | "long" | "rest" | "race" | "other",
   "distance_miles": <number — 0.0 for rest days>,
-  "notes": "<one short coaching note describing the run>"
-}
-
-TRAINING PRINCIPLES:
-- Periodize into Base → Build → Peak → Taper phases
-- Never increase total weekly mileage by more than 10% week-over-week (except step-back weeks)
-- Include a step-back (recovery) week every 3–4 weeks, reducing mileage ~20%
-- One long run per week, building toward 50–60% of race distance at peak (~22–26 mi)
-- Back-to-back moderate-long runs in peak weeks (classic ultra prep strategy)
-- At most one hard quality workout per week (tempo, progression, fartlek, or hills)
-- Easy runs at conversational pace; the vast majority of weekly mileage should be easy effort
-- Rest days: type must be "rest", distance_miles must be 0.0
-- Race week: mark race day as type "race" with distance_miles equal to race distance; rest before and after
-- 3-week taper before race: reduce mileage significantly (70% → 50% → 30% of peak)
-- Injury prevention is the top priority — conservative progression beats ambitious loading
+  "notes": "<specific, concrete coaching instruction for this run>"
+}}
 """
 
-_EDIT_SYSTEM = """\
-You are an expert ultramarathon coach who follows evidence-based, periodized training principles.
+_EDIT_SYSTEM = f"""\
+You are an elite endurance running coach grounded in Stephen Seiler's polarized
+training research: ~80% of volume at genuine Zone 1 (conversational, RPE 3–4),
+~20% at genuine Zone 3 (above lactate threshold, RPE 7–9), with minimal Zone 2.
 
-The athlete has an existing training week they want modified. Apply their instruction while
-preserving the overall training stimulus and purpose of the week.
+Apply the athlete's modification to the existing training week while preserving
+its overall training stimulus. Do not shift the intensity distribution.
 
 OUTPUT FORMAT:
-Return ONLY valid JSON — no markdown fences, no explanation, no extra text.
-The JSON maps lowercase day names (monday–sunday) to day objects. ALL 7 days must be present.
+Return ONLY valid JSON — no markdown fences, no explanation.
+Map lowercase day names (monday–sunday) to day objects. All 7 days required.
 
-Day object schema (all fields required):
-{
+Day object schema:
+{{
   "type": "easy" | "workout" | "long" | "rest" | "race" | "other",
   "distance_miles": <number — 0.0 for rest days>,
-  "notes": "<one short coaching note>"
-}
+  "notes": "<specific coaching instruction>"
+}}
 """
 
 
-def _get_week_monday(week_label: str) -> date:
-    year, wnum = week_label.split("-W")
-    return date.fromisocalendar(int(year), int(wnum), 1)
+def _build_full_plan_system(use_vdot: bool) -> str:
+    if use_vdot:
+        pace_section = (
+            f"\n{_VDOT_FRAMEWORK}\n"
+            "PACE PRESCRIPTION REQUIREMENT:\n"
+            "This athlete is training for a marathon or shorter. Every workout note MUST\n"
+            "include a specific target pace in MM:SS/mi derived from the VDOT calculation\n"
+            "above. Examples: '6 miles at easy pace (10:45/mi)' or '2mi warmup, 4×1mi at\n"
+            "T-pace (8:35/mi) with 90s jog recovery, 2mi cooldown'. No vague effort cues\n"
+            "without a pace — the athlete is following VDOT and needs numbers.\n"
+            "For long runs in peak phase: include optional marathon-pace miles at the end\n"
+            "(e.g. 'last 3 miles at M-pace (9:16/mi)') to build race-specific feel.\n"
+        )
+    else:
+        pace_section = (
+            "\nINTENSITY PRESCRIPTION:\n"
+            "This is ultra or general fitness training. Use Seiler effort-based guidance\n"
+            "throughout: Zone 1/3 labels, RPE, conversational-pace cues. For long runs,\n"
+            "prescribe time and effort, not per-mile pace (e.g. '3 hours easy, Zone 1,\n"
+            "power hike anything over 8% grade'). Pace is secondary to time on feet.\n"
+        )
+    return _FULL_PLAN_SYSTEM_BASE + pace_section
 
 
-def _week_label_for_date(d: date) -> str:
-    year, week, _ = d.isocalendar()
-    return f"{year}-W{week:02d}"
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+def _get_plan_week_monday(start_date_str: str, week_num: int) -> date:
+    start = date.fromisoformat(start_date_str)
+    start_monday = start - timedelta(days=start.weekday())
+    return start_monday + timedelta(weeks=(week_num - 1))
 
 
-def _weeks_from_to_race(start_label: str, race_date_str: str) -> list[str]:
-    """All ISO week labels from start_label through the week containing race_date."""
-    start = _get_week_monday(start_label)
-    race_date = date.fromisoformat(race_date_str)
-    labels = []
-    cur = start
-    while cur <= race_date:
-        labels.append(_week_label_for_date(cur))
-        cur += timedelta(weeks=1)
-    return labels
+def _total_plan_weeks(start_date_str: str, race_date_str: str) -> int:
+    start = date.fromisoformat(start_date_str)
+    start_monday = start - timedelta(days=start.weekday())
+    race = date.fromisoformat(race_date_str)
+    return max(1, ((race - start_monday).days // 7) + 1)
 
 
-def _build_history_context(plan: dict) -> str:
-    running = plan.get("running", {})
-    past = sorted(running.keys())[-4:]
-    if not past:
-        return "  No prior running history — athlete just completed a half marathon on June 5, 2026. Start base-building conservatively."
+def _parse_intake(intake: dict) -> dict:
+    today = date.today()
+    start_date = intake.get("start_date") or today.isoformat()
+    race_date_str = intake.get("race_date", "").strip()
+    race_name = intake.get("race_name", "").strip()
+    race_distance_unit = intake.get("race_distance_unit", "miles")
+    notes = intake.get("notes", "").strip()
+    recent_race_result = intake.get("recent_race_result", "").strip()
+    qa_context = intake.get("qa_context", "").strip()
+    training_history = intake.get("training_history", "").strip()
+
+    try:
+        days_per_week = int(intake.get("days_per_week") or 4)
+    except (TypeError, ValueError):
+        days_per_week = 4
+
+    try:
+        race_miles = float(intake.get("race_miles") or 0)
+        if race_distance_unit == "km":
+            race_miles = round(race_miles * 0.621371, 1)
+    except (TypeError, ValueError):
+        race_miles = 0
+
+    try:
+        current_mileage = float(intake.get("current_weekly_mileage") or 0)
+    except (TypeError, ValueError):
+        current_mileage = 0
+
+    if race_date_str:
+        num_weeks = _total_plan_weeks(start_date, race_date_str)
+        start_dt = date.fromisoformat(start_date)
+        start_monday = start_dt - timedelta(days=start_dt.weekday())
+        race_dt = date.fromisoformat(race_date_str)
+        race_week_num = max(1, ((race_dt - start_monday).days // 7) + 1)
+    else:
+        num_weeks = 16
+        race_week_num = None
+
+    use_vdot = race_miles > 0 and race_miles <= 26.2
+
+    return {
+        "start_date": start_date,
+        "race_date_str": race_date_str,
+        "race_name": race_name,
+        "race_miles": race_miles,
+        "days_per_week": days_per_week,
+        "current_mileage": current_mileage,
+        "notes": notes,
+        "recent_race_result": recent_race_result,
+        "qa_context": qa_context,
+        "num_weeks": num_weeks,
+        "race_week_num": race_week_num,
+        "use_vdot": use_vdot,
+        "training_history": training_history,
+    }
+
+
+def _athlete_profile_text(p: dict) -> str:
     lines = []
-    for w in past:
-        data = running[w]
-        total = sum(d.get("distance_miles", 0.0) for d in data.values())
-        types = [data.get(day, {}).get("type", "rest") for day in _DAYS]
-        lines.append(f"  {w}: {round(total, 1)} mi — {', '.join(types)}")
+    if p["race_name"] and p["race_date_str"] and p["race_miles"]:
+        lines.append(f"- Race: {p['race_name']} on {p['race_date_str']} ({p['race_miles']} miles) — Week {p['race_week_num']}")
+    elif p["race_date_str"]:
+        lines.append(f"- Goal event on {p['race_date_str']} — Week {p['race_week_num']}")
+    else:
+        lines.append("- No specific race — general ultra fitness training")
+    lines.append(f"- Training methodology: {'VDOT pace-based (marathon or shorter)' if p['use_vdot'] else 'Seiler effort-based (ultra / general fitness)'}")
+    lines.append(f"- Training days: {p['days_per_week']}/week ({7 - p['days_per_week']} rest days)")
+    if p["current_mileage"]:
+        lines.append(f"- Current weekly mileage: {p['current_mileage']} mi")
+    else:
+        lines.append("- Current mileage: not specified (assume conservative start)")
+    if p["recent_race_result"]:
+        lines.append(f"- Recent race result: {p['recent_race_result']}")
+    if p["notes"]:
+        lines.append(f"- Additional context: {p['notes']}")
+    if p["qa_context"]:
+        lines.append(f"\nINTAKE Q&A:\n{p['qa_context']}")
+    if p["training_history"]:
+        lines.append(f"\n{p['training_history']}")
     return "\n".join(lines)
 
 
-def generate_full_running_plan(plan: dict, profile: dict, custom_prompt: str = "") -> dict:
-    """Generate the complete training plan from current week through race week."""
-    today = date.today()
-    current_week = _week_label_for_date(today)
-    race_date_str = profile.get("race_date", "2026-10-10")
-    race_miles = profile.get("race_miles", 42)
-    race_name = profile.get("race_name", "42-mile ultramarathon")
-    days_per_week = profile.get("days_per_week_target", 4)
+def _week_list_text(p: dict) -> str:
+    lines = []
+    for wnum in range(1, p["num_weeks"] + 1):
+        mon = _get_plan_week_monday(p["start_date"], wnum)
+        lines.append(f"  Week {wnum} (Mon {mon.strftime('%b %d')})")
+    return "\n".join(lines)
 
-    week_labels = _weeks_from_to_race(current_week, race_date_str)
-    num_weeks = len(week_labels)
-    history = _build_history_context(plan)
-    race_week_label = _week_label_for_date(date.fromisoformat(race_date_str))
-    custom_section = f"\nADDITIONAL INSTRUCTIONS:\n{custom_prompt}" if custom_prompt else ""
 
-    week_list = "\n".join(
-        f"  {wl} (Mon {_get_week_monday(wl).strftime('%b %d')})"
-        for wl in week_labels
-    )
-
-    user_message = f"""\
-Generate a complete {num_weeks}-week ultramarathon training plan.
-
-ATHLETE PROFILE:
-- Race: {race_name} on {race_date_str} (ISO week: {race_week_label})
-- Race distance: {race_miles} miles
-- Target training days per week: {days_per_week} (rest the remaining days)
-- Current fitness: just completed a half marathon on June 5, 2026 — solid aerobic base, needs short recovery
-
-RECENT TRAINING HISTORY:
-{history}
-
-WEEKS TO PLAN (every week must appear in the output JSON):
-{week_list}
-
-PERIODIZATION GUIDANCE:
-- Weeks 1–2: recovery from half marathon, easy running 25–30 mi/week
-- Weeks 3–8: base building, build to 35–40 mi/week
-- Weeks 9–14: build phase, quality workouts, 40–50 mi/week with step-back weeks
-- Weeks 15–17: peak, 50–55 mi/week, back-to-back long runs
-- Final 3 weeks: taper — reduce to ~70%, ~50%, ~30% of peak
-- Race week: mark race day ({race_date_str}) as type "race"
-{custom_section}
-"""
-
-    client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
-    message = client.messages.create(
-        model=Config.CLAUDE_MODEL,
-        max_tokens=16000,
-        thinking={"type": "adaptive"},
-        system=_FULL_PLAN_SYSTEM,
-        messages=[{"role": "user", "content": user_message}],
-    )
-
-    raw = next(b.text for b in reversed(message.content) if hasattr(b, "text")).strip()
+def _parse_json_response(raw: str) -> dict:
+    raw = raw.strip()
     if raw.startswith("```"):
         lines = raw.split("\n")
         raw = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
     return json.loads(raw)
 
 
+# ── Intake questions ──────────────────────────────────────────────────────────
+
+def generate_intake_questions(intake: dict) -> str:
+    """Synchronous Sonnet call — asks targeted questions before plan generation."""
+    p = _parse_intake(intake)
+    user_message = (
+        f"Athlete intake:\n{_athlete_profile_text(p)}\n\n"
+        f"What additional information would most improve this athlete's training plan?"
+    )
+    client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=400,
+        system=_QUESTIONS_SYSTEM,
+        messages=[{"role": "user", "content": user_message}],
+    )
+    return message.content[0].text.strip()
+
+
+# ── Three-pass plan generation ────────────────────────────────────────────────
+
+def _generate_skeleton(p: dict, client: anthropic.Anthropic) -> dict:
+    num_weeks = p["num_weeks"]
+    base_end = max(1, round(num_weeks * 0.40))
+    build_end = max(base_end + 1, round(num_weeks * 0.75))
+    peak_end = max(build_end + 1, num_weeks - 3)
+
+    guidance = (
+        f"Periodization boundaries ({num_weeks} weeks):\n"
+        f"  Weeks 1–{base_end}: base (quality_sessions=0)\n"
+        f"  Weeks {base_end+1}–{build_end}: build (quality_sessions=1)\n"
+        f"  Weeks {build_end+1}–{peak_end}: peak (quality_sessions=1)\n"
+        f"  Weeks {peak_end+1}–{num_weeks}: taper/race"
+    )
+    if p["race_week_num"]:
+        guidance += f"\n  Week {p['race_week_num']}: race week"
+
+    user_message = (
+        f"Generate a periodization skeleton for {num_weeks} weeks.\n\n"
+        f"ATHLETE:\n{_athlete_profile_text(p)}\n\n"
+        f"{guidance}\n\n"
+        f"WEEKS:\n{_week_list_text(p)}"
+    )
+
+    message = client.messages.create(
+        model=Config.CLAUDE_MODEL,
+        max_tokens=2000,
+        thinking={"type": "adaptive"},
+        system=_SKELETON_SYSTEM,
+        messages=[{"role": "user", "content": user_message}],
+    )
+    raw = next(b.text for b in reversed(message.content) if hasattr(b, "text"))
+    return _parse_json_response(raw)
+
+
+def _critique_skeleton(skeleton: dict, p: dict, client: anthropic.Anthropic) -> str:
+    skeleton_lines = []
+    for wnum in range(1, p["num_weeks"] + 1):
+        w = skeleton.get(str(wnum), {})
+        skeleton_lines.append(
+            f"  Week {wnum}: {w.get('phase','?')} — {w.get('weekly_miles','?')} mi total, "
+            f"{w.get('long_run_miles','?')} mi long run, "
+            f"{w.get('quality_sessions','?')} quality session(s)"
+        )
+
+    user_message = (
+        f"Review this {p['num_weeks']}-week training skeleton for an athlete with:\n"
+        f"{_athlete_profile_text(p)}\n\n"
+        f"SKELETON:\n" + "\n".join(skeleton_lines)
+    )
+
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=600,
+        system=_CRITIQUE_SYSTEM,
+        messages=[{"role": "user", "content": user_message}],
+    )
+    return message.content[0].text.strip()
+
+
+def generate_full_running_plan(intake: dict, progress_cb=None) -> dict:
+    """Three-pass plan generation.
+
+    Pass 1 (Opus + thinking): periodization skeleton
+    Pass 2 (Sonnet): sports science critique
+    Pass 3 (Opus + thinking + streaming): full daily plan using skeleton + critique
+    """
+    def progress(msg):
+        if progress_cb:
+            progress_cb(msg)
+
+    # Fetch real training history from intervals.icu (no-op if unavailable)
+    progress("Fetching training history from intervals.icu...")
+    try:
+        from integrations.intervals_api import get_training_context
+        training_history = get_training_context()
+    except Exception:
+        training_history = ""
+    if training_history:
+        intake = {**intake, "training_history": training_history}
+
+    p = _parse_intake(intake)
+    client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
+    full_plan_system = _build_full_plan_system(p["use_vdot"])
+
+    progress("Building periodization structure...")
+    try:
+        skeleton = _generate_skeleton(p, client)
+    except Exception:
+        skeleton = {}
+
+    progress("Running sports science review...")
+    try:
+        critique = _critique_skeleton(skeleton, p, client)
+    except Exception:
+        critique = ""
+
+    progress("Generating detailed daily schedule...")
+
+    skeleton_text = ""
+    if skeleton:
+        skeleton_lines = []
+        for wnum in range(1, p["num_weeks"] + 1):
+            w = skeleton.get(str(wnum), {})
+            if w:
+                skeleton_lines.append(
+                    f"  Week {wnum}: {w.get('phase','?')} — {w.get('weekly_miles','?')} mi, "
+                    f"{w.get('long_run_miles','?')} mi long run, "
+                    f"{w.get('quality_sessions','?')} quality session(s)"
+                )
+        if skeleton_lines:
+            skeleton_text = "PERIODIZATION SKELETON (use as constraints for daily detail):\n" + "\n".join(skeleton_lines)
+
+    critique_text = f"\nSPORTS SCIENCE REVIEW:\n{critique}" if critique else ""
+
+    user_message = (
+        f"Generate a complete {p['num_weeks']}-week daily training plan.\n\n"
+        f"ATHLETE:\n{_athlete_profile_text(p)}\n\n"
+        f"{skeleton_text}"
+        f"{critique_text}\n\n"
+        f"WEEKS (all must appear as keys in output JSON):\n{_week_list_text(p)}"
+    )
+
+    with client.messages.stream(
+        model=Config.CLAUDE_MODEL,
+        max_tokens=16000,
+        thinking={"type": "adaptive"},
+        system=full_plan_system,
+        messages=[{"role": "user", "content": user_message}],
+    ) as stream:
+        message = stream.get_final_message()
+
+    raw = next(b.text for b in reversed(message.content) if hasattr(b, "text"))
+    return _parse_json_response(raw)
+
+
+# ── Per-week edit ─────────────────────────────────────────────────────────────
+
 def edit_weekly_running_plan(
-    week_label: str,
-    plan: dict,
-    profile: dict,
+    week_num: int,
+    active_plan: dict,
     custom_prompt: str = "",
 ) -> dict:
-    """Edit a specific week's plan based on the user's instruction."""
-    race_date_str = profile.get("race_date", "2026-10-10")
-    race_miles = profile.get("race_miles", 42)
-    race_name = profile.get("race_name", "42-mile ultramarathon")
+    race_date_str = active_plan.get("race_date", "")
+    race_miles = active_plan.get("race_miles", 0)
+    race_name = active_plan.get("race_name", "")
+    start_date = active_plan.get("start_date", date.today().isoformat())
 
-    existing_week = plan.get("running", {}).get(week_label, {})
+    existing_week = active_plan.get("weeks", {}).get(str(week_num), {})
     if existing_week:
-        existing_lines = []
+        lines = []
         for day in _DAYS:
             d = existing_week.get(day, {})
             line = f"  {day}: {d.get('type', 'rest')} — {d.get('distance_miles', 0)} mi"
             if d.get("notes"):
                 line += f" ({d['notes']})"
-            existing_lines.append(line)
-        existing_text = "\n".join(existing_lines)
+            lines.append(line)
+        existing_text = "\n".join(lines)
     else:
-        existing_text = "  No plan yet for this week — create a reasonable week given the race context."
+        existing_text = "  No plan yet — create a reasonable week consistent with the training phase."
 
-    monday = _get_week_monday(week_label)
-    race_date = date.fromisoformat(race_date_str)
-    weeks_to_race = max(0, round((race_date - monday).days / 7))
+    monday = _get_plan_week_monday(start_date, week_num)
+    weeks_to_race = None
+    if race_date_str:
+        race_dt = date.fromisoformat(race_date_str)
+        weeks_to_race = max(0, (race_dt - monday).days // 7)
 
-    user_message = f"""\
-Modify the training plan for {week_label} (week of {monday.strftime('%b %d, %Y')}).
+    if race_name and race_date_str:
+        race_ctx = f"Race: {race_name} on {race_date_str} ({weeks_to_race} weeks away, {race_miles} miles)"
+    elif race_date_str:
+        race_ctx = f"Goal event on {race_date_str} ({weeks_to_race} weeks away)"
+    else:
+        race_ctx = "General fitness training (no specific race)"
 
-RACE CONTEXT: {race_name} on {race_date_str} ({weeks_to_race} weeks away, {race_miles} miles)
-
-CURRENT PLAN:
-{existing_text}
-
-USER INSTRUCTION:
-{custom_prompt if custom_prompt else "No specific instruction — produce a solid week consistent with this point in training."}
-
-Apply the instruction while preserving the week's overall training stimulus. \
-If relocating a run type, keep its distance and character. \
-Do not dramatically change total weekly mileage unless the instruction requires it.
-"""
+    user_message = (
+        f"Modify training plan Week {week_num} (week of {monday.strftime('%b %d, %Y')}).\n\n"
+        f"{race_ctx}\n\n"
+        f"Current plan:\n{existing_text}\n\n"
+        f"Athlete instruction:\n"
+        f"{custom_prompt or 'No specific instruction — produce a solid week consistent with the training phase.'}\n\n"
+        f"Keep the overall weekly training stimulus intact. Preserve the 80/20 intensity split. "
+        f"If moving a run, preserve its distance and character."
+    )
 
     client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
     message = client.messages.create(
-        model=Config.CLAUDE_MODEL,
-        max_tokens=1024,
-        thinking={"type": "adaptive"},
+        model="claude-sonnet-4-6",
+        max_tokens=2000,
         system=_EDIT_SYSTEM,
         messages=[{"role": "user", "content": user_message}],
     )
 
-    raw = next(b.text for b in reversed(message.content) if hasattr(b, "text")).strip()
-    if raw.startswith("```"):
-        lines = raw.split("\n")
-        raw = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
-    return json.loads(raw)
+    raw = next(b.text for b in reversed(message.content) if hasattr(b, "text"))
+    return _parse_json_response(raw)

@@ -60,6 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (tabButtons.length) {
         const countdownBadge = document.getElementById('days-countdown-badge');
         const raceBadge = document.getElementById('race-countdown-badge');
+        const birthdayBadge = document.getElementById('birthday-countdown-badge');
 
         tabButtons.forEach((btn) => {
             btn.addEventListener('click', () => {
@@ -80,6 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const selectedTab = btn.getAttribute('data-target').replace('#', '');
                 if (countdownBadge) countdownBadge.classList.toggle('countdown-badge--hidden', selectedTab !== 'interview');
                 if (raceBadge) raceBadge.classList.toggle('countdown-badge--hidden', selectedTab !== 'running');
+                if (birthdayBadge) birthdayBadge.classList.toggle('countdown-badge--hidden', selectedTab !== 'birthdays');
                 const newUrl = new URL(window.location.href);
                 newUrl.searchParams.set('tab', selectedTab);
                 window.history.replaceState(null, '', newUrl);
@@ -200,11 +202,11 @@ document.addEventListener("DOMContentLoaded", () => {
         countdownEl.textContent = days.toLocaleString();
     }
 
-    // ── Days until Oct 10 race countdown ─────────────────────────────────
+    // ── Days until race countdown (dynamic from active plan) ─────────────
     const raceCountdownEl = document.getElementById('race-countdown-days');
-    if (raceCountdownEl) {
-        const raceDays = Math.ceil((new Date('2026-10-10') - new Date()) / (1000 * 60 * 60 * 24));
-        raceCountdownEl.textContent = raceDays.toLocaleString();
+    if (raceCountdownEl && window.RACE_DATE) {
+        const raceDays = Math.ceil((new Date(window.RACE_DATE) - new Date()) / (1000 * 60 * 60 * 24));
+        raceCountdownEl.textContent = Math.max(0, raceDays).toLocaleString();
     }
 
     // ── Claude generation modal ───────────────────────────────────────────
@@ -304,22 +306,147 @@ document.addEventListener("DOMContentLoaded", () => {
         return false;
     };
 
+    // ── New training plan modal (2-step) ─────────────────────────────────
+
+    const npOverlay  = document.getElementById('new-plan-modal-overlay');
+    const npStep1    = document.getElementById('np-step-1');
+    const npStep2    = document.getElementById('np-step-2');
+    const npIndicator = document.getElementById('np-step-indicator');
+
+    function _readIntakeForm() {
+        return {
+            race_name:              document.getElementById('np-race-name')?.value.trim()     || '',
+            race_date:              document.getElementById('np-race-date')?.value.trim()     || '',
+            race_miles:             document.getElementById('np-race-distance')?.value.trim() || '',
+            race_distance_unit:     document.getElementById('np-race-distance-unit')?.value   || 'miles',
+            days_per_week:          document.getElementById('np-days-per-week')?.value        || '4',
+            current_weekly_mileage: document.getElementById('np-current-mileage')?.value.trim() || '',
+            recent_race_result:     document.getElementById('np-recent-race')?.value.trim()   || '',
+            notes:                  document.getElementById('np-notes')?.value.trim()         || '',
+        };
+    }
+
+    function _showNpStep(num) {
+        if (!npStep1 || !npStep2) return;
+        npStep1.style.display = num === 1 ? '' : 'none';
+        npStep2.style.display = num === 2 ? '' : 'none';
+        if (npIndicator) {
+            npIndicator.textContent = num === 1
+                ? 'Step 1 of 2 — Your details'
+                : 'Step 2 of 2 — Claude\'s questions';
+        }
+    }
+
+    function openNewPlanModal() {
+        if (!npOverlay) return;
+        _showNpStep(1);
+        npOverlay.setAttribute('aria-hidden', 'false');
+        npOverlay.classList.add('modal--open');
+        setTimeout(() => document.getElementById('np-race-name')?.focus(), 50);
+    }
+
+    function closeNewPlanModal() {
+        if (!npOverlay) return;
+        npOverlay.classList.remove('modal--open');
+        npOverlay.setAttribute('aria-hidden', 'true');
+    }
+
+    if (npOverlay) {
+        npOverlay.addEventListener('click', (e) => { if (e.target === npOverlay) closeNewPlanModal(); });
+        document.getElementById('np-cancel')?.addEventListener('click', closeNewPlanModal);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && npOverlay.classList.contains('modal--open')) closeNewPlanModal();
+        });
+
+        // Step 1 → Step 2: fetch Claude's questions
+        document.getElementById('np-continue')?.addEventListener('click', async () => {
+            const continueBtn = document.getElementById('np-continue');
+            continueBtn.disabled = true;
+            continueBtn.textContent = 'Thinking...';
+            try {
+                const formData = _readIntakeForm();
+                const body = new URLSearchParams(formData);
+                const res = await fetch('/running/intake-questions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString(),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to get questions');
+                const block = document.getElementById('np-questions-block');
+                if (block) block.textContent = data.questions;
+                document.getElementById('np-answers').value = '';
+                _showNpStep(2);
+                setTimeout(() => document.getElementById('np-answers')?.focus(), 50);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            } finally {
+                continueBtn.disabled = false;
+                continueBtn.textContent = 'Continue →';
+            }
+        });
+
+        // Step 2 back button
+        document.getElementById('np-back')?.addEventListener('click', () => _showNpStep(1));
+
+        // Step 2 → generate plan
+        document.getElementById('np-confirm')?.addEventListener('click', () => {
+            const formData = _readIntakeForm();
+            const questions = document.getElementById('np-questions-block')?.textContent || '';
+            const answers = document.getElementById('np-answers')?.value.trim() || '';
+            if (questions) {
+                formData.qa_context = `Claude's questions:\n${questions}\n\nAthlete's answers:\n${answers}`;
+            }
+            closeNewPlanModal();
+            startNewPlan(formData);
+        });
+    }
+
+    window.handleNewPlan = function handleNewPlan() {
+        openNewPlanModal();
+        return false;
+    };
+
+    async function startNewPlan(formData) {
+        showSkeleton('running-full');
+        localStorage.setItem('claudeGenJob', JSON.stringify({type: 'running-full'}));
+        try {
+            const body = new URLSearchParams(formData);
+            const res = await fetch('/running/generate-full-plan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: body.toString(),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to start plan generation');
+            localStorage.setItem('claudeGenJob', JSON.stringify({jobId: data.job_id, type: 'running-full'}));
+            pollJob(data.job_id, 'running-full');
+        } catch (e) {
+            hideSkeleton('running-full');
+            localStorage.removeItem('claudeGenJob');
+            alert('Error: ' + e.message);
+        }
+    }
+
     // ── Skeleton show/hide ────────────────────────────────────────────────
 
     function showSkeleton(type) {
         if (type === 'running-full' || type === 'running-edit' || type === 'running') {
             const tabBtn = document.querySelector('[data-target="#running"]');
             if (tabBtn && tabBtn.getAttribute('aria-selected') !== 'true') tabBtn.click();
-            const hero = document.getElementById('running-week-hero');
-            if (hero) hero.style.display = 'none';
+            const content = document.getElementById('running-plan-content');
+            if (content) content.style.display = 'none';
             const skel = document.getElementById('running-skeleton');
             if (skel) {
                 skel.style.display = 'block';
                 const msg = skel.querySelector('.skel-status');
                 if (msg) {
                     const text = type === 'running-full'
-                        ? 'Claude is building your 18-week training plan...'
-                        : 'Claude is updating your running plan...';
+                        ? 'Claude is building your training plan...'
+                        : 'Claude is updating your plan...';
                     msg.innerHTML = `<span class="spinner"></span>${text}`;
                 }
             }
@@ -339,8 +466,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (type === 'running-full' || type === 'running-edit' || type === 'running') {
             const skel = document.getElementById('running-skeleton');
             if (skel) skel.style.display = 'none';
-            const hero = document.getElementById('running-week-hero');
-            if (hero) hero.style.display = '';
+            const content = document.getElementById('running-plan-content');
+            if (content) content.style.display = '';
         } else {
             const skel = document.getElementById('claude-skeleton');
             if (skel) skel.style.display = 'none';
@@ -381,6 +508,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     localStorage.removeItem('claudeGenJob');
                     hideSkeleton(type);
                     alert('Claude generation failed: ' + (data.error || 'Unknown error'));
+                } else if (data.message && type.startsWith('running')) {
+                    const skelMsg = document.querySelector('#running-skeleton .skel-status');
+                    if (skelMsg) skelMsg.innerHTML = `<span class="spinner"></span>${data.message}`;
                 }
             } catch {
                 // Network hiccup — keep polling
@@ -399,7 +529,7 @@ document.addEventListener("DOMContentLoaded", () => {
             bodyParams = { custom_prompt: customPrompt || '' };
         } else if (type === 'running-edit' || type === 'running') {
             endpoint = '/running/generate-ai';
-            bodyParams = { week_label: weekLabel, intensity: 'normal', custom_prompt: customPrompt || '' };
+            bodyParams = { week_num: weekLabel, custom_prompt: customPrompt || '' };
         } else {
             endpoint = '/interview/generate-ai';
             bodyParams = { week_label: weekLabel, intensity: intensity || 'normal', custom_prompt: customPrompt || '' };

@@ -225,7 +225,7 @@ input:focus, select:focus, textarea:focus {
 
 /* Interview tab header + countdown */
 .interview-tab-header { display: flex; justify-content: flex-end; margin-bottom: .75rem }
-.countdown-badge--hidden { display: none }
+.countdown-badge--hidden { display: none !important }
 .countdown-badge {
   margin-left: auto;
   display: flex; flex-direction: column; align-items: flex-end;
@@ -335,6 +335,9 @@ input:focus, select:focus, textarea:focus {
 .modal__label { display: block; font-size: .82rem; font-weight: 600; color: var(--muted); margin-bottom: .55rem; text-transform: uppercase; letter-spacing: .04em }
 .modal__optional { font-weight: 400; text-transform: none; letter-spacing: 0 }
 .modal__textarea { width: 100%; border-radius: 10px; padding: .6rem .75rem; resize: vertical; font-family: inherit; font-size: .9rem; min-height: 72px }
+.modal__input { width: 100%; border-radius: 10px; padding: .6rem .75rem; font-family: inherit; font-size: .9rem; background: var(--input-bg); border: 1px solid var(--border); color: var(--text) }
+.modal__input:focus { outline: 2px solid var(--accent); outline-offset: -1px }
+.modal__questions-block { background: var(--input-bg); border: 1px solid var(--border); border-radius: 10px; padding: .75rem 1rem; margin-bottom: 1rem; font-size: .875rem; line-height: 1.6; color: var(--text); white-space: pre-wrap }
 
 /* Intensity toggle */
 .intensity-toggle { display: flex; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: var(--card-sunken) }

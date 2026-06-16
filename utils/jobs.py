@@ -48,6 +48,14 @@ def mark_done(job_id: str) -> None:
             _save(jobs)
 
 
+def mark_progress(job_id: str, message: str) -> None:
+    with _lock:
+        jobs = _load()
+        if job_id in jobs:
+            jobs[job_id]["message"] = message
+            _save(jobs)
+
+
 def mark_failed(job_id: str, error: str) -> None:
     with _lock:
         jobs = _load()
