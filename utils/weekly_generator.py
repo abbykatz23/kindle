@@ -155,10 +155,17 @@ def run_running_compliance_check() -> None:
         except Exception as exc:
             log.error("Running compliance retroactive update failed: %s", exc)
 
+    # ── Forward adjustment: redistribute missed volume to remaining days ───────
+    try:
+        from integrations.intervals_api import analyze_week_compliance
+        compliance = analyze_week_compliance(week_data, week_monday, active_plan.get("start_date", ""))
+    except Exception as exc:
+        log.error("Running compliance check failed: %s", exc)
+        return
+
     if not compliance.get("missed_runs") and not compliance.get("short_runs"):
         return
 
-    # Check there are remaining days to redistribute to
     remaining = [
         day for i, day in enumerate(_PLAN_DAYS)
         if week_monday + timedelta(days=i) >= today
