@@ -41,8 +41,19 @@ def get_week_monday(week_label: str) -> date:
 
 def get_todays_run_plan(today: date) -> dict | None:
     plan = load_plan()
+    running = plan.get("running", {})
+    active = running.get("active") if isinstance(running, dict) else None
+    if not active:
+        return None
+    start_date = active.get("start_date")
+    if not start_date:
+        return None
+    start = date.fromisoformat(start_date)
+    start_monday = start - timedelta(days=start.weekday())
+    today_monday = today - timedelta(days=today.weekday())
+    week_num = max(1, ((today_monday - start_monday).days // 7) + 1)
     day_name = today.strftime("%A").lower()
-    return plan.get("running", {}).get(get_week_label(today), {}).get(day_name)
+    return active.get("weeks", {}).get(str(week_num), {}).get(day_name)
 
 
 def get_tasks_for_date(d: date) -> list[dict]:
@@ -80,6 +91,23 @@ def get_week_task_lists(today: date) -> tuple[list[dict], list[dict]]:
             else:
                 other_tasks.append(t)
     return leetcode_tasks, other_tasks
+
+
+def get_week_run_plan(today: date) -> dict:
+    """Return {day_name: plan_dict} for the active plan's current week, or {} if no plan."""
+    plan = load_plan()
+    running = plan.get("running", {})
+    active = running.get("active") if isinstance(running, dict) else None
+    if not active:
+        return {}
+    start_date = active.get("start_date")
+    if not start_date:
+        return {}
+    start = date.fromisoformat(start_date)
+    start_monday = start - timedelta(days=start.weekday())
+    today_monday = today - timedelta(days=today.weekday())
+    week_num = max(1, ((today_monday - start_monday).days // 7) + 1)
+    return active.get("weeks", {}).get(str(week_num), {})
 
 
 def get_upcoming_birthdays(today: date, days_ahead: int = 7) -> list[dict]:

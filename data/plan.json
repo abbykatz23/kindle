@@ -1,111 +1,2666 @@
 {
   "running": {
-    "2026-W21": {
-      "monday": {"type": "easy", "distance_miles": 4.0, "notes": ""},
-      "tuesday": {"type": "rest", "distance_miles": 0.0, "notes": ""},
-      "wednesday": {"type": "workout", "distance_miles": 5.5, "notes": ""},
-      "thursday": {"type": "easy", "distance_miles": 3.5, "notes": ""},
-      "friday": {"type": "rest", "distance_miles": 0.0, "notes": ""},
-      "saturday": {"type": "long", "distance_miles": 10.0, "notes": ""},
-      "sunday": {"type": "easy", "distance_miles": 3.0, "notes": ""}
+    "active": {
+      "id": "plan_20260619",
+      "created_at": "2026-06-19",
+      "start_date": "2026-06-19",
+      "race_date": "2026-10-10",
+      "race_name": "BPL Challenge",
+      "race_miles": 42.0,
+      "days_per_week": 5,
+      "current_weekly_mileage": 20.0,
+      "notes": "4-5 days a week, getting over a slight knee injury",
+      "weeks": {
+        "1": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Past date \u2014 rest. Plan begins Friday."
+          },
+          "tuesday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Past date \u2014 rest. Plan begins Friday."
+          },
+          "wednesday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Past date \u2014 rest. Plan begins Friday."
+          },
+          "thursday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Past date \u2014 rest. Plan begins Friday."
+          },
+          "friday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Zone 1, RPE 3/4. Knee still settling \u2014 keep it genuinely easy, conversational, avoid steep downhills and the hardest pavement. Run softer surfaces where possible."
+          },
+          "saturday": {
+            "type": "easy",
+            "distance_miles": 5.0,
+            "notes": "Zone 1, easy and relaxed. Nose-breathing pace. If the knee complains on downhills, walk them. No pace targets this week."
+          },
+          "sunday": {
+            "type": "long",
+            "distance_miles": 6.0,
+            "notes": "Easy long run, Zone 1, full conversational sentences throughout. Gentle rolling terrain, ease the downhills. This is a controlled re-entry, not a test."
+          }
+        },
+        "2": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest. Let the knee adapt."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Zone 1, RPE 3. Soft surfaces, smooth flats. Easy enough to nose-breathe the whole way."
+          },
+          "wednesday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Zone 1 recovery-easy. Keep it boring-easy \u2014 this builds aerobic base while the knee heals."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Zone 1, conversational. Check in on the knee; if downhills bite, walk them."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 8.0,
+            "notes": "Easy long run, Zone 1. Time on feet is the goal \u2014 full sentences the whole way. Practice taking a few sips/calories past 60 min."
+          },
+          "sunday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Easy shakeout on tired legs, Zone 1. Gentle introduction to running the day after a long effort."
+          }
+        },
+        "3": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Zone 1, RPE 3/4. Knee should be settling by now \u2014 if pain-free on flats, you can include gentle hills both directions."
+          },
+          "wednesday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Easy Zone 1. Conversational throughout."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Zone 1 easy. Relaxed form, quiet feet on the downhills to protect the knee."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 9.0,
+            "notes": "Easy long run, Zone 1. Keep effort capped \u2014 should feel almost too easy. Sip fluids and take a gel around the hour mark. Note: long run distance will build steadily each week \u2014 for a 42-mile ultra, the goal is time on feet at Zone 1 effort over many months, not big miles right now. Your knee is still re-entering training; rushing mileage risks setback. Trust the process."
+          },
+          "sunday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Recovery-easy on tired legs, Zone 1. No more than RPE 3."
+          }
+        },
+        "4": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Zone 1 easy. Smooth and aerobic \u2014 nose-breathing pace."
+          },
+          "wednesday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Zone 1 easy, conversational. Include moderate up/down hills to mimic race terrain now that the knee is improving."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Easy Zone 1 recovery run."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 10.0,
+            "notes": "Easy long run, Zone 1 \u2014 measured by effort, not pace. Full sentences throughout. Dial in your fueling rhythm (sip + small calories every 30\u201340 min)."
+          },
+          "sunday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Easy shakeout, Zone 1. Practice running relaxed on slightly fatigued legs."
+          }
+        },
+        "5": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest. This is a cutback week \u2014 adaptation happens during recovery."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Zone 1 easy. Reduced volume this week to absorb the last three builds."
+          },
+          "wednesday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Easy Zone 1, conversational."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 2.0,
+            "notes": "Short easy Zone 1 run. Keep it light."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 7.0,
+            "notes": "Easy long run, Zone 1, shorter cutback long. Relaxed and aerobic \u2014 let the body soak up the previous weeks."
+          },
+          "sunday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Easy recovery jog, Zone 1."
+          }
+        },
+        "6": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Zone 1 easy, conversational. Base building continues \u2014 still no hard running."
+          },
+          "wednesday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 over moderate hills, up and down, to keep adapting to race-style terrain."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Zone 1 easy. RPE 3/4, nose-breathing."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 11.0,
+            "notes": "Easy long run, Zone 1. Time on feet \u2014 aim for a comfortable couple of hours. Full fueling practice with gels/fluids on schedule."
+          },
+          "sunday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Easy on tired legs, Zone 1. Builds back-to-back durability gently."
+          }
+        },
+        "7": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest. Final base week."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 5.0,
+            "notes": "Zone 1 easy, relaxed and aerobic."
+          },
+          "wednesday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1, conversational. Include rolling hills, practicing a relaxed power-hike on any steep pitch."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Zone 1 easy recovery run."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 13.0,
+            "notes": "Easy long run, Zone 1 \u2014 your longest in months. Keep effort capped, full sentences. Hike steep uphills by design and walk the steeper downhills to protect the knee."
+          },
+          "sunday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Easy shakeout, Zone 1, on fatigued legs."
+          }
+        },
+        "8": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest. Build phase begins \u2014 base is now large enough to add one quality session per week."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 5.0,
+            "notes": "Zone 1 easy, conversational. Keep it genuinely easy so Wednesday's quality work is sharp."
+          },
+          "wednesday": {
+            "type": "workout",
+            "distance_miles": 5.0,
+            "notes": "First quality: 20 min tempo at LT2 effort (RPE 7, only a few words between breaths) in the middle. Warm up 1.5 mi easy, cool down easy. Run the tempo on flats/gentle grade to spare the knee."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 recovery. Never hard the day after quality."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 14.0,
+            "notes": "Easy long run, Zone 1. Effort-based \u2014 should feel relaxed start to finish. Full fueling/hydration rehearsal."
+          },
+          "sunday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy on tired legs, Zone 1. Back-to-back stimulus for the ultra."
+          }
+        },
+        "9": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest. Cutback week."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Zone 1 easy, conversational."
+          },
+          "wednesday": {
+            "type": "workout",
+            "distance_miles": 4.0,
+            "notes": "Hill repeats: 6 \u00d7 60\u201390s uphill hard (RPE 7\u20138), walk/jog down for full recovery. Warm up and cool down easy. Controlled, strong stride \u2014 keeps quality even in a lighter week."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Easy Zone 1 recovery run."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 10.0,
+            "notes": "Easy long run, Zone 1, reduced for cutback. Relaxed effort to absorb the build."
+          },
+          "sunday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 on tired legs."
+          }
+        },
+        "10": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 6.0,
+            "notes": "Zone 1 easy, aerobic and relaxed."
+          },
+          "wednesday": {
+            "type": "workout",
+            "distance_miles": 5.0,
+            "notes": "Tempo: 2 \u00d7 15 min at LT2 effort (RPE 7) with 3 min easy jog between. Warm up/cool down easy. Hold form when it gets uncomfortable."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 recovery."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 16.0,
+            "notes": "Easy long run, Zone 1. Time on feet ~2.5+ hrs. Practice power-hiking every steep climb and dialing fueling every 30 min. Keep effort easy even when slow."
+          },
+          "sunday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 on fatigued legs \u2014 ultra-specific back-to-back work."
+          }
+        },
+        "11": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 6.0,
+            "notes": "Zone 1 easy, conversational throughout."
+          },
+          "wednesday": {
+            "type": "workout",
+            "distance_miles": 5.0,
+            "notes": "Long hill repeats: 3 \u00d7 10 min moderate-uphill at strong effort (RPE 7), easy jog/walk down between. Ultra-specific strength. Warm up/cool down easy."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 5.0,
+            "notes": "Easy Zone 1 recovery run."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 18.0,
+            "notes": "Easy long run, Zone 1 \u2014 measured by time, ~3 hrs. Stay relaxed and fuel proactively. Walk the steep stuff by design; quiet, controlled downhills for the knee."
+          },
+          "sunday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 on tired legs."
+          }
+        },
+        "12": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest. Cutback week before the peak block."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 5.0,
+            "notes": "Zone 1 easy, relaxed."
+          },
+          "wednesday": {
+            "type": "workout",
+            "distance_miles": 5.0,
+            "notes": "Progression run: 3 mi easy Zone 1, then last 15\u201320 min building to tempo (RPE 7). Finish strong but controlled."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 recovery."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 12.0,
+            "notes": "Easy long run, Zone 1, reduced for cutback. Keep it relaxed \u2014 banking recovery for the big peak weeks ahead."
+          },
+          "sunday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 on tired legs."
+          }
+        },
+        "13": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest. Peak phase begins."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 5.0,
+            "notes": "Zone 1 easy, conversational. Stay fresh for the weekend's big back-to-back."
+          },
+          "wednesday": {
+            "type": "workout",
+            "distance_miles": 5.0,
+            "notes": "Tempo: 25 min continuous at LT2 effort (RPE 7). Warm up/cool down easy. Last real quality session before race-specific volume dominates."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 recovery."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day \u2014 prep for back-to-back long runs."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 18.0,
+            "notes": "Easy long run, Zone 1, ~3 hrs. Race-day fueling and gear rehearsal. Power-hike climbs, controlled descents. Save energy for tomorrow."
+          },
+          "sunday": {
+            "type": "long",
+            "distance_miles": 10.0,
+            "notes": "Second long run, Zone 1, on heavy legs \u2014 this simulates the back half of the 42-miler. Keep effort easy, hike anything steep, keep fueling."
+          }
+        },
+        "14": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest. Recover for the biggest weekend of the plan."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 5.0,
+            "notes": "Zone 1 easy, fully conversational. Legs should feel restored by today."
+          },
+          "wednesday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 with 4\u20136 \u00d7 20s relaxed strides to keep the legs lively. No real intensity \u2014 protect Saturday."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 recovery run."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day before peak long run."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 26.0,
+            "notes": "Peak long run, Zone 1 \u2014 your dress rehearsal (~62% of race distance, 5\u20136 hrs on feet). Full race kit, nutrition, hydration. Power-hike all steep climbs by design, controlled downhills for the knee. Effort stays easy the whole way."
+          },
+          "sunday": {
+            "type": "long",
+            "distance_miles": 8.0,
+            "notes": "Final back-to-back long on depleted legs, Zone 1. Slow and easy \u2014 this is the most ultra-specific stimulus you'll get. Keep eating and drinking."
+          }
+        },
+        "15": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest. Taper begins \u2014 volume drops, intensity stays."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 5.0,
+            "notes": "Zone 1 easy, conversational. Let the body absorb the peak block."
+          },
+          "wednesday": {
+            "type": "workout",
+            "distance_miles": 5.0,
+            "notes": "Maintain sharpness: 18 min tempo at LT2 effort (RPE 7). Warm up/cool down easy. Keep some intensity \u2014 detraining starts within ~10 days of going all-easy."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 recovery."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 15.0,
+            "notes": "Last meaningful long run, Zone 1, relaxed (~3 weeks out). Nothing over 14\u201316 mi from here on. Rehearse race fueling one final time."
+          },
+          "sunday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 on tired legs."
+          }
+        },
+        "16": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Zone 1 easy, fresh and relaxed."
+          },
+          "wednesday": {
+            "type": "workout",
+            "distance_miles": 5.0,
+            "notes": "Short, sharp: 2 \u00d7 8 min at LT2 effort (RPE 7) with 3 min easy between, plus 4 \u00d7 20s strides. Keeps the engine primed on reduced volume."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Easy Zone 1 recovery."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Rest day."
+          },
+          "saturday": {
+            "type": "long",
+            "distance_miles": 8.0,
+            "notes": "Easy Zone 1 \u2014 last moderate run, well under 14 mi. Relaxed, conversational. Legs should feel increasingly springy."
+          },
+          "sunday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Easy Zone 1 shakeout. Banking freshness for race week."
+          }
+        },
+        "17": {
+          "monday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Full rest. Race week \u2014 your job now is to arrive fresh."
+          },
+          "tuesday": {
+            "type": "easy",
+            "distance_miles": 4.0,
+            "notes": "Easy Zone 1 with 4 \u00d7 20s relaxed strides to keep legs sharp without fatigue."
+          },
+          "wednesday": {
+            "type": "easy",
+            "distance_miles": 3.0,
+            "notes": "Easy Zone 1, conversational. Stay loose, hydrate, sleep well."
+          },
+          "thursday": {
+            "type": "easy",
+            "distance_miles": 2.0,
+            "notes": "Very short, easy Zone 1 shakeout. Then back off completely."
+          },
+          "friday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Complete rest the day before the race. Legs up, fuel, hydrate, prep gear and nutrition."
+          },
+          "saturday": {
+            "type": "race",
+            "distance_miles": 42.0,
+            "notes": "BPL Challenge \u2014 42 mi. Start in Zone 1, easier than feels right; discipline early pays off late. Power-hike every steep climb by design, run the runnable. Fuel/hydrate on schedule from the first hour. Quiet, controlled downhills to protect the knee. Run your own race."
+          },
+          "sunday": {
+            "type": "rest",
+            "distance_miles": 0.0,
+            "notes": "Complete rest. Celebrate \u2014 then take a full easy recovery week before resuming any training."
+          }
+        }
+      }
     },
-    "2026-W22": {
-      "monday": {"type": "easy", "distance_miles": 4.5, "notes": ""},
-      "tuesday": {"type": "workout", "distance_miles": 6.0, "notes": ""},
-      "wednesday": {"type": "rest", "distance_miles": 0.0, "notes": ""},
-      "thursday": {"type": "easy", "distance_miles": 4.0, "notes": ""},
-      "friday": {"type": "easy", "distance_miles": 3.5, "notes": ""},
-      "saturday": {"type": "long", "distance_miles": 11.0, "notes": ""},
-      "sunday": {"type": "rest", "distance_miles": 0.0, "notes": ""}
-    },
-    "2026-W23": {
-      "monday": {"type": "easy", "distance_miles": 0.0, "notes": ""},
-      "tuesday": {"type": "long", "distance_miles": 0.7, "notes": "every other interval go hard"},
-      "wednesday": {"type": "easy", "distance_miles": 0.0, "notes": ""},
-      "thursday": {"type": "easy", "distance_miles": 0.0, "notes": ""},
-      "friday": {"type": "easy", "distance_miles": 0.0, "notes": ""},
-      "saturday": {"type": "easy", "distance_miles": 0.0, "notes": ""},
-      "sunday": {"type": "easy", "distance_miles": 0.0, "notes": ""}
-    }
+    "archived": [
+      {
+        "id": "plan_20260619",
+        "created_at": "2026-06-19",
+        "start_date": "2026-06-19",
+        "race_date": "2026-10-10",
+        "race_name": "BPL Challenge",
+        "race_miles": 42.0,
+        "days_per_week": 5,
+        "current_weekly_mileage": 20.0,
+        "notes": "4-5 days a week training.\nmy knee has been a bit sore for about a week, so i'm recovering from that",
+        "weeks": {
+          "1": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. Knee is priority right now \u2014 ice/elevate if it flares, gentle mobility for hips and IT band."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Zone 1, RPE 3/4. Stay on the soft hard-packed dirt of the Esplanade, NOT pavement \u2014 hard surfaces aggravate your lateral knee. Conversational, nose-breathing. Stop if knee pain climbs above a dull 2/10."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Zone 1 easy. Keep it flat \u2014 avoid any ascents while the knee settles. Should feel almost too easy."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Zone 1, soft surface. Full sentences the whole way. This is recovery mileage, not training stress."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Monitor knee \u2014 we want it trending toward zero pain over the next 1\u20132 weeks."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 6.0,
+              "notes": "Easy long run, ~55\u201360 min, Zone 1. Flat dirt only. Time on feet is the goal, pace is irrelevant. If the knee complains, cut it short \u2014 no heroics in a recovery week."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy shakeout, Zone 1. Gentle and conversational. Reassess knee tonight."
+            }
+          },
+          "2": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Hip and glute activation work helps lateral knee \u2014 clamshells, side-lying leg raises."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1, soft surface. Still no quality and no hills until the knee is fully quiet. Easy, conversational."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Zone 1 easy on dirt. Nose-breathing pace."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Zone 1. Keep it genuinely easy \u2014 RPE 3/4."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 7.0,
+              "notes": "Easy long run ~65 min, Zone 1, flat soft surface. Conversational throughout. Knee should be 80\u2013100% by now; if so, we begin true base building next week."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 recovery jog."
+            }
+          },
+          "3": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Base phase begins \u2014 the focus for the next several weeks is pure aerobic volume, zero hard running."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy. You can start mixing in short pavement segments now if knee is pain-free, to prep for the city-street race surface."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1, conversational. Resist the urge to push \u2014 easy days must stay easy."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy. Full sentences."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 8.0,
+              "notes": "Easy long run ~75 min, Zone 1. Practice taking in some fuel (gel or chews) around the 60-min mark \u2014 start building your gut tolerance now."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 recovery."
+            }
+          },
+          "4": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy. Stay disciplined on effort \u2014 if your breathing deepens, slow down."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy, conversational."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1. Almost-too-easy is the right feel."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 10.0,
+              "notes": "Easy long run ~95 min, Zone 1. Take fuel every 40\u201345 min and carry/practice with fluids. Pure aerobic time on feet."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 shakeout."
+            }
+          },
+          "5": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Cutback week \u2014 mileage drops ~20% so your body absorbs the last three weeks. Adaptation happens during recovery."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy, relaxed."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Zone 1 short and easy."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 7.0,
+              "notes": "Easy long run ~65 min, Zone 1. Shorter than last week by design \u2014 keep it relaxed."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1. Knee check \u2014 should be a non-issue by now."
+            }
+          },
+          "6": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Last base week before we introduce quality. Aerobic foundation is getting solid."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy, conversational."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy. Optional: include a few relaxed 15s strides at the end to wake up the legs \u2014 not hard, just smooth turnover."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 10.0,
+              "notes": "Easy long run ~95 min, Zone 1. Fuel every 40 min. Time on feet."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1 recovery."
+            }
+          },
+          "7": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Build phase begins \u2014 one genuine Zone 3 session per week now that the base can absorb it."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy. Keep it truly easy to be fresh for tomorrow's workout."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Tempo run: 15 min easy warmup, then 20 min at comfortably-hard LT2 effort (RPE 7, only a few words at a time), 10 min easy cooldown. Run on flat dirt/pavement, no hills."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy recovery \u2014 deliberately gentle the day after quality. No grey-zone creep."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 12.0,
+              "notes": "Easy long run ~115 min, Zone 1. Dial in your race-day fueling routine. Conversational the whole way."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1 shakeout on tired legs."
+            }
+          },
+          "8": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Zone 1 easy, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Progression run: 35 min easy Zone 1, then last 20 min building to tempo (RPE 7). Finish controlled-hard, not all-out. Flat route."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy recovery."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 13.0,
+              "notes": "Easy long run ~2 hr, Zone 1. Fuel every 40 min, carry fluids. Practice eating on the move at race pace effort."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1, time-on-feet on slightly tired legs."
+            }
+          },
+          "9": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Cutback week \u2014 reduce load, keep it all aerobic so you supercompensate."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy \u2014 no quality this week, this is a recovery week. A few light strides at the end if you feel good."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 10.0,
+              "notes": "Easy long run ~95 min, Zone 1. Relaxed cutback long run."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1 recovery."
+            }
+          },
+          "10": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Knee should be fully resolved \u2014 we can add hill work now, a key ultra skill."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Zone 1 easy, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Hill repeats: 15 min easy warmup, then 8 \u00d7 75s uphill hard (RPE 8), walk/jog down for full recovery. 10 min easy cooldown. Strong but controlled effort up; this also builds power-hiking muscles."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy recovery \u2014 gentle after hills."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 15.0,
+              "notes": "Easy long run ~2:25, Zone 1. Include some rolling terrain and practice power hiking anything over 8% grade \u2014 walk it briskly with purpose, that's race strategy not weakness."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1 on tired legs \u2014 early back-to-back practice."
+            }
+          },
+          "11": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Zone 1 easy, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 7.0,
+              "notes": "Tempo: 15 min warmup, then 2 \u00d7 15 min at LT2 effort (RPE 7) with 3 min easy jog between, 10 min cooldown. Hold the comfortably-hard line \u2014 not racing, not jogging."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy recovery."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 17.0,
+              "notes": "Easy long run ~2:45, Zone 1. Full race-day nutrition rehearsal \u2014 same gels, fluids, timing you'll use Oct 10. Power hike the climbs."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Easy Zone 1, time on feet on fatigued legs."
+            }
+          },
+          "12": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Peak phase \u2014 back-to-back long runs this weekend to simulate the back half of the 42-miler."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Zone 1 easy."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Long hill repeats: 15 min warmup, then 3 \u00d7 10 min moderate uphill at sustained effort (RPE 7), easy jog down between. Cooldown. Builds the climbing strength for the course's elevation changes."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy recovery \u2014 keep it light, big weekend ahead."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Eat and hydrate well for the back-to-back."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 17.0,
+              "notes": "Easy long run ~2:45, Zone 1. Full fueling rehearsal. Don't overcook it \u2014 tomorrow matters more than today."
+            },
+            "sunday": {
+              "type": "long",
+              "distance_miles": 10.0,
+              "notes": "Back-to-back long run ~1:40 on pre-fatigued legs, Zone 1. This is the key ultra adaptation \u2014 running tired teaches your body and mind the second half of the race. Keep it genuinely easy."
+            }
+          },
+          "13": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Peak week \u2014 highest volume of the plan and your biggest long run."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Zone 1 easy, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Tempo: 15 min warmup, 20 min at LT2 effort (RPE 7), 10 min cooldown. Keep quality controlled this week \u2014 the weekend long runs are the priority."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy recovery. Bank rest for the weekend."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Fuel and hydrate for the peak back-to-back."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 20.0,
+              "notes": "Peak long run ~3:20, Zone 1. ~48% of race distance. Full race simulation: pacing, fueling every 40 min, power hiking climbs. Slow and steady \u2014 time on feet is the whole point."
+            },
+            "sunday": {
+              "type": "long",
+              "distance_miles": 11.0,
+              "notes": "Back-to-back ~1:50 on heavy legs, Zone 1. The most race-specific session of your block \u2014 practice eating and moving forward when tired. Stay strictly easy."
+            }
+          },
+          "14": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. This is your last big long-run week \u2014 taper begins after this."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Zone 1 easy."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Tempo: 15 min warmup, 2 \u00d7 12 min at LT2 (RPE 7) with 3 min jog, cooldown. Sharpen the legs while volume eases."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy recovery."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 16.0,
+              "notes": "Final long run, ~2:35, Zone 1. Last run over 16 miles before the race. Relaxed and confident \u2014 final dress rehearsal of nutrition and gear. Nothing longer after this."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Easy Zone 1 on tired legs, last back-to-back of the block."
+            }
+          },
+          "15": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Taper week 1 (~70% of peak). Volume drops, but intensity stays \u2014 detraining starts around day 10, so we keep some sharpness."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Tempo: 15 min warmup, 18 min at LT2 effort (RPE 7), 10 min cooldown. Keep the intensity to hold fitness while legs freshen."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy recovery."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 14.0,
+              "notes": "Easy long run ~2:15, Zone 1. Capped at 14 \u2014 enough to maintain endurance without adding fatigue. Stay relaxed."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 shakeout."
+            }
+          },
+          "16": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Taper week 2 (~50% of peak). Legs should start feeling spring-loaded."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 5.0,
+              "notes": "Short sharpener: 15 min warmup, 12 min at LT2 (RPE 7), cooldown. Brief but keeps the system primed \u2014 do NOT go all-easy in taper."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Zone 1 easy, with 4 \u00d7 20s relaxed strides to keep turnover crisp."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 10.0,
+              "notes": "Easy run ~1:35, Zone 1. Final moderate-length effort \u2014 relaxed and easy, banking freshness. Run through your race-morning fueling routine."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 0.0,
+              "notes": "Rest or 20 min very easy walk. Optional gentle movement only."
+            }
+          },
+          "17": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Race week (~30% volume). Stay off your feet when you can, sleep well, hydrate."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Zone 1 easy shakeout with 4 \u00d7 20s strides. Loose and light \u2014 nothing taxing."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Zone 1 easy, 25\u201330 min, a couple of light strides. Legs should feel fresh and eager."
+            },
+            "thursday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Complete rest. Finalize gear, nutrition, logistics. Carb-load begins."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Complete rest before race day. Light walking only, hydrate, easy carbs, early to bed."
+            },
+            "saturday": {
+              "type": "race",
+              "distance_miles": 42.0,
+              "notes": "BPL Challenge \u2014 42 miles. Start slower than feels right, Zone 1 effort, settle in. Fuel every 35\u201340 min from the gun \u2014 never wait until you're hungry. Power hike the climbs with purpose. Run your own race; the back half is where your back-to-backs pay off. Trust the training."
+            },
+            "sunday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest and celebrate. Begin at least one full easy recovery week before any normal training resumes."
+            }
+          }
+        },
+        "archived_at": "2026-06-19"
+      },
+      {
+        "id": "plan_20260619",
+        "created_at": "2026-06-19",
+        "start_date": "2026-06-19",
+        "race_date": "2026-10-10",
+        "race_name": "BPL Challenge",
+        "race_miles": 42.0,
+        "days_per_week": 5,
+        "current_weekly_mileage": 20.0,
+        "notes": "my knee is feeling a bit weird this week but I don't think it's anything serious.",
+        "weeks": {
+          "1": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. Knee is your priority this week \u2014 ice/elevate if it feels swollen, and note exactly what aggravates it."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Zone 1, RPE 3-4, fully conversational. Pick the softest, flattest surface you can find (grass, dirt, track) \u2014 avoid hard pavement and any downhill while the knee settles."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1. Nose-breathing pace. Flat route only. If the knee complains at all, stop early \u2014 no ego this week."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Very easy, Zone 1. Soft surface. This should feel almost too easy \u2014 that's correct."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Light walking and gentle mobility work for the knee is fine."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 5.0,
+              "notes": "Easy long run, ~50-55 min, Zone 1, conversational throughout. Keep it flat and on softer ground. Deliberately short this week to protect the knee."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 2.0,
+              "notes": "Short and easy, Zone 1. Optional \u2014 skip entirely if the knee is still grumpy. Better to under-do it now."
+            }
+          },
+          "2": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. By now the knee should be improving \u2014 if it isn't trending better, see a physio before we build further."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1, fully conversational. Still favor softer surfaces and flat terrain."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1. Relaxed, nose-breathing pace."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 recovery effort. Keep it gentle."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest day."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 6.0,
+              "notes": "Long run ~65 min, Zone 1, conversational. If the knee is now symptom-free you can let the route roll gently, but still no hard downhill pounding."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 2.0,
+              "notes": "Short easy shakeout, Zone 1."
+            }
+          },
+          "3": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy. Conversational. You can start running normal road routes now if the knee is quiet."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1. Steady, relaxed."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1. Keep effort honest \u2014 if you can't speak full sentences, slow down."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 7.0,
+              "notes": "Long run ~75-80 min, Zone 1. This crosses the 75-min mark \u2014 start practicing taking on fluids/calories. Conversational pace the whole way."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 2.0,
+              "notes": "Short easy recovery, Zone 1."
+            }
+          },
+          "4": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. This is a cutback week \u2014 adaptation happens during recovery, not during the hard weeks."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1, relaxed and short."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1. Enjoy the lighter load this week."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 recovery effort."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 5.0,
+              "notes": "Reduced long run ~55 min, Zone 1, conversational. Cutback long \u2014 keep it genuinely easy."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 2.0,
+              "notes": "Short easy shakeout, Zone 1."
+            }
+          },
+          "5": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1, conversational."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1. Steady aerobic effort, nose-breathing comfortable."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1. Resist the urge to push \u2014 base building is about volume of easy work."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 7.0,
+              "notes": "Long run ~80 min, Zone 1. Practice race-day nutrition. Conversational throughout."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 2.0,
+              "notes": "Short easy recovery, Zone 1."
+            }
+          },
+          "6": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1, conversational."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1. Steady aerobic effort."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1 recovery effort."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 8.0,
+              "notes": "Long run ~90 min, Zone 1. Time on feet is the stimulus \u2014 pace is irrelevant. Fuel every 30-40 min."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 on tired legs \u2014 gentle introduction to back-to-back running."
+            }
+          },
+          "7": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1, conversational."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1. Steady aerobic base work \u2014 last week before we add quality."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1 recovery effort."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 9.0,
+              "notes": "Long run ~100 min, Zone 1, conversational. Keep dialing in nutrition and hydration."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 on tired legs."
+            }
+          },
+          "8": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Cutback week \u2014 but it also introduces our first quality session. Base is now big enough to absorb it."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1, conversational. Keep it genuinely easy ahead of tomorrow's workout."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 5.0,
+              "notes": "First quality session: tempo run. 15 min easy warmup, then 20 min at comfortably hard (Zone 3, RPE 7, only a few words between breaths), then easy cooldown. Run this on flat ground to protect the knee."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 recovery \u2014 no quality two days running, ever. Keep it gentle after the tempo."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 7.0,
+              "notes": "Cutback long ~80 min, Zone 1, fully conversational."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 2.0,
+              "notes": "Short easy recovery, Zone 1."
+            }
+          },
+          "9": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Progression run: start easy Zone 1, then over the final 20 min build smoothly to tempo effort (Zone 3, RPE 7). Finish strong but controlled. Flat route."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1 recovery effort after the workout."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 10.0,
+              "notes": "Long run ~1:50, Zone 1, conversational. Practice full race-day fueling and carry your own bottles/vest."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 on tired legs \u2014 back-to-back ultra prep."
+            }
+          },
+          "10": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Tempo run: 15 min easy warmup, then 2 x 15 min at comfortably hard (Zone 3, RPE 7) with 3 min easy jog between, then cooldown. Flat ground."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1 recovery effort."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 11.0,
+              "notes": "Long run ~2:00, Zone 1, conversational. Include a few gentle rolling hills since the race has moderate hills \u2014 power hike anything steep, don't pound the downhills."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1 on tired legs."
+            }
+          },
+          "11": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Easy Zone 1, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Hill repeats (knee should be fully resolved by now): 15 min warmup, then 8 x 60-90s uphill hard (Zone 3, RPE 8), walk/jog back down for recovery. Walking the descents protects your knee \u2014 uphill builds strength for the race's hills."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1 recovery effort \u2014 legs will feel the hills, keep it gentle."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 12.0,
+              "notes": "Long run ~2:15, Zone 1, conversational. Practice power hiking any climb over 8% grade \u2014 this is a deliberate racing skill, not a fallback."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1 on tired legs \u2014 the back-to-back stress is the point."
+            }
+          },
+          "12": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Cutback week \u2014 let the last three build weeks consolidate."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 5.0,
+              "notes": "Tempo run: 15 min warmup, 20 min at comfortably hard (Zone 3, RPE 7), cooldown. Shorter quality to match the cutback."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1 recovery effort."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 9.0,
+              "notes": "Reduced long ~1:40, Zone 1, conversational. Keep it easy \u2014 recovering for the peak push."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1 on tired legs."
+            }
+          },
+          "13": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Peak phase begins \u2014 highest mileage and your biggest back-to-back weekends."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1, conversational. Stay disciplined on easy days so the long efforts land well."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Long hill repeats (ultra-specific): 15 min warmup, then 3 x 10 min moderate uphill at sustained effort (Zone 3, RPE 7), easy jog down between. Builds climbing strength for race day's hills."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1 recovery effort."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest \u2014 prime your legs for the big weekend."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 14.0,
+              "notes": "Long run ~2:45, Zone 1, conversational. Full race-day kit, nutrition, and hydration rehearsal. Power hike the steep bits."
+            },
+            "sunday": {
+              "type": "long",
+              "distance_miles": 6.0,
+              "notes": "Back-to-back long: ~70 min Zone 1 on tired legs. This simulates the back half of your 42-miler \u2014 run easy and just accumulate time on feet."
+            }
+          },
+          "14": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. This is your peak week \u2014 the biggest long run and final big stimulus before the taper."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Progression run: easy Zone 1 building to 20 min at tempo (Zone 3, RPE 7) in the final stretch. Keep it controlled \u2014 bigger long runs this weekend."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1 recovery effort. Keep it very gentle ahead of the peak weekend."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest \u2014 fuel and hydrate well for tomorrow's peak long run."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 18.0,
+              "notes": "Peak long run ~3:30, Zone 1, conversational. This is ~45% of race distance \u2014 pace is irrelevant, time on feet is the goal. Full nutrition rehearsal; power hike all steep climbs. This is your last big long run."
+            },
+            "sunday": {
+              "type": "long",
+              "distance_miles": 6.0,
+              "notes": "Back-to-back: ~70 min very easy Zone 1 on heavy legs. Final ultra-specific overload before we taper."
+            }
+          },
+          "15": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Taper begins \u2014 volume drops about 30%, but we keep some intensity so you stay sharp (detraining starts around 10 days of going all-easy)."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 5.0,
+              "notes": "Tempo run: 15 min warmup, 20 min at comfortably hard (Zone 3, RPE 7), cooldown. Keep the legs in touch with race effort even as volume comes down."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1 recovery effort."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 12.0,
+              "notes": "Final moderately-long run ~2:15, Zone 1, conversational. Nothing longer than this from here on. Rehearse race kit one last time."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 2.0,
+              "notes": "Short easy shakeout, Zone 1."
+            }
+          },
+          "16": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Volume now ~50% of peak. Trust the taper \u2014 fitness is banked, freshness is the job now."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 4.0,
+              "notes": "Short, sharp tempo: 10 min warmup, 12 min at comfortably hard (Zone 3, RPE 7), cooldown. Just enough intensity to stay race-ready."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 recovery effort."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 8.0,
+              "notes": "Easy long ~90 min, Zone 1, conversational. This is your last run over an hour before race day \u2014 keep it relaxed."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 2.0,
+              "notes": "Short easy shakeout, Zone 1."
+            }
+          },
+          "17": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Race week \u2014 volume minimal, legs getting fresh. Sleep and nutrition are now your training."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1, relaxed and short."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 with 4 x 20s relaxed strides to keep the legs snappy \u2014 not hard, just brisk turnover."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 2.0,
+              "notes": "Short, easy shakeout, Zone 1. Final loosening run."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Complete rest the day before the race. Lay out your kit, finalize nutrition plan, hydrate, and get to bed early."
+            },
+            "saturday": {
+              "type": "race",
+              "distance_miles": 42.0,
+              "notes": "BPL Challenge \u2014 42 miles. Start in Zone 1, slower than feels right \u2014 discipline early wins the back half. Power hike every meaningful climb, eat and drink on schedule from the first hour, and protect your knee on the downhills with short, light steps. Time on feet, not pace. You're ready."
+            },
+            "sunday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest and celebrate. Take a full easy recovery week before resuming any training."
+            }
+          }
+        },
+        "archived_at": "2026-06-19"
+      },
+      {
+        "id": "plan_20260619",
+        "created_at": "2026-06-19",
+        "start_date": "2026-06-19",
+        "race_date": "2026-10-10",
+        "race_name": "BPL Challenge",
+        "race_miles": 0.0,
+        "days_per_week": 5,
+        "current_weekly_mileage": 20.0,
+        "notes": "",
+        "weeks": {
+          "1": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. Base phase begins. Your knee feels 'weird' \u2014 pay attention this week; if anything sharpens, back off and ice."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1, fully conversational, nose-breathing possible. RPE 3-4/10. This should feel almost too easy. Note how the knee responds."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy. Keep effort genuinely relaxed \u2014 no pushing pace just because you feel good."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Short, easy Zone 1. If the knee is irritated at all, make this a walk/jog or skip."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest ahead of Saturday long run."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 8.0,
+              "notes": "Long run, Zone 1 only \u2014 conversational throughout. Time on feet is the goal, not pace. Practice sipping fluids."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 shakeout on tired legs. Keep it short and gentle."
+            }
+          },
+          "2": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy, RPE 3-4. Conversational the entire run."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy. Resist drifting into the 'comfortably hard' grey zone."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1. Relaxed form, soft cadence."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest before long run."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 9.0,
+              "notes": "Long run, all Zone 1. Slow enough to chat freely. Build the aerobic base \u2014 no hero pacing."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy recovery jog, Zone 1."
+            }
+          },
+          "3": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. Knee should feel settled by now \u2014 if not, let's reassess volume."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy, conversational."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy. Keep RPE 3-4."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Note: friend visiting Jul 4-6 \u2014 if Saturday gets disrupted, shift the long run to Sunday or Monday; just keep one long effort this week."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 10.0,
+              "notes": "Long run, Zone 1. Conversational pace, time on feet. Flexible day this week given your visitor \u2014 move it if needed but don't skip it."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 2.0,
+              "notes": "Short easy Zone 1, or rest-swap with Saturday if your weekend shifts."
+            }
+          },
+          "4": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. Cutback/recovery week \u2014 adaptation happens now. Volume drops ~25%."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy, relaxed."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1. Let the body absorb the last three weeks."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Short easy Zone 1."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 6.0,
+              "notes": "Reduced long run, Zone 1. Easy and conversational \u2014 this is a down week, keep it truly relaxed."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 jog."
+            }
+          },
+          "5": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. Volume steps back up \u2014 still pure base, Zone 1 only."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy, conversational."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1, RPE 3-4."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest before long run."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 9.0,
+              "notes": "Long run, Zone 1. Practice taking in a gel or chews around the 60-minute mark."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 recovery."
+            }
+          },
+          "6": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Easy Zone 1. Keep it conversational even as mileage grows."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest before long run."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 11.0,
+              "notes": "Long run, Zone 1 \u2014 roughly 1h45-2h on feet. Conversational throughout. Dial in your fueling routine."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 on tired legs."
+            }
+          },
+          "7": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. Cutback week \u2014 reduce ~20%. Last week of pure base phase."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Short easy Zone 1."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 8.0,
+              "notes": "Reduced long run, Zone 1, easy and relaxed. Recovery week \u2014 bank the freshness for the build phase."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 jog."
+            }
+          },
+          "8": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. Build phase begins \u2014 base is now large enough to absorb one quality session per week."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy, fully conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "First quality session: warm up 1.5mi easy, then 20 min continuous tempo at comfortably hard LT2 effort (RPE 7, only a few words at a time), then cool down. This is your one genuinely hard run of the week."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1 \u2014 recover from yesterday's tempo. Keep it gentle."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest before long run."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 11.0,
+              "notes": "Long run, Zone 1 only. Conversational. Do NOT let it become moderate \u2014 it stays easy."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 recovery."
+            }
+          },
+          "9": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Zone 1 easy."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Hill repeats: warm up 1.5mi easy, then 8 x 60-90s uphill hard (RPE 7-8), walk/jog down to recover fully between. Cool down easy. Builds strength and power."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1 recovery."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest before long run."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 12.0,
+              "notes": "Long run, Zone 1 \u2014 ~2h on feet. Conversational. Fuel every 30-40 min."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1 on tired legs."
+            }
+          },
+          "10": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. Cutback week \u2014 reduce ~20%. You mentioned August travel; this lighter week is well-timed for it. Keep runs consistent but flexible on which days."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy \u2014 travel-friendly, run wherever you are."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 5.0,
+              "notes": "Tempo: warm up, then 18-20 min at comfortably hard LT2 effort (RPE 7), cool down. If travel makes a tempo impractical, swap with an easy day."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 10.0,
+              "notes": "Reduced long run, Zone 1, easy. Recovery week \u2014 keep effort relaxed even if scenery is new."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 jog."
+            }
+          },
+          "11": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Zone 1 easy, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Progression run: first 4 miles easy Zone 1, then finish the last 15-20 min at tempo effort (RPE 7). Teaches you to push when already fatigued."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1 recovery."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest before long run."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 13.0,
+              "notes": "Long run, Zone 1 \u2014 ~2h15. Conversational. Solid fueling practice; treat it like a dress rehearsal for race nutrition."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1 on tired legs."
+            }
+          },
+          "12": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Zone 1 easy."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 7.0,
+              "notes": "Tempo: warm up, then 2 x 15 min at LT2 comfortably hard effort (RPE 7) with 3 min easy jog between, cool down. Strong threshold stimulus."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 6.0,
+              "notes": "Easy Zone 1 recovery."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest before long run."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 14.0,
+              "notes": "Long run, Zone 1 \u2014 ~2h30 on feet. Conversational throughout. Highest mileage week so far; keep the long run truly easy."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1 jog."
+            }
+          },
+          "13": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. Cutback week before peak \u2014 reduce ~20% and arrive fresh."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Tempo: warm up, then 20 min at comfortably hard LT2 effort (RPE 7), cool down. Maintain sharpness on a lighter week."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 12.0,
+              "notes": "Long run, Zone 1, easy. Slightly reduced \u2014 recovery week to set up the peak."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 recovery."
+            }
+          },
+          "14": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. PEAK week \u2014 highest volume, with back-to-back long runs. This is your biggest training stimulus before the taper."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 6.0,
+              "notes": "Race-specific tempo: warm up, then 25 min at comfortably hard LT2 effort (RPE 7), cool down. Last hard quality session of the cycle."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Easy Zone 1 \u2014 keep legs loose ahead of the big weekend."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest. Prep fuel, hydration, and gear for tomorrow's long run."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 16.0,
+              "notes": "Peak long run, Zone 1 \u2014 ~3h on feet. Conversational pace. Full race-day nutrition rehearsal. This is your longest run of the cycle (~50-55% of 50K race distance)."
+            },
+            "sunday": {
+              "type": "long",
+              "distance_miles": 8.0,
+              "notes": "Back-to-back: medium-long run on tired legs, Zone 1 easy. Simulates the back half of your ultra. Practice power-hiking any rises; keep effort gentle."
+            }
+          },
+          "15": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. TAPER begins \u2014 volume drops to ~70% of peak, but intensity stays. Do not go all-easy: detraining starts around day 10."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 5.0,
+              "notes": "Zone 1 easy, conversational."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 5.0,
+              "notes": "Sharpener: warm up, then 15 min at LT2 comfortably hard effort (RPE 7), cool down. Keeps the system primed while volume falls."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Easy Zone 1."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest before long run."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 11.0,
+              "notes": "Last longer run of the cycle, Zone 1 easy. Nothing over ~14-16mi from here on. Conversational, relaxed."
+            },
+            "sunday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 recovery."
+            }
+          },
+          "16": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. Taper continues \u2014 ~50% of peak volume. Legs should start feeling springy."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy, short and relaxed."
+            },
+            "wednesday": {
+              "type": "workout",
+              "distance_miles": 5.0,
+              "notes": "Maintain intensity: warm up, then 4 x 3 min at LT2 comfortably hard effort (RPE 7) with 2 min easy jog between, cool down. Short and snappy \u2014 keeps you sharp without fatigue."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Rest before final moderate-length run."
+            },
+            "saturday": {
+              "type": "long",
+              "distance_miles": 8.0,
+              "notes": "Final longer run, Zone 1 easy. Stay conversational. Trust the fitness \u2014 resist the urge to test yourself."
+            },
+            "sunday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. Begin focusing on sleep, hydration, and carbohydrate stores for race week."
+            }
+          },
+          "17": {
+            "monday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. RACE WEEK \u2014 ~30% of peak volume. Everything now is about arriving fresh."
+            },
+            "tuesday": {
+              "type": "easy",
+              "distance_miles": 4.0,
+              "notes": "Zone 1 easy, relaxed and short. Legs should feel eager \u2014 that's the taper working."
+            },
+            "wednesday": {
+              "type": "easy",
+              "distance_miles": 3.0,
+              "notes": "Easy Zone 1 with 4 x 20s strides at the end (smooth, controlled, not all-out) to keep neuromuscular sharpness."
+            },
+            "thursday": {
+              "type": "easy",
+              "distance_miles": 2.0,
+              "notes": "Very short, very easy Zone 1 shakeout. Stay loose; keep it brief."
+            },
+            "friday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Complete rest the day before the race. Lay out gear, finalize fueling plan, hydrate, eat well, sleep early."
+            },
+            "saturday": {
+              "type": "race",
+              "distance_miles": 31.0,
+              "notes": "RACE DAY (50K). Start in Zone 1 \u2014 go out easy and conservative; the discipline you built in training pays off now. Fuel every 30-40 min from the start, power-hike the steep/long climbs by design, and stay relaxed. Negative-split mindset."
+            },
+            "sunday": {
+              "type": "rest",
+              "distance_miles": 0.0,
+              "notes": "Full rest. Congratulations \u2014 begin recovery. Take at least one easy week before resuming normal training."
+            }
+          }
+        },
+        "archived_at": "2026-06-19"
+      }
+    ]
   },
   "interview_prep": {
-    "2026-W20": {
+    "2026-W25": {
       "monday": [
-        {"type": "leetcode", "task": "#1 Two Sum", "leetcode_slug": "two-sum", "completed": true},
-        {"type": "leetcode", "task": "#2 Add Two Numbers", "leetcode_slug": "add-two-numbers", "completed": true}
+        {
+          "type": "reading",
+          "task": "CTCI ch 6 (Big-O): review time/space complexity analysis and Big-O notation",
+          "leetcode_slug": null,
+          "completed": false
+        },
+        {
+          "type": "leetcode",
+          "task": "#1 Two Sum",
+          "leetcode_slug": "two-sum",
+          "completed": false
+        }
       ],
       "tuesday": [
-        {"type": "reading", "task": "OSTEP ch 1-2: Introduction and Virtualization Overview", "completed": true}
+        {
+          "type": "leetcode",
+          "task": "#217 Contains Duplicate",
+          "leetcode_slug": "contains-duplicate",
+          "completed": false
+        },
+        {
+          "type": "leetcode",
+          "task": "#242 Valid Anagram",
+          "leetcode_slug": "valid-anagram",
+          "completed": false
+        }
       ],
       "wednesday": [
-        {"type": "leetcode", "task": "#20 Valid Parentheses", "leetcode_slug": "valid-parentheses", "completed": true},
-        {"type": "leetcode", "task": "#21 Merge Two Sorted Lists", "leetcode_slug": "merge-two-sorted-lists", "completed": false}
-      ],
-      "friday": [
-        {"type": "behavioral", "task": "Brainstorm STAR story candidates from past experience", "completed": false}
-      ]
-    },
-    "2026-W21": {
-      "monday": [
-        {"type": "leetcode", "task": "#121 Best Time to Buy and Sell Stock", "leetcode_slug": "best-time-to-buy-and-sell-stock", "completed": true},
-        {"type": "leetcode", "task": "#125 Valid Palindrome", "leetcode_slug": "valid-palindrome", "completed": true}
-      ],
-      "tuesday": [
-        {"type": "reading", "task": "OSTEP ch 3-4: Process API and Direct Execution", "completed": true}
+        {
+          "type": "reading",
+          "task": "CTCI ch 1 (Arrays and Strings): read intro and hash table fundamentals",
+          "leetcode_slug": null,
+          "completed": false
+        },
+        {
+          "type": "leetcode",
+          "task": "#49 Group Anagrams",
+          "leetcode_slug": "group-anagrams",
+          "completed": false
+        }
       ],
       "thursday": [
-        {"type": "leetcode", "task": "#238 Product of Array Except Self", "leetcode_slug": "product-of-array-except-self", "completed": false}
+        {
+          "type": "reading",
+          "task": "GROK: read the Two Pointers pattern introduction and worked examples",
+          "leetcode_slug": null,
+          "completed": false
+        },
+        {
+          "type": "leetcode",
+          "task": "#167 Two Sum II - Input Array Is Sorted",
+          "leetcode_slug": "two-sum-ii-input-array-is-sorted",
+          "completed": false
+        }
+      ],
+      "friday": [
+        {
+          "type": "behavioral",
+          "task": "Write STAR story: solving an ambiguous, undefined problem from scratch (Google: dealing with ambiguity) \u2014 pull raw material from a Partners Capital project",
+          "leetcode_slug": null,
+          "completed": false
+        }
       ],
       "saturday": [
-        {"type": "reading", "task": "Watch Neetcode heap intro", "completed": true},
-        {"type": "leetcode", "task": "#703 Kth Largest in a Stream", "leetcode_slug": "kth-largest-element-in-a-stream", "completed": false}
-      ]
-    },
-    "2026-W22": {
-      "monday": [
-        {"type": "leetcode", "task": "#1046 Last Stone Weight", "leetcode_slug": "last-stone-weight", "completed": true},
-        {"type": "leetcode", "task": "#973 K Closest Points to Origin", "leetcode_slug": "k-closest-points-to-origin", "completed": true}
-      ],
-      "tuesday": [
-        {"type": "reading", "task": "OSTEP ch 5-6: Scheduling Introduction", "completed": false}
-      ],
-      "wednesday": [
-        {"type": "system_design", "task": "System Design Interview intro chapter — read framework", "completed": true},
-        {"type": "system_design", "task": "Alex Xu Ch 8: URL Shortener", "completed": true}
-      ],
-      "thursday": [
-        {"type": "system_design", "task": "Sketch URL Shortener design from memory", "completed": false}
-      ],
-      "friday": [
-        {"type": "behavioral", "task": "STAR story draft: most technically challenging problem", "completed": false}
-      ]
-    },
-    "2026-W23": {
-      "monday": [
-        {"type": "reading", "task": "Watch Neetcode heap intro (carry-over from 2026-W21)", "leetcode_slug": null, "completed": false},
-        {"type": "leetcode", "task": "#703 Kth Largest Element in a Stream (carry-over from 2026-W21)", "leetcode_slug": "kth-largest-element-in-a-stream", "completed": false}
-      ],
-      "tuesday": [
-        {"type": "leetcode", "task": "#1046 Last Stone Weight (carry-over from 2026-W22)", "leetcode_slug": "last-stone-weight", "completed": false},
-        {"type": "leetcode", "task": "#973 K Closest Points to Origin (carry-over from 2026-W22)", "leetcode_slug": "k-closest-points-to-origin", "completed": false}
-      ],
-      "wednesday": [
-        {"type": "system_design", "task": "Alex Xu Ch 8: Design a URL Shortener (carry-over from 2026-W22)", "leetcode_slug": null, "completed": false},
-        {"type": "system_design", "task": "Sketch URL Shortener design from memory (carry-over from 2026-W22)", "leetcode_slug": null, "completed": false}
-      ],
-      "thursday": [
-        {"type": "reading", "task": "OSTEP ch 1-4: Intro to OS, processes, and the Process API", "leetcode_slug": null, "completed": false},
-        {"type": "leetcode", "task": "#1 Two Sum", "leetcode_slug": "two-sum", "completed": false}
-      ],
-      "friday": [
-        {"type": "leetcode", "task": "#217 Contains Duplicate", "leetcode_slug": "contains-duplicate", "completed": false},
-        {"type": "leetcode", "task": "#242 Valid Anagram", "leetcode_slug": "valid-anagram", "completed": false}
-      ],
-      "saturday": [
-        {"type": "behavioral", "task": "Brainstorm STAR story candidates: list raw experiences for 'conflict with a teammate' and 'technically challenging problem'", "leetcode_slug": null, "completed": false}
+        {
+          "type": "behavioral",
+          "task": "Write STAR story: taking ownership and driving a project to completion despite obstacles \u2014 pull raw material from a Partners Capital project",
+          "leetcode_slug": null,
+          "completed": false
+        },
+        {
+          "type": "other",
+          "task": "Review and re-attempt any LeetCode problem you missed or struggled with this week; add it to your spaced-repetition list",
+          "leetcode_slug": null,
+          "completed": false
+        }
       ],
       "sunday": [
-        {"type": "reading", "task": "OSTEP ch 5-6: Process API (fork/exec/wait) and Direct Execution", "leetcode_slug": null, "completed": false}
+        {
+          "type": "behavioral",
+          "task": "Write STAR story: going above and beyond to improve the end-user/customer experience (Chewy: customer obsession) \u2014 outline raw material from a Partners Capital project",
+          "leetcode_slug": null,
+          "completed": false
+        }
       ]
     }
   }

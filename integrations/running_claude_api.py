@@ -10,42 +10,38 @@ _DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "su
 # ── Core science ──────────────────────────────────────────────────────────────
 
 _SEILER_FRAMEWORK = """\
-TRAINING PHILOSOPHY — SEILER'S POLARIZED MODEL:
+TRAINING PHILOSOPHY — POLARIZED INTENSITY DISTRIBUTION:
 
-Stephen Seiler's research across elite endurance athletes (runners, cyclists, rowers,
-cross-country skiers) consistently finds that ~80% of training volume is performed at
-LOW intensity and ~20% at HIGH intensity, with very little in between. This is the
-most rigorously studied intensity distribution in endurance sport.
+Stephen Seiler's research across elite endurance athletes consistently finds that ~80%
+of training volume should be at LOW intensity and ~20% at HIGH intensity, with very
+little in between. This is the most rigorously studied intensity model in endurance sport.
 
-THREE-ZONE MODEL:
-  Zone 1 (easy, ~80% of all training): Below the first ventilatory threshold (VT1).
-    - Athlete can speak in complete, comfortable sentences
-    - Nose-breathing is possible
-    - RPE 3–4/10
-    - This is NOT "medium easy" — it feels almost too easy
-  Zone 2 (moderate, avoid): Between VT1 and lactate threshold (LT2/VT2).
-    - The "grey zone" or "black hole" — accumulates fatigue without the specific
-      adaptations of either easy OR hard work
-    - Most recreational athletes spend too much time here, thinking it's productive
-    - Elite athletes almost never train in Zone 2
-  Zone 3 (hard, ~20% of training): Above lactate threshold (LT2).
-    - Genuine discomfort; only a few words possible between breaths
-    - RPE 7–9/10
+THREE INTENSITY LEVELS:
+
+  EASY (RPE 3–4/10, ~80% of all training):
+    - Full conversational sentences throughout — you could recite a paragraph out loud
+    - Could nose-breathe the whole run if you wanted to
+    - This is genuinely slow, often slower than athletes expect. That is correct.
+    - Builds aerobic base: mitochondrial density, fat oxidation, cardiac output
+
+  MODERATE (RPE 5–6/10) — AVOID:
+    - The "grey zone": too hard for aerobic base gains, too easy for speed gains
+    - Accumulates fatigue without meaningful adaptation
+    - Most recreational runners spend too much time here because it feels productive
+    - If a run is supposed to be easy, it should be genuinely easy, not moderate
+
+  HARD / THRESHOLD (RPE 7–9/10, ~20% of all training):
+    - Comfortably hard — a few words possible between breaths, not full sentences
     - Tempo runs, threshold repeats, hill intervals
+    - Only in build and peak phases, at most once per week
 
-THE MODERATE INTENSITY TRAP:
-Most recreational runners over-train in Zone 2 ("comfortably hard") because it feels
-purposeful. This is one of the biggest training mistakes. Seiler's data shows it
-blunts both aerobic base adaptations AND quality work quality by leaving athletes
-chronically fatigued. If a run is easy, it should be genuinely easy. If it is a
-workout, it should be genuinely hard.
+THE KEY RULE: If it's easy, make it genuinely easy. If it's hard, make it genuinely hard.
+Never drift into the moderate middle.
 
 LONG RUNS:
-Always performed in Zone 1 — slow enough to converse freely. Long runs build
-mitochondrial density, fat oxidation, cardiac stroke volume, and connective tissue
-resilience. Pace is irrelevant; time on feet is the stimulus. For ultras, this is
-especially true: a 3-hour easy run builds more ultra-specific fitness than a
-2-hour moderate run.
+Always at easy effort (RPE 3–4) — slow enough to hold a full conversation. Long runs
+build aerobic infrastructure and connective tissue resilience. For ultras, time on feet
+is the stimulus, not pace: a 3-hour easy run is more valuable than a 2-hour moderate one.
 """
 
 _VDOT_FRAMEWORK = """\
@@ -120,7 +116,7 @@ Ultra-specific protocols:
   - Practice power hiking uphills — this is a genuine racing skill for ultras,
     not a fallback; elites walk the steep climbs by design
   - Nutrition practice during any run over 75–90 minutes
-  - Peak long run should reach ~50–60% of race distance
+  - Peak long run should reach ~70% of race distance (e.g. 29 mi for a 42-mile race, 35 mi for a 50-mile race)
 
 Taper science:
   - Three-week taper is well-supported by research
@@ -144,6 +140,12 @@ a personalized training plan. The athlete has filled out a basic intake form.
 Ask 3–4 targeted questions that would most meaningfully improve the plan.
 Do NOT re-ask things already covered in the intake. Focus on high-impact unknowns.
 
+DO NOT ask about:
+- Current weekly mileage or recent training volume — this is pulled automatically from
+  GPS activity data and is already available
+- General fitness level in terms of mileage — use qualitative questions instead
+- How many miles per week they run — already known from activity tracking
+
 Prioritize in this order:
 1. Recent race result (if training for marathon or shorter and not provided) — essential
    for calculating VDOT training paces. E.g.: "What's your most recent race result?
@@ -152,11 +154,11 @@ Prioritize in this order:
    stress fractures). What aggravates them and what modifications help.
 3. Schedule constraints — specific days that are off-limits, work travel, early mornings
    vs evenings, any weeks with unusual schedules.
-4. Training background — what training structure they've used before, what's worked,
-   what's caused problems.
-5. Terrain (especially for ultras) — trails vs roads, typical elevation in training,
-   race course profile.
-6. Tune-up races — any shorter races planned during the training cycle.
+4. Terrain (especially for ultras) — trails vs roads, typical elevation in training runs,
+   race course profile (e.g. "mostly flat" vs "10,000ft gain").
+5. Tune-up races — any shorter races planned during the training cycle.
+6. Training background — what has worked or caused problems in past training cycles
+   (NOT mileage-based — focus on structure, intensity, injury patterns).
 
 FORMAT: Return a plain numbered list. No preamble. No sign-off.
 1. ...
@@ -194,6 +196,7 @@ Rules:
 - Race week: phase = "race", weekly_miles = minimal (race day + easy shakeout only)
 - Never increase weekly_miles > 10% week-over-week
 - Include a cutback week (20–25% reduction) every 3–4 weeks
+- long_run_miles in the peak phase MUST reach 70% of race distance — this is a hard requirement
 """
 
 _CRITIQUE_SYSTEM = """\
@@ -208,7 +211,7 @@ Check the following and flag any issues:
 5. Taper: do the final 3 weeks before the race show roughly 70%/50%/30% of peak mileage?
 6. Starting mileage: is it reasonable given the athlete's stated current mileage?
 7. Peak mileage: does it realistically follow from the starting point?
-8. Long run: does it reach ~50–60% of race distance at peak?
+8. Long run: does it reach ~70% of race distance at peak? Flag if it falls below 65%.
 
 Be specific. Name the exact week numbers if you flag an issue.
 If the skeleton looks good, say so briefly. Keep your response under 300 words.
@@ -244,13 +247,46 @@ Day object schema:
 }}
 """
 
+_COACH_SYSTEM = f"""\
+You are a running coach making targeted adjustments to an athlete's active training plan.
+
+{_SEILER_FRAMEWORK}
+
+RULES:
+1. Make ONLY the minimum changes needed to address the athlete's message.
+2. Preserve the overall weekly training load and 80/20 intensity split.
+3. Never place two Zone 3 quality sessions on consecutive days.
+4. If the message reveals a lasting signal (injury, constraint, preference), set persistent_note.
+5. You may adjust the current week and the next 1–2 weeks only.
+6. Preserve any notes_actual fields — do not include them in your output.
+
+Return ONLY valid JSON — no markdown fences, no explanation:
+{{
+  "changes": {{
+    "<week_num_string>": {{
+      "<day_name>": {{
+        "type": "easy" | "workout" | "long" | "rest" | "race" | "other",
+        "distance_miles": <number>,
+        "notes": "<specific coaching instruction>"
+      }}
+    }}
+  }},
+  "feedback": "<1–3 sentences: what you changed and why, or why no change was needed>",
+  "persistent_note": "<one-sentence lasting signal, or null>"
+}}
+
+Include only weeks and days that actually changed.
+"""
+
 _EDIT_SYSTEM = f"""\
-You are an elite endurance running coach grounded in Stephen Seiler's polarized
-training research: ~80% of volume at genuine Zone 1 (conversational, RPE 3–4),
-~20% at genuine Zone 3 (above lactate threshold, RPE 7–9), with minimal Zone 2.
+You are an elite endurance running coach following polarized training principles:
+~80% of volume at easy effort (RPE 3–4, conversational, full sentences throughout),
+~20% at hard/threshold effort (RPE 7–9, comfortably hard), avoiding the moderate
+"grey zone" (RPE 5–6) that accumulates fatigue without meaningful gains.
 
 Apply the athlete's modification to the existing training week while preserving
 its overall training stimulus. Do not shift the intensity distribution.
+Use RPE targets and effort descriptors in notes — no zone number labels.
 
 OUTPUT FORMAT:
 Return ONLY valid JSON — no markdown fences, no explanation.
@@ -281,10 +317,13 @@ def _build_full_plan_system(use_vdot: bool) -> str:
     else:
         pace_section = (
             "\nINTENSITY PRESCRIPTION:\n"
-            "This is ultra or general fitness training. Use Seiler effort-based guidance\n"
-            "throughout: Zone 1/3 labels, RPE, conversational-pace cues. For long runs,\n"
-            "prescribe time and effort, not per-mile pace (e.g. '3 hours easy, Zone 1,\n"
-            "power hike anything over 8% grade'). Pace is secondary to time on feet.\n"
+            "This is ultra or general fitness training. Every workout note MUST include\n"
+            "an RPE target and an effort descriptor — no zone numbers. Examples:\n"
+            "  Easy run: 'RPE 3-4, conversational throughout — full sentences, not breathless'\n"
+            "  Long run: '2.5 hours at easy effort (RPE 3-4), power hike anything steep'\n"
+            "  Tempo: 'RPE 7-8, comfortably hard — a few words between breaths'\n"
+            "  Hill repeats: '6 × 60s uphill hard (RPE 8), walk back down to recover'\n"
+            "For long runs prescribe time, not miles. Pace is secondary to effort and time.\n"
         )
     return _FULL_PLAN_SYSTEM_BASE + pace_section
 
@@ -314,6 +353,7 @@ def _parse_intake(intake: dict) -> dict:
     recent_race_result = intake.get("recent_race_result", "").strip()
     qa_context = intake.get("qa_context", "").strip()
     training_history = intake.get("training_history", "").strip()
+    race_results_context = intake.get("race_results_context", "").strip()
 
     try:
         days_per_week = int(intake.get("days_per_week") or 4)
@@ -358,6 +398,7 @@ def _parse_intake(intake: dict) -> dict:
         "race_week_num": race_week_num,
         "use_vdot": use_vdot,
         "training_history": training_history,
+        "race_results_context": race_results_context,
     }
 
 
@@ -379,6 +420,8 @@ def _athlete_profile_text(p: dict) -> str:
         lines.append(f"- Recent race result: {p['recent_race_result']}")
     if p["notes"]:
         lines.append(f"- Additional context: {p['notes']}")
+    if p.get("race_results_context"):
+        lines.append(f"\nRACE RESULTS (max effort — use for VDOT pace calibration):\n{p['race_results_context']}")
     if p["qa_context"]:
         lines.append(f"\nINTAKE Q&A:\n{p['qa_context']}")
     if p["training_history"]:
@@ -395,10 +438,17 @@ def _week_list_text(p: dict) -> str:
 
 
 def _parse_json_response(raw: str) -> dict:
+    import re
     raw = raw.strip()
+    # Strip markdown code fences
     if raw.startswith("```"):
         lines = raw.split("\n")
-        raw = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+        raw = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:]).strip()
+    # If still not starting with {, extract the first JSON object found
+    if not raw.startswith("{"):
+        match = re.search(r'\{[\s\S]*\}', raw)
+        if match:
+            raw = match.group(0)
     return json.loads(raw)
 
 
@@ -438,6 +488,14 @@ def _generate_skeleton(p: dict, client: anthropic.Anthropic) -> dict:
     )
     if p["race_week_num"]:
         guidance += f"\n  Week {p['race_week_num']}: race week"
+
+    if p["race_miles"] and p["race_miles"] > 0:
+        target_long = round(p["race_miles"] * 0.70, 1)
+        guidance += (
+            f"\n\nLONG RUN REQUIREMENT: Peak long_run_miles MUST reach {target_long} miles "
+            f"(70% of the {p['race_miles']}-mile race). This is non-negotiable. "
+            f"The peak long run should appear in the peak phase, not taper."
+        )
 
     user_message = (
         f"Generate a periodization skeleton for {num_weeks} weeks.\n\n"
@@ -503,6 +561,15 @@ def generate_full_running_plan(intake: dict, progress_cb=None) -> dict:
     if training_history:
         intake = {**intake, "training_history": training_history}
 
+    # Include race results for VDOT calibration
+    try:
+        from utils.race_results import race_results_context
+        race_ctx = race_results_context()
+        if race_ctx and race_ctx != "None":
+            intake = {**intake, "race_results_context": race_ctx}
+    except Exception:
+        pass
+
     p = _parse_intake(intake)
     client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
     full_plan_system = _build_full_plan_system(p["use_vdot"])
@@ -537,11 +604,25 @@ def generate_full_running_plan(intake: dict, progress_cb=None) -> dict:
 
     critique_text = f"\nSPORTS SCIENCE REVIEW:\n{critique}" if critique else ""
 
+    # Identify past days in Week 1 that must be rest (plan starts mid-week)
+    start_dt = date.fromisoformat(p["start_date"])
+    week1_monday = start_dt - timedelta(days=start_dt.weekday())
+    past_days_note = ""
+    if start_dt > week1_monday:
+        past_days = [_DAYS[i] for i in range(start_dt.weekday())]
+        past_days_note = (
+            f"\nIMPORTANT — Week 1 starts mid-week: the plan begins on "
+            f"{start_dt.strftime('%A %b %d')}. The following days are already in the past "
+            f"and MUST be set as rest days (distance_miles: 0): "
+            f"{', '.join(past_days)}. Do not assign any runs to these days.\n"
+        )
+
     user_message = (
         f"Generate a complete {p['num_weeks']}-week daily training plan.\n\n"
         f"ATHLETE:\n{_athlete_profile_text(p)}\n\n"
         f"{skeleton_text}"
-        f"{critique_text}\n\n"
+        f"{critique_text}"
+        f"{past_days_note}\n\n"
         f"WEEKS (all must appear as keys in output JSON):\n{_week_list_text(p)}"
     )
 
@@ -615,4 +696,58 @@ def edit_weekly_running_plan(
     )
 
     raw = next(b.text for b in reversed(message.content) if hasattr(b, "text"))
+    return _parse_json_response(raw)
+
+
+# ── Live coach ────────────────────────────────────────────────────────────────
+
+def coach_running_plan(
+    active_plan: dict,
+    current_week_num: int,
+    user_message: str,
+    race_results_ctx: str = "",
+    coaching_notes_ctx: str = "",
+) -> dict:
+    """Make targeted adjustments to the running plan based on prose user message.
+
+    Returns {"changes": {week_num_str: {day: {...}}}, "feedback": str, "persistent_note": str|None}
+    """
+    weeks_ctx = []
+    for wnum in range(max(1, current_week_num - 1), current_week_num + 3):
+        week = active_plan.get("weeks", {}).get(str(wnum))
+        if not week:
+            continue
+        label = f"Week {wnum}" + (" (current)" if wnum == current_week_num else "")
+        weeks_ctx.append(label + ":")
+        for day in _DAYS:
+            d = week.get(day, {})
+            run_type = d.get("type", "rest")
+            if run_type == "rest" or not d.get("distance_miles"):
+                weeks_ctx.append(f"  {day}: rest")
+            else:
+                line = f"  {day}: {run_type} {d.get('distance_miles')}mi"
+                if d.get("notes"):
+                    line += f" — {d['notes']}"
+                if d.get("notes_actual"):
+                    line += f" [actual: {d['notes_actual']}]"
+                weeks_ctx.append(line)
+
+    user_msg = (
+        f"Current plan week: {current_week_num}\n\n"
+        f"PLAN:\n" + "\n".join(weeks_ctx) + "\n\n"
+        f"RACE RESULTS (all max effort, use for VDOT pacing):\n{race_results_ctx or 'None'}\n\n"
+        f"PERSISTENT COACHING NOTES:\n{coaching_notes_ctx or 'None'}\n\n"
+        f"ATHLETE MESSAGE:\n{user_message}"
+    )
+
+    client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=4000,
+        system=_COACH_SYSTEM,
+        messages=[{"role": "user", "content": user_msg}],
+    )
+    raw = next((b.text for b in reversed(message.content) if hasattr(b, "text")), "")
+    if not raw:
+        raise ValueError("Claude returned an empty response")
     return _parse_json_response(raw)

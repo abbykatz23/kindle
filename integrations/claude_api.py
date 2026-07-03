@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, datetime, timedelta
 
 import anthropic
 
@@ -118,6 +118,25 @@ def _build_context(week_label: str, plan: dict, curriculum: dict) -> dict:
         else:
             status = "significantly behind — prioritize carry-over tasks and reduce new material this week"
 
+    # Slugs already present in the target week (inserted by nightly carryover — don't re-add)
+    target_week_data = interview_prep.get(week_label, {})
+    already_in_week_slugs: set[str] = set()
+    for day in _DAYS:
+        for task in target_week_data.get(day, []):
+            if task.get("leetcode_slug") and task.get("type") == "leetcode":
+                already_in_week_slugs.add(task["leetcode_slug"])
+
+    # Filter overdue list: exclude slugs that are already carried into this week
+    overdue_tasks = [t for t in overdue_tasks if t.get("leetcode_slug") not in already_in_week_slugs]
+
+    # Ahead-of-schedule completions from nightly state update
+    from utils.state import load_state
+    ahead_slugs: set[str] = set(load_state().get("leetcode_ahead", []))
+
+    # Persistent coaching signals
+    from utils.coaching_notes import coaching_notes_context
+    coaching_notes = coaching_notes_context()
+
     return {
         "week_num": week_num,
         "total_weeks": total_weeks,
@@ -128,6 +147,9 @@ def _build_context(week_label: str, plan: dict, curriculum: dict) -> dict:
         "status": status,
         "overdue_tasks": overdue_tasks,
         "recent_summaries": recent_summaries,
+        "already_in_week_slugs": already_in_week_slugs,
+        "ahead_slugs": ahead_slugs,
+        "coaching_notes": coaching_notes,
     }
 
 
@@ -231,6 +253,28 @@ def generate_weekly_interview_prep(
     intensity_instruction = _INTENSITY_INSTRUCTIONS.get(intensity, _INTENSITY_INSTRUCTIONS["normal"])
     custom_section = f"\nUSER INSTRUCTIONS:\n  {custom_prompt}" if custom_prompt else ""
 
+    # Determine which days of this week are still in the future (including today)
+    week_monday = _get_week_monday(week_label)
+    today_local = date.today()
+    available_days = [_DAYS[i] for i in range(7) if week_monday + timedelta(days=i) >= today_local]
+    past_days = [d for d in _DAYS if d not in available_days]
+    days_constraint = (
+        f"\nSCHEDULING CONSTRAINT: Only assign tasks to these days (today onwards): {', '.join(available_days)}."
+        + (f" Do NOT assign anything to {', '.join(past_days)} — they are already past." if past_days else "")
+    )
+
+    if ctx["already_in_week_slugs"]:
+        already_section = "\n\nSLUGS ALREADY IN THIS WEEK (inserted by nightly carry-over — DO NOT add these again):\n" + \
+            "\n".join(f"  - {s}" for s in sorted(ctx["already_in_week_slugs"]))
+    else:
+        already_section = ""
+
+    if ctx["ahead_slugs"]:
+        ahead_section = "\n\nAHEAD OF SCHEDULE — ALREADY ACCEPTED (skip these in any upcoming week's plan):\n" + \
+            "\n".join(f"  - {s}" for s in sorted(ctx["ahead_slugs"]))
+    else:
+        ahead_section = ""
+
     user_message = f"""\
 Generate interview prep tasks for {week_label} (Week {ctx['week_num']} of {ctx['total_weeks']}).
 
@@ -254,7 +298,10 @@ OVERDUE TASKS (incomplete from past weeks — schedule these first):
 
 RECENT WEEK SUMMARIES:
 {recent_text}
-{existing_section}{custom_section}
+{existing_section}{already_section}{ahead_section}{days_constraint}{custom_section}
+
+PERSISTENT COACHING NOTES (signals from the user over time — let these inform pacing and topic choices):
+{ctx['coaching_notes']}
 
 Generate a realistic, achievable week. Distribute tasks sensibly across days. \
 Carry-over and completed tasks take priority. Honour any user instructions above \
@@ -275,6 +322,202 @@ even if they conflict with the default pacing guidance.\
     raw = next(b.text for b in reversed(message.content) if hasattr(b, "text")).strip()
 
     # Strip markdown fences if Claude wraps anyway
+    if raw.startswith("```"):
+        lines = raw.split("\n")
+        raw = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+
+    result = json.loads(raw)
+    for d in past_days:
+        result.pop(d, None)
+    return result
+
+
+_SUMMARY_SYSTEM = """\
+You are an encouraging interview prep coach writing a daily briefing for a candidate.
+
+Return ONLY valid JSON — no markdown, no explanation:
+{
+  "summary": "<2-3 honest, constructive sentences on overall progress — reference specific numbers>",
+  "encouragement": "<1-2 sentences of genuine encouragement grounded in what they have actually done>",
+  "motivation_snippet": "<1-2 sentences about why landing a role at ONE specific target company would be exciting — \
+be technically specific, not generic. Rotate which company you highlight each time.>",
+  "pointers": ["<specific tactical tip tailored to current phase/topic>"],
+  "suggestions": ["<specific, actionable plan adjustment phrased as an action>"]
+}
+
+RULES:
+- pointers: 1-3 items. Concrete, phase-appropriate study tips.
+- suggestions: 2-4 items. Self-contained, specific adjustments to the plan. Each will be presented \
+as a checkbox the candidate can send to their coach. Phrase as an action: "Add one extra DP problem \
+this week", "Move Thursday's system design to Tuesday so you have more energy for it".
+- motivation_snippet: pick ONE company from their target list. Highlight something technically exciting \
+and specific about working there — a system, a team, a research direction, a product challenge.
+- If on track or ahead, say so clearly. Do not invent concern.
+- If significantly behind, be honest and include recovery steps in suggestions.\
+"""
+
+
+def generate_interview_summary(plan: dict, curriculum: dict) -> dict:
+    """Generate the daily coaching summary: progress, encouragement, motivation, pointers, suggestions."""
+    from utils.coaching_notes import coaching_notes_context
+    from utils.interviews import interviews_context
+
+    today = date.today()
+    week_label = today.strftime("%G-W%V")
+    start_date = date.fromisoformat(curriculum.get("start_date", today.isoformat()))
+    start_monday = start_date - timedelta(days=start_date.weekday())
+    today_monday = today - timedelta(days=today.weekday())
+    week_num = max(1, (today_monday - start_monday).days // 7 + 1)
+    total_weeks = curriculum.get("total_weeks", 26)
+
+    # Compute phase
+    current_phase = curriculum.get("phases", [{}])[-1]
+    for phase in curriculum.get("phases", []):
+        if phase.get("weeks_start", 0) <= week_num <= phase.get("weeks_end", 999):
+            current_phase = phase
+            break
+
+    # Overall completion stats
+    interview_prep = plan.get("interview_prep", {})
+    total_assigned = total_completed = lc_completed = 0
+    for wl, week_data in interview_prep.items():
+        for day_tasks in week_data.values():
+            for task in day_tasks:
+                total_assigned += 1
+                if task.get("completed"):
+                    total_completed += 1
+                    if task.get("type") == "leetcode":
+                        lc_completed += 1
+
+    completion_pct = round(total_completed / total_assigned * 100) if total_assigned else 100
+
+    # Topic order progress
+    topic_order = curriculum.get("lc_topic_order", [])
+    topic_progress = ""
+    if topic_order:
+        topic_idx = min(len(topic_order) - 1, int((week_num - 1) * len(topic_order) / total_weeks))
+        topic_progress = f"Current topic: {topic_order[topic_idx]} ({topic_idx + 1}/{len(topic_order)})"
+
+    user_msg = f"""\
+Candidate status:
+  Week: {week_num} of {total_weeks}
+  Phase: {current_phase.get('name', 'unknown')} — {current_phase.get('focus', '')[:120]}
+  Overall completion: {total_completed}/{total_assigned} tasks ({completion_pct}%)
+  LeetCode problems completed: {lc_completed}
+  {topic_progress}
+  Goal: {curriculum.get('goal', '')}
+  Target companies: derived from goal above
+
+COACHING NOTES (persistent signals):
+{coaching_notes_context()}
+
+INTERVIEW OUTCOMES (actual interviews logged):
+{interviews_context()}
+
+Write today's coaching briefing.\
+"""
+
+    client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
+    message = client.messages.create(
+        model=Config.CLAUDE_MODEL,
+        max_tokens=1024,
+        system=_SUMMARY_SYSTEM,
+        messages=[{"role": "user", "content": user_msg}],
+    )
+
+    raw = message.content[0].text.strip()
+    if raw.startswith("```"):
+        lines = raw.split("\n")
+        raw = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+
+    result = json.loads(raw)
+    result["generated_at"] = datetime.now().isoformat(timespec="seconds")
+    return result
+
+
+_COACH_SYSTEM = """\
+You are an interview prep coach making targeted adjustments to a candidate's weekly plan.
+
+RULES:
+1. Make ONLY the minimum changes needed to address the request. Do not restructure the whole plan.
+2. Never modify or remove tasks where completed is true.
+3. Preserve all task fields (type, leetcode_slug, carryover_from, etc.) when moving tasks.
+4. If changes span multiple weeks (e.g. "push to next week"), include both weeks in changes.
+5. If the message contains a lasting signal — a struggle, preference, or constraint that should \
+shape future plans — set persistent_note to a concise one-sentence summary. Otherwise null.
+
+Return ONLY valid JSON — no markdown fences, no explanation:
+{
+  "changes": {
+    "<week_label>": { "<day_name>": [<full updated task list for that day>] }
+  },
+  "feedback": "<1-3 sentences: what you changed and why, or why no change was needed>",
+  "persistent_note": "<one sentence summary of any lasting signal, or null>"
+}
+
+Include only week labels and day names that actually changed. Omit unchanged days entirely.\
+"""
+
+
+def coach_interview_week(
+    week_label: str,
+    plan: dict,
+    curriculum: dict,
+    user_message: str,
+) -> dict:
+    """
+    Make targeted adjustments to the current (and optionally next) week's plan.
+
+    Returns {"changes": {week_label: {day: [tasks]}}, "feedback": str, "persistent_note": str|None}
+    """
+    from utils.coaching_notes import coaching_notes_context
+
+    next_week_monday = _get_week_monday(week_label) + timedelta(weeks=1)
+    next_week_label = next_week_monday.strftime("%G-W%V")
+
+    current_week_data = plan.get("interview_prep", {}).get(week_label, {})
+    next_week_data = plan.get("interview_prep", {}).get(next_week_label, {})
+
+    # Derive current phase for context
+    start_date = date.fromisoformat(curriculum.get("start_date", date.today().isoformat()))
+    monday = _get_week_monday(week_label)
+    week_num = max(1, (monday - start_date).days // 7 + 1)
+    current_phase = curriculum.get("phases", [{}])[-1]
+    for phase in curriculum.get("phases", []):
+        if phase.get("weeks_start", 0) <= week_num <= phase.get("weeks_end", 999):
+            current_phase = phase
+            break
+
+    from utils.interviews import interviews_context
+
+    user_msg = f"""\
+Current week: {week_label} (Week {week_num} — phase: {current_phase.get('name', 'unknown')})
+
+CURRENT WEEK TASKS:
+{json.dumps(current_week_data, indent=2)}
+
+NEXT WEEK ({next_week_label}) TASKS (for reference if you need to move tasks there):
+{json.dumps(next_week_data, indent=2) if next_week_data else "  (no plan yet — you may add tasks here if needed)"}
+
+PERSISTENT COACHING NOTES:
+{coaching_notes_context()}
+
+INTERVIEW OUTCOMES (actual interviews logged):
+{interviews_context()}
+
+USER MESSAGE: {user_message}
+"""
+
+    client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
+    message = client.messages.create(
+        model=Config.CLAUDE_MODEL,
+        max_tokens=2048,
+        thinking={"type": "adaptive"},
+        system=_COACH_SYSTEM,
+        messages=[{"role": "user", "content": user_msg}],
+    )
+
+    raw = next(b.text for b in reversed(message.content) if hasattr(b, "text")).strip()
     if raw.startswith("```"):
         lines = raw.split("\n")
         raw = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])

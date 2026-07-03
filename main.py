@@ -1,13 +1,29 @@
-"""Render the dashboard and push it to the Kindle. Run from project root."""
+"""Render the dashboard (or a detail view) and push it to the Kindle. Run from project root."""
 import sys
 from datetime import date, datetime, timedelta
 
 from config import Config
 from dashboard.push import push_to_kindle
-from dashboard.render import render_dashboard, save_dashboard
+from dashboard.render import (
+    render_birthdays_detail,
+    render_dashboard,
+    render_interview_detail,
+    render_running_detail,
+    save_dashboard,
+)
+from integrations.intervals_api import is_run_completed_today
 from integrations.leetcode import get_recent_accepted_submissions
 from utils.completions import get_manual_completions
-from utils.plan import get_todays_run_plan, get_upcoming_birthdays, get_week_task_lists
+from utils.kindle_state import get_view
+from utils.plan import (
+    get_todays_run_plan,
+    get_upcoming_birthdays,
+    get_week_run_plan,
+    get_week_task_lists,
+    load_birthdays,
+    load_plan,
+)
+from utils.run_feedback import get_or_generate_feedback
 
 
 def _format_now(now: datetime) -> str:
@@ -56,26 +72,49 @@ def _attach_completion(today: date) -> tuple[list[dict], list[dict]]:
 
 def run(push: bool = True) -> None:
     today = date.today()
-    last_refreshed_label = _format_now(datetime.now())
+    view = get_view()
 
-    leetcode_tasks, other_tasks = _attach_completion(today)
+    if view == "running":
+        week_plan = get_week_run_plan(today)
+        run_completed = is_run_completed_today()
+        img = render_running_detail(week_plan, today, run_completed)
 
-    run_plan = get_todays_run_plan(today)
-    run_completed = False
+    elif view == "interview":
+        leetcode_tasks, other_tasks = _attach_completion(today)
+        img = render_interview_detail(leetcode_tasks + other_tasks, today)
 
-    birthdays = get_upcoming_birthdays(today, days_ahead=7)
+    elif view == "birthdays":
+        img = render_birthdays_detail(load_birthdays(), today)
 
-    img = render_dashboard(
-        leetcode_tasks=leetcode_tasks,
-        other_tasks=other_tasks,
-        run=run_plan,
-        run_completed=run_completed,
-        birthdays=birthdays,
-        last_refreshed_label=last_refreshed_label,
-    )
+    else:
+        last_refreshed_label = _format_now(datetime.now())
+        leetcode_tasks, other_tasks = _attach_completion(today)
+        interview_tasks = leetcode_tasks + other_tasks
+        run_plan = get_todays_run_plan(today)
+        run_completed = is_run_completed_today()
+        birthdays = get_upcoming_birthdays(today, days_ahead=7)
+
+        run_feedback = None
+        if run_completed and run_plan:
+            week_plan = get_week_run_plan(today)
+            active = (load_plan().get("running") or {}).get("active") or {}
+            plan_meta = {
+                "race_name": active.get("race_name", ""),
+                "race_date": active.get("race_date", ""),
+            }
+            run_feedback = get_or_generate_feedback(today, run_plan, week_plan, plan_meta)
+
+        img = render_dashboard(
+            interview_tasks=interview_tasks,
+            run=run_plan,
+            run_completed=run_completed,
+            birthdays=birthdays,
+            last_refreshed_label=last_refreshed_label,
+            run_feedback=run_feedback,
+        )
 
     image_path = save_dashboard(img)
-    print(f"Dashboard saved to {image_path}")
+    print(f"Dashboard saved to {image_path} (view={view})")
 
     if push:
         push_to_kindle(image_path)

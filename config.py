@@ -14,6 +14,11 @@ class Config:
     PLAN_FILE = DATA_DIR / "plan.json"
     BIRTHDAYS_FILE = DATA_DIR / "birthdays.json"
     STATE_FILE = DATA_DIR / "state.json"
+    COACHING_NOTES_FILE = DATA_DIR / "coaching_notes.json"
+    INTERVIEW_SUMMARY_FILE = DATA_DIR / "interview_summary.json"
+    INTERVIEWS_FILE = DATA_DIR / "interviews.json"
+    RACE_RESULTS_FILE = DATA_DIR / "race_results.json"
+    RUNNING_COACHING_NOTES_FILE = DATA_DIR / "running_coaching_notes.json"
     OUTPUT_IMAGE_PATH = BASE_DIR / "output" / "dashboard.png"
 
     # Kindle SSH

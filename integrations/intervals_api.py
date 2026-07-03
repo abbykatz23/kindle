@@ -144,7 +144,187 @@ def summarize_training_history(activities: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def get_todays_run_detail() -> dict | None:
+    """Return the first run activity logged today, with distance/pace/splits, or None."""
+    if not Config.INTERVALS_API_KEY or not Config.INTERVALS_ATHLETE_ID:
+        return None
+    today_str = date.today().isoformat()
+    try:
+        r = requests.get(
+            f"{_BASE}/athlete/{Config.INTERVALS_ATHLETE_ID}/activities",
+            auth=_auth(),
+            params={
+                "oldest": today_str,
+                "newest": today_str,
+                "fields": "name,start_date_local,type,distance,moving_time,average_speed,laps",
+            },
+            timeout=10,
+        )
+        r.raise_for_status()
+    except Exception:
+        return None
+    for a in r.json():
+        if a.get("_note") or a.get("type") not in ("Run", "TrailRun", "VirtualRun"):
+            continue
+        distance_m = a.get("distance") or 0
+        moving_time_s = a.get("moving_time") or 0
+        return {
+            "name": a.get("name", ""),
+            "distance_miles": _meters_to_miles(distance_m),
+            "moving_time_s": moving_time_s,
+            "pace_per_mile": _pace_per_mile(distance_m, moving_time_s),
+            "laps": a.get("laps") or [],
+        }
+    return None
+
+
+def is_run_completed_today() -> bool:
+    """Return True if a run activity was logged today in intervals.icu."""
+    if not Config.INTERVALS_API_KEY or not Config.INTERVALS_ATHLETE_ID:
+        return False
+    today_str = date.today().isoformat()
+    try:
+        r = requests.get(
+            f"{_BASE}/athlete/{Config.INTERVALS_ATHLETE_ID}/activities",
+            auth=_auth(),
+            params={"oldest": today_str, "newest": today_str, "fields": "type,start_date_local"},
+            timeout=10,
+        )
+        r.raise_for_status()
+    except Exception:
+        return False
+    return any(
+        a.get("type") in ("Run", "TrailRun", "VirtualRun")
+        for a in r.json()
+        if not a.get("_note")
+    )
+
+
 def get_training_context() -> str:
     """Top-level function: fetch + summarize. Returns '' if no data available."""
     activities = fetch_recent_activities()
     return summarize_training_history(activities)
+
+
+# ── Week compliance ───────────────────────────────────────────────────────────
+
+_COMPLIANCE_THRESHOLD_MILES = 0.55
+_PLAN_DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+
+def analyze_week_compliance(week_plan: dict, week_monday: date, plan_start_date: str = "") -> dict:
+    """Compare assigned plan vs actual intervals.icu activities for past days of the week.
+
+    Returns:
+        has_data: False if no native activity data is available at all
+        planned_miles: total assigned miles for evaluated (past) days
+        actual_miles: total actual miles logged for those days
+        missed_runs: list of {day, planned, date} where run was fully skipped
+        short_runs: list of {day, planned, actual, date} where gap > threshold
+        summary_text: human-readable string for Claude prompt (empty if compliant)
+    """
+    empty = {
+        "has_data": False,
+        "planned_miles": 0.0,
+        "actual_miles": 0.0,
+        "missed_runs": [],
+        "short_runs": [],
+        "summary_text": "",
+    }
+    if not Config.INTERVALS_API_KEY or not Config.INTERVALS_ATHLETE_ID:
+        return empty
+
+    today = date.today()
+    week_sunday = week_monday + timedelta(days=6)
+    fetch_until = min(today, week_sunday)
+
+    try:
+        r = requests.get(
+            f"{_BASE}/athlete/{Config.INTERVALS_ATHLETE_ID}/activities",
+            auth=_auth(),
+            params={
+                "oldest": week_monday.isoformat(),
+                "newest": fetch_until.isoformat(),
+                "fields": "start_date_local,type,distance",
+            },
+            timeout=15,
+        )
+        r.raise_for_status()
+    except Exception:
+        return empty
+
+    actuals: dict[str, float] = defaultdict(float)
+    for a in r.json():
+        if a.get("_note") or a.get("type") not in ("Run", "TrailRun", "VirtualRun"):
+            continue
+        day_str = a.get("start_date_local", "")[:10]
+        actuals[day_str] += _meters_to_miles(a.get("distance") or 0)
+
+    if not actuals:
+        return empty
+
+    missed_runs = []
+    short_runs = []
+    planned_total = 0.0
+    actual_total = 0.0
+
+    plan_start_dt = date.fromisoformat(plan_start_date) if plan_start_date else week_monday
+
+    for i, day_name in enumerate(_PLAN_DAYS):
+        day_date = week_monday + timedelta(days=i)
+        if day_date >= today or day_date < plan_start_dt:
+            continue
+        day_plan = week_plan.get(day_name, {})
+        planned_type = day_plan.get("type", "rest")
+        planned_miles = float(day_plan.get("distance_miles") or 0)
+        if planned_type == "rest" or planned_miles == 0:
+            continue
+        actual_miles = actuals.get(day_date.isoformat(), 0.0)
+        planned_total += planned_miles
+        actual_total += actual_miles
+        gap = planned_miles - actual_miles
+        if actual_miles == 0:
+            missed_runs.append({"day": day_name, "planned": planned_miles, "date": day_date.isoformat()})
+        elif gap > _COMPLIANCE_THRESHOLD_MILES:
+            short_runs.append({
+                "day": day_name,
+                "planned": planned_miles,
+                "actual": round(actual_miles, 2),
+                "date": day_date.isoformat(),
+            })
+
+    if not missed_runs and not short_runs:
+        return {
+            "has_data": True,
+            "planned_miles": round(planned_total, 2),
+            "actual_miles": round(actual_total, 2),
+            "missed_runs": [],
+            "short_runs": [],
+            "summary_text": "",
+        }
+
+    lines = ["Training compliance gaps detected this week:"]
+    for m in missed_runs:
+        lines.append(f"  - {m['day'].title()} ({m['date']}): {m['planned']} mi assigned — run not completed")
+    for s in short_runs:
+        lines.append(
+            f"  - {s['day'].title()} ({s['date']}): {s['planned']} mi assigned — "
+            f"{s['actual']} mi completed (short by {round(s['planned'] - s['actual'], 2)} mi)"
+        )
+    lines.append(
+        f"Total so far: planned {round(planned_total, 1)} mi, "
+        f"completed {round(actual_total, 1)} mi for evaluated days."
+    )
+    lines.append(
+        "Please adjust the remaining days of this week to redistribute the missed volume "
+        "where appropriate, keeping the overall training structure and intensity distribution intact."
+    )
+
+    return {
+        "has_data": True,
+        "planned_miles": round(planned_total, 2),
+        "actual_miles": round(actual_total, 2),
+        "missed_runs": missed_runs,
+        "short_runs": short_runs,
+        "summary_text": "\n".join(lines),
+    }

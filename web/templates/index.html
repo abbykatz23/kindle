@@ -8,10 +8,12 @@
         <button type="button" class="tab-button btn {% if default_tab == 'running' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'running' %}true{% else %}false{% endif %}" data-target="#running">Running Plan</button>
         <button type="button" class="tab-button btn {% if default_tab == 'birthdays' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'birthdays' %}true{% else %}false{% endif %}" data-target="#birthdays">Birthdays</button>
         <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center;">
+            {% if curriculum and curriculum.target_date %}
             <div class="countdown-badge{% if default_tab != 'interview' %} countdown-badge--hidden{% endif %}" id="days-countdown-badge" style="margin-left:0">
                 <span class="countdown-badge__num" id="countdown-days">—</span>
-                <span class="countdown-badge__label">days until 2027</span>
+                <span class="countdown-badge__label">days until interviews</span>
             </div>
+            {% endif %}
             {% if active_plan and race_date_str %}
             <div class="countdown-badge{% if default_tab != 'running' %} countdown-badge--hidden{% endif %}" id="race-countdown-badge" style="margin-left:0">
                 <span class="countdown-badge__num" id="race-countdown-days">—</span>
@@ -31,6 +33,49 @@
 
         {# ── Interview Prep tab ── #}
         <section id="interview" class="tab-content" aria-hidden="{% if default_tab == 'interview' %}false{% else %}true{% endif %}">
+
+            {# Curriculum header #}
+            <div id="curriculum-header-block">
+            {% if curriculum %}
+            <div class="curriculum-header">
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Active curriculum</div>
+                    <div style="font-weight:600;font-size:.95rem;margin-top:.2rem;">{{ curriculum.goal }}</div>
+                    <div style="font-size:.78rem;color:var(--muted);margin-top:.15rem;display:flex;gap:.75rem;flex-wrap:wrap;">
+                        <span>{{ curriculum.total_weeks }} weeks &middot; {{ curriculum.start_date }} → {{ curriculum.target_date }}</span>
+                        {% if current_topic_name %}
+                        <span style="color:var(--accent);">▸ {{ current_topic_name }} ({{ topic_idx + 1 }}/{{ topics_total }} topics)</span>
+                        {% endif %}
+                        {% if lc_completed %}
+                        <span>{{ lc_completed }} LC solved</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <button class="btn btn--claude" onclick="return openCurriculumModal()" style="flex-shrink:0;font-size:.875rem;padding:.5rem .8rem;">✦ Regenerate</button>
+            </div>
+            {% else %}
+            <div class="curriculum-empty">
+                <p style="color:var(--muted);font-size:.9rem;">No interview curriculum yet.</p>
+                <button class="btn btn--claude" onclick="return openCurriculumModal()">✦ Set up curriculum</button>
+            </div>
+            {% endif %}
+            </div>
+
+            {# Curriculum generation skeleton #}
+            <div id="curriculum-skeleton" style="display:none;padding:.25rem 0;">
+                <div class="weeks">
+                    {% for i in range(3) %}
+                    <div class="iday">
+                        <div class="skel" style="height:.85rem;width:30%;margin-bottom:.75rem;"></div>
+                        <div class="skel" style="height:2.75rem;"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="skel-status" id="curriculum-skel-msg">
+                    <span class="spinner"></span>
+                    Claude is designing your curriculum...
+                </div>
+            </div>
 
             {# Overview — hidden while Claude is generating #}
             <div class="interview-overview">
@@ -71,7 +116,8 @@
                 </details>
                 {% endif %}
 
-                {# Current week hero #}
+                {# Current week hero — only shown once a curriculum and plan exist #}
+                {% if curriculum %}
                 {% set imonday = get_week_monday(current_week) %}
                 {% set isunday = imonday + timedelta(days=6) %}
                 {% set current_interview = plan.get('interview_prep', {}).get(current_week, {}) %}
@@ -88,21 +134,53 @@
                         </div>
                     </div>
 
-                    {# 7-day pill grid with today emphasis #}
-                    <div class="week-card__days-hero">
+                    {# Behind banner #}
+                    {% if total_carryovers > 0 %}
+                    <div class="behind-banner{% if total_carryovers >= 3 %} behind-banner--red{% endif %}">
+                        {% if total_carryovers >= 3 %}⚠{% else %}↩{% endif %}
+                        {{ total_carryovers }} carried-over problem{% if total_carryovers != 1 %}s{% endif %} from previous days
+                    </div>
+                    {% endif %}
+
+                    {# 7-day pill grid — clickable #}
+                    <div class="week-card__days-hero" id="day-pills">
                         {% for day in days %}
                         {% set day_tasks = current_interview.get(day, []) %}
                         {% set is_today = day == today.strftime('%A').lower() %}
-                        <div class="day-pill-hero{% if is_today %} day-pill-hero--today{% endif %}">
+                        {% set n_carryovers = carryover_by_day.get(day, 0) %}
+                        <div class="day-pill-hero{% if is_today %} day-pill-hero--today{% elif n_carryovers > 0 %} day-pill-hero--behind{% endif %}" data-day="{{ day }}" onclick="selectDay('{{ day }}')" style="cursor:pointer;">
                             <span class="day-pill-hero__name">{{ day[:3].title() }}</span>
                             {% if day_tasks %}
                             <span class="day-pill-hero__type">{{ day_tasks|length }} task{% if day_tasks|length != 1 %}s{% endif %}</span>
                             {% else %}
                             <span class="day-pill-hero__type" style="color:var(--muted)">—</span>
                             {% endif %}
+                            {% if n_carryovers > 0 %}
+                            <span class="day-pill-hero__carryover">↩{{ n_carryovers }}</span>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
+
+                    {# Per-day task panels #}
+                    {% for day in days %}
+                    {% set day_tasks = current_interview.get(day, []) %}
+                    <div class="day-task-panel" id="day-panel-{{ day }}" style="display:none;">
+                        {% if day_tasks %}
+                        <ul class="day-task-list">
+                            {% for task in day_tasks %}
+                            <li class="day-task-item{% if task.get('completed') %} day-task-item--done{% endif %}">
+                                <span class="day-task-badge day-task-badge--{{ task.get('type','other') }}">{{ task.get('type','other').replace('_',' ') }}</span>
+                                <span class="day-task-text">{{ task.get('task','') }}</span>
+                                {% if task.get('carryover_from') %}<span class="carryover-badge">↩ carried over</span>{% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="muted" style="font-size:.85rem;padding:.35rem 0;">No tasks scheduled.</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
 
                     {% if cstats.total > 0 %}
                     <div class="iweek-pills">
@@ -115,9 +193,53 @@
                     <span class="muted" style="font-size:.78rem;">{{ cstats.done }}/{{ cstats.total }} done</span>
                     {% endif %}
                 </div>
-
+                {% endif %}{# /if curriculum #}
 
                 </section>
+
+                {# Daily coaching summary #}
+                {% if interview_summary %}
+                <div class="summary-panel">
+                    <div class="summary-panel__body">
+                        <p class="summary-panel__summary">{{ interview_summary.summary }}</p>
+                        <p class="summary-panel__encourage">{{ interview_summary.encouragement }}</p>
+                        {% if interview_summary.motivation_snippet %}
+                        <p class="summary-panel__motivation">✦ {{ interview_summary.motivation_snippet }}</p>
+                        {% endif %}
+                        {% if interview_summary.pointers %}
+                        <ul class="summary-panel__pointers">
+                            {% for tip in interview_summary.pointers %}
+                            <li>{{ tip }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                        {% if interview_summary.suggestions %}
+                        <div class="summary-panel__suggestions">
+                            <div class="summary-panel__suggestions-label">Suggested adjustments</div>
+                            {% for s in interview_summary.suggestions %}
+                            <label class="summary-suggestion">
+                                <input type="checkbox" class="suggestion-cb" value="{{ s }}">
+                                <span>{{ s }}</span>
+                            </label>
+                            {% endfor %}
+                            <button class="btn btn--claude summary-apply-btn" onclick="applyCheckedSuggestions('{{ current_week }}')" style="margin-top:.5rem;font-size:.8rem;padding:.4rem .7rem;">Apply selected →</button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="summary-panel__meta">Updated {{ interview_summary.generated_at[:10] if interview_summary.generated_at else 'today' }}</div>
+                </div>
+                {% endif %}
+
+                {# Live coach input #}
+                {% if curriculum %}
+                <div class="coach-panel">
+                    <div id="coach-feedback-banner" class="coach-feedback" style="display:none;"></div>
+                    <div class="coach-input-row">
+                        <textarea id="coach-message" class="coach-textarea" placeholder="Ask your coach… e.g. 'push my reading to next week' or 'I keep struggling with dynamic programming'" rows="2"></textarea>
+                        <button id="coach-submit" class="btn btn--claude" onclick="submitCoach('{{ current_week }}')">✦ Ask coach</button>
+                    </div>
+                </div>
+                {% endif %}
             </div>{# /interview-overview #}
 
             {# Skeleton shown during Claude generation #}
@@ -139,7 +261,125 @@
                 </div>
             </div>
 
+        {# ── Interview outcomes ── #}
+        <div style="margin-top:1.5rem;">
+            <details class="past-weeks">
+                <summary class="past-weeks__summary">Interview outcomes ({{ interviews|length }})</summary>
+                <div style="margin-top:.75rem;">
+                    <form action="{{ url_for('main.add_interview_outcome') }}" method="post" class="outcome-form">
+                        <input class="field__input" type="date" name="date" required style="max-width:140px;">
+                        <input class="field__input" type="text" name="company" placeholder="Company" required style="flex:1;min-width:100px;">
+                        <select class="field__input" name="round_type" style="max-width:160px;">
+                            <option value="phone screen">Phone screen</option>
+                            <option value="technical">Technical</option>
+                            <option value="system design">System design</option>
+                            <option value="behavioral">Behavioral</option>
+                            <option value="final round">Final round</option>
+                        </select>
+                        <select class="field__input" name="result" style="max-width:110px;">
+                            <option value="pending">Pending</option>
+                            <option value="passed">Passed</option>
+                            <option value="failed">Failed</option>
+                            <option value="offer">Offer</option>
+                        </select>
+                        <input class="field__input" type="text" name="topics" placeholder="Topics (optional)" style="max-width:180px;">
+                        <input class="field__input" type="text" name="notes" placeholder="Notes (optional)" style="flex:2;min-width:120px;">
+                        <button type="submit" class="btn btn--primary">Log</button>
+                    </form>
+                    {% if interviews %}
+                    <ul class="outcomes-list">
+                        {% for iv in interviews %}
+                        <li class="outcome-item outcome-item--{{ iv.result }}">
+                            <span class="outcome-date">{{ iv.date }}</span>
+                            <span class="outcome-company">{{ iv.company }}</span>
+                            <span class="outcome-round">{{ iv.round_type }}</span>
+                            <span class="outcome-result outcome-result--{{ iv.result }}">{{ iv.result }}</span>
+                            {% if iv.topics %}<span class="outcome-topics muted">{{ iv.topics }}</span>{% endif %}
+                            {% if iv.notes %}<span class="outcome-notes muted">{{ iv.notes }}</span>{% endif %}
+                            <form action="{{ url_for('main.delete_interview_outcome') }}" method="post" style="margin-left:auto;">
+                                <input type="hidden" name="id" value="{{ iv.id }}">
+                                <button type="submit" class="btn btn--danger" style="font-size:.75rem;padding:.3rem .55rem;" onclick="return confirm('Delete this entry?')">✕</button>
+                            </form>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="muted" style="margin-top:.5rem;font-size:.85rem;">No interviews logged yet.</p>
+                    {% endif %}
+                </div>
+            </details>
+        </div>
+
+        {# Inject curriculum target date for countdown badge #}
+        <script>window.CURRICULUM_TARGET_DATE = "{{ curriculum.target_date if curriculum else '' }}";</script>
+
         </section>
+
+        {# ── Curriculum setup modal ── #}
+        <div id="curriculum-modal-overlay" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true">
+            <div class="modal" style="max-width:500px;">
+                <div class="modal__title" id="curriculum-modal-title">✦ Set up curriculum</div>
+                <div id="cp-step-indicator" style="font-size:.78rem;color:var(--muted);margin-bottom:1rem;">Step 1 of 2 — Your goals</div>
+
+                {# Step 1 #}
+                <div id="cp-step-1">
+                    <div class="modal__section">
+                        <label class="modal__label" for="cp-target-roles">Target roles</label>
+                        <input id="cp-target-roles" class="modal__input" type="text" placeholder="e.g. Software Engineer, ML Engineer">
+                    </div>
+                    <div class="modal__section">
+                        <label class="modal__label" for="cp-target-companies">Target companies</label>
+                        <input id="cp-target-companies" class="modal__input" type="text" placeholder="e.g. Google, Meta, Apple">
+                    </div>
+                    <div class="modal__section">
+                        <label class="modal__label" for="cp-timeline">Interview timeline</label>
+                        <input id="cp-timeline" class="modal__input" type="text" placeholder="e.g. November 2026 or in 6 months">
+                    </div>
+                    <div class="modal__section">
+                        <label class="modal__label" for="cp-level">Current level</label>
+                        <select id="cp-level" class="modal__input field__input">
+                            <option value="">Select...</option>
+                            <option value="entry-level (0-2 years)">Entry-level (0-2 yrs)</option>
+                            <option value="mid-level (2-5 years)">Mid-level (2-5 yrs)</option>
+                            <option value="senior (5+ years)">Senior (5+ yrs)</option>
+                            <option value="staff / principal">Staff / Principal</option>
+                        </select>
+                    </div>
+                    <div class="modal__section">
+                        <label class="modal__label" for="cp-hours">Hours per week for prep <span class="modal__optional">(optional)</span></label>
+                        <input id="cp-hours" class="modal__input" type="text" placeholder="e.g. 10-15 hours">
+                    </div>
+                    <div class="modal__section">
+                        <label class="modal__label" for="cp-strengths">Current strengths / weaknesses <span class="modal__optional">(optional)</span></label>
+                        <textarea id="cp-strengths" class="modal__textarea" placeholder="e.g. Strong in algorithms, weak in system design and OS concepts"></textarea>
+                    </div>
+                    <div class="modal__section">
+                        <label class="modal__label" for="cp-notes">Anything else <span class="modal__optional">(optional)</span></label>
+                        <textarea id="cp-notes" class="modal__textarea" placeholder="e.g. I have a current job, no prep on Sundays, have taken interviews at Google before"></textarea>
+                    </div>
+                    <div class="modal__actions">
+                        <button id="cp-cancel" class="btn">Cancel</button>
+                        <button id="cp-continue" class="btn btn--primary">Continue →</button>
+                    </div>
+                </div>
+
+                {# Step 2 #}
+                <div id="cp-step-2" style="display:none;">
+                    <div class="modal__section">
+                        <div class="modal__label">Claude's questions</div>
+                        <div id="cp-questions-block" class="modal__questions-block"></div>
+                    </div>
+                    <div class="modal__section">
+                        <label class="modal__label" for="cp-answers">Your answers <span class="modal__optional">(optional — skip if you prefer)</span></label>
+                        <textarea id="cp-answers" class="modal__textarea" placeholder="Answer any or all of the questions above..."></textarea>
+                    </div>
+                    <div class="modal__actions">
+                        <button id="cp-back" class="btn">← Back</button>
+                        <button id="cp-confirm" class="btn btn--claude">✦ Generate curriculum</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         {# ── Running Plan tab ── #}
         <section id="running" class="tab-content" aria-hidden="{% if default_tab == 'running' %}false{% else %}true{% endif %}">
@@ -163,8 +403,8 @@
             <form method="post" action="{{ url_for('main.archive_running_plan') }}" style="display:inline">
                 <button type="submit" class="btn" onclick="return confirm('Archive this plan? You can still view it below.')">Archive</button>
             </form>
+            <button class="btn btn--claude" onclick="return handleNewPlan(this)" data-has-plan="true">✦ New Plan</button>
             {% endif %}
-            <button class="btn btn--claude" onclick="return handleNewPlan(this)" data-has-plan="{{ 'true' if active_plan else 'false' }}">✦ New Plan</button>
         </div>
     </div>
 
@@ -215,6 +455,7 @@
     {% set hero_sun = wdates.get('sunday') %}
     {% set running = active_plan.get('weeks', {}).get(current_plan_week|string) %}
     <div class="week-card week-card--hero" id="running-week-hero">
+        <div id="running-compliance-badge" style="display:none;margin-bottom:.6rem;padding:.4rem .75rem;border-radius:8px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.25);color:#fbbf24;font-size:.8rem;font-weight:600;"></div>
         <div class="week-card__header" style="flex-wrap:wrap;gap:.5rem;">
             <div style="display:flex;flex-direction:column;gap:.55rem;">
                 <span class="hero-badge">This week</span>
@@ -260,8 +501,10 @@
         <div class="week-card__header">
             <h2 class="week-card__label">Week {{ wnum }}</h2>
             {% if wmon %}<span class="week-card__dates">{{ wmon | datefmt('%b %-d') }} – {{ wsun | datefmt('%b %-d') }}</span>{% endif %}
-            <button class="btn btn--claude" data-generate-week="{{ wnum }}" data-generate-type="running-edit" data-has-plan="{{ 'true' if running else 'false' }}" onclick="return handleClaudeGenerate(this)" style="font-size:.875rem;padding:.45rem .7rem;">✦ Edit with Claude</button>
-            <a href="{{ url_for('main.running_week', week_num=wnum) }}" class="btn">Edit</a>
+            <div style="display:flex;gap:.4rem;margin-left:auto;">
+                <button class="btn btn--claude" data-generate-week="{{ wnum }}" data-generate-type="running-edit" data-has-plan="{{ 'true' if running else 'false' }}" onclick="return handleClaudeGenerate(this)" style="font-size:.875rem;padding:.45rem .7rem;">✦ Edit with Claude</button>
+                <a href="{{ url_for('main.running_week', week_num=wnum) }}" class="btn" style="font-size:.875rem;padding:.45rem .7rem;">Edit</a>
+            </div>
         </div>
         {% if running %}
         <div class="week-card__pills">
@@ -282,8 +525,21 @@
 
     {% else %}
     {# No active plan — empty state #}
-    <div class="week-card" style="text-align:center;padding:2.5rem 1rem;">
-        <p style="font-size:1.05rem;color:var(--muted);">No active training plan. Click <strong>✦ New Plan</strong> to get started.</p>
+    <div class="curriculum-empty">
+        <p style="color:var(--muted);font-size:.9rem;">No active training plan.</p>
+        <button class="btn btn--claude" onclick="return handleNewPlan()">✦ New Plan</button>
+    </div>
+    {% endif %}
+
+    {% if active_plan %}
+    {# Running live coach #}
+    <div class="coach-panel" style="margin-top:1rem;">
+        <div id="running-coach-feedback-banner" class="coach-feedback" style="display:none;"></div>
+        <div class="coach-input-row">
+            <textarea id="running-coach-message" class="coach-textarea" placeholder="Tell your coach… e.g. 'my knee is sore, reduce impact this week' or 'I want to add hill work Thursday'" rows="2"></textarea>
+            <button id="running-coach-submit" class="btn btn--claude" onclick="submitRunningCoach()">✦ Ask coach</button>
+        </div>
+        <div id="running-coach-status" class="skel-status" style="display:none;margin-top:.6rem;"></div>
     </div>
     {% endif %}
 
@@ -331,6 +587,40 @@
         </div>
     </details>
     {% endif %}
+
+    {# Race results log #}
+    <details class="past-weeks" style="margin-top:1.5rem;">
+        <summary class="past-weeks__summary">Race results ({{ race_results|length }})</summary>
+        <div style="margin-top:.75rem;">
+            <form action="{{ url_for('main.add_race_result') }}" method="post" class="outcome-form">
+                <input class="field__input" type="date" name="date" required style="max-width:140px;">
+                <input class="field__input" type="text" name="race_name" placeholder="Race name" required style="flex:1;min-width:100px;">
+                <input class="field__input" type="number" name="distance_miles" placeholder="Miles" step="0.01" min="0" style="max-width:100px;">
+                <input class="field__input" type="text" name="finish_time" placeholder="Time (e.g. 1:52:30)" style="max-width:140px;">
+                <input class="field__input" type="text" name="notes" placeholder="Notes (optional)" style="flex:2;min-width:100px;">
+                <button type="submit" class="btn btn--primary">Log</button>
+            </form>
+            {% if race_results %}
+            <ul class="outcomes-list" style="margin-top:.75rem;">
+                {% for r in race_results %}
+                <li class="outcome-item">
+                    <span class="outcome-date">{{ r.date }}</span>
+                    <span class="outcome-company">{{ r.race_name }}</span>
+                    {% if r.distance_miles %}<span class="outcome-round">{{ r.distance_miles }} mi</span>{% endif %}
+                    {% if r.finish_time %}<span class="outcome-result outcome-result--passed">{{ r.finish_time }}</span>{% endif %}
+                    {% if r.notes %}<span class="outcome-notes muted">{{ r.notes }}</span>{% endif %}
+                    <form action="{{ url_for('main.delete_race_result') }}" method="post" style="margin-left:auto;">
+                        <input type="hidden" name="id" value="{{ r.id }}">
+                        <button type="submit" class="btn btn--danger" style="font-size:.75rem;padding:.3rem .55rem;" onclick="return confirm('Delete this result?')">✕</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p style="color:var(--muted);font-size:.875rem;margin-top:.5rem;">No race results logged yet. Results are assumed max effort and used to calibrate training paces.</p>
+            {% endif %}
+        </div>
+    </details>
 
     {# Inject race date for JS countdown #}
     <script>window.RACE_DATE = "{{ race_date_str }}";</script>

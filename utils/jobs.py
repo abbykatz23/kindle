@@ -40,11 +40,13 @@ def get_job(job_id: str) -> dict | None:
         return _load().get(job_id)
 
 
-def mark_done(job_id: str) -> None:
+def mark_done(job_id: str, extra: dict | None = None) -> None:
     with _lock:
         jobs = _load()
         if job_id in jobs:
             jobs[job_id]["status"] = "done"
+            if extra:
+                jobs[job_id].update(extra)
             _save(jobs)
 
 

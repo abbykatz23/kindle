@@ -8,3 +8,10 @@ build/
 venv/
 output/*.png
 logs/*.log
+
+# Runtime / cache — not source-controlled
+=3.10.0
+data/jobs.json
+data/kindle_view.json
+data/run_feedback.json
+data/running_coaching_notes.json

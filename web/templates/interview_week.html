@@ -27,7 +27,7 @@
         {% if tasks %}
         <ul class="task-list">
             {% for task in tasks %}
-            <li class="interview-task{% if task.get('completed') %} interview-task--done{% endif %}">
+            <li class="interview-task{% if task.get('completed') %} interview-task--done{% endif %}{% if task.get('carryover_from') %} interview-task--carryover{% endif %}">
                 <form action="{{ url_for('main.interview_task') }}" method="post" class="task-toggle-form">
                     <input type="hidden" name="action" value="complete">
                     <input type="hidden" name="week_label" value="{{ week_label }}">
@@ -52,6 +52,9 @@
                             <span class="lc-name-display" style="font-size:.875rem;color:var(--muted);"></span>
                         </div>
                         <span class="lc-status" style="font-size:.75rem;color:var(--muted);"></span>
+                        {% if task.get('carryover_from') %}
+                        <span class="carryover-badge">↩ carried over from {{ task.carryover_from | short_date }}</span>
+                        {% endif %}
                     </div>
                     <button type="submit" name="action" value="update" class="btn" style="padding:.5rem .75rem;font-size:.875rem;">Save</button>
                     <button type="submit" name="action" value="delete" class="btn btn--danger" style="padding:.5rem .75rem;font-size:.875rem;" onclick="return confirm('Delete this task?')">Delete</button>

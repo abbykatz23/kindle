@@ -46,6 +46,11 @@
                 <span class="field__label">Notes</span>
                 <textarea class="field__textarea" name="{{ day }}_notes">{{ d.get('notes', '') }}</textarea>
             </label>
+
+            <label class="field">
+                <span class="field__label">Post-run notes <span style="font-weight:400;color:var(--muted);font-size:.8em;">(how did it go?)</span></span>
+                <textarea class="field__textarea" name="{{ day }}_notes_actual" rows="1" placeholder="e.g. felt good, HR stayed low, knee a bit tight…">{{ d.get('notes_actual', '') }}</textarea>
+            </label>
         </div>
         {% endfor %}
     </div>

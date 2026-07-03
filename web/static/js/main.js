@@ -193,14 +193,123 @@ document.addEventListener("DOMContentLoaded", () => {
         wireInterviewLookup(typeSelect);
     });
 
-    // ── Days until 2027 countdown ─────────────────────────────────────────
+    // ── Interview countdown (curriculum target date or fallback 2027) ────
     const countdownEl = document.getElementById('countdown-days');
+    const countdownLabel = document.querySelector('#days-countdown-badge .countdown-badge__label');
     if (countdownEl) {
-        const target = new Date('2027-01-01');
-        const now = new Date();
-        const days = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
-        countdownEl.textContent = days.toLocaleString();
+        const targetDateStr = window.CURRICULUM_TARGET_DATE;
+        if (targetDateStr) {
+            const target = new Date(targetDateStr);
+            const days = Math.max(0, Math.ceil((target - new Date()) / (1000 * 60 * 60 * 24)));
+            countdownEl.textContent = days.toLocaleString();
+            if (countdownLabel) countdownLabel.textContent = 'days until interviews';
+        } else {
+            const days = Math.ceil((new Date('2027-01-01') - new Date()) / (1000 * 60 * 60 * 24));
+            countdownEl.textContent = days.toLocaleString();
+        }
     }
+
+    // ── Running live coach ────────────────────────────────────────────────
+
+    function _setRunningCoachLoading(isLoading, statusMsg) {
+        const btn = document.getElementById('running-coach-submit');
+        const msg = document.getElementById('running-coach-message');
+        const statusEl = document.getElementById('running-coach-status');
+        if (isLoading) {
+            if (btn) { btn.disabled = true; btn.textContent = 'Thinking…'; }
+            if (msg) msg.disabled = true;
+            if (statusEl) { statusEl.innerHTML = `<span class="spinner"></span>${statusMsg || 'Claude is adjusting your plan…'}`; statusEl.style.display = 'flex'; }
+        } else {
+            if (btn) { btn.disabled = false; btn.textContent = '✦ Ask coach'; }
+            if (msg) msg.disabled = false;
+            if (statusEl) statusEl.style.display = 'none';
+        }
+    }
+
+    window.submitRunningCoach = async function submitRunningCoach() {
+        const msg = document.getElementById('running-coach-message')?.value.trim();
+        if (!msg) return;
+        _setRunningCoachLoading(true);
+        try {
+            const res = await fetch('/running/coach', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ message: msg }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+            localStorage.setItem('runningCoachJob', data.job_id);
+            _pollRunningCoach(data.job_id);
+        } catch (e) {
+            alert('Error: ' + e.message);
+            _setRunningCoachLoading(false);
+        }
+    };
+
+    function _pollRunningCoach(jobId) {
+        const timer = setInterval(async () => {
+            try {
+                const r = await fetch(`/running/coach/status?job_id=${jobId}`);
+                const data = await r.json();
+                if (data.status === 'done') {
+                    clearInterval(timer);
+                    localStorage.removeItem('runningCoachJob');
+                    if (data.message) localStorage.setItem('runningCoachFeedback', data.message);
+                    window.location.href = '/?tab=running';
+                } else if (data.status === 'error') {
+                    clearInterval(timer);
+                    localStorage.removeItem('runningCoachJob');
+                    _setRunningCoachLoading(false);
+                    alert('Coach error: ' + (data.error || 'Unknown error'));
+                } else if (data.message) {
+                    _setRunningCoachLoading(true, data.message);
+                }
+            } catch { /* network hiccup */ }
+        }, 1500);
+    }
+
+    // Resume poll if page was refreshed mid-coach
+    const _pendingCoachJob = localStorage.getItem('runningCoachJob');
+    if (_pendingCoachJob) {
+        _setRunningCoachLoading(true);
+        _pollRunningCoach(_pendingCoachJob);
+    }
+    // Show feedback banner after redirect
+    const _coachFeedback = localStorage.getItem('runningCoachFeedback');
+    if (_coachFeedback) {
+        localStorage.removeItem('runningCoachFeedback');
+        const banner = document.getElementById('running-coach-feedback-banner');
+        if (banner) { banner.textContent = _coachFeedback; banner.style.display = 'block'; }
+    }
+
+    // ── Running compliance badge ──────────────────────────────────────────
+
+    let _complianceSummary = '';
+
+    async function fetchRunningCompliance() {
+        const badge = document.getElementById('running-compliance-badge');
+        if (!badge) return;
+        try {
+            const r = await fetch('/running/week-compliance');
+            if (!r.ok) return;
+            const data = await r.json();
+            if (!data.has_data) return;
+            const gaps = (data.missed_runs || []).length + (data.short_runs || []).length;
+            if (gaps === 0) return;
+            const missedCount = (data.missed_runs || []).length;
+            const shortCount = (data.short_runs || []).length;
+            const parts = [];
+            if (missedCount) parts.push(`${missedCount} run${missedCount > 1 ? 's' : ''} missed`);
+            if (shortCount) parts.push(`${shortCount} run${shortCount > 1 ? 's' : ''} cut short`);
+            badge.textContent = `⚠ ${parts.join(', ')} this week — click ✦ Edit with Claude to adjust`;
+            badge.style.display = 'block';
+            _complianceSummary = data.summary_text || '';
+        } catch {
+            // silently ignore — compliance is best-effort
+        }
+    }
+
+    fetchRunningCompliance();
 
     // ── Days until race countdown (dynamic from active plan) ─────────────
     const raceCountdownEl = document.getElementById('race-countdown-days');
@@ -257,7 +366,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (intensitySection) intensitySection.style.display = cfg.showIntensity ? '' : 'none';
         if (textarea) textarea.placeholder = cfg.placeholder || '';
-        textarea.value = '';
+        textarea.value = (_pendingType === 'running-edit' && _complianceSummary) ? _complianceSummary : '';
         if (cfg.showIntensity) {
             intensityBtns.forEach(b => {
                 b.classList.toggle('intensity-btn--active', b.dataset.intensity === 'normal');
@@ -305,6 +414,229 @@ document.addEventListener("DOMContentLoaded", () => {
         openClaudeModal(btn.dataset.generateWeek, hasPlan, type);
         return false;
     };
+
+    // ── Day pill selection ────────────────────────────────────────────────
+    window.selectDay = function selectDay(day) {
+        document.querySelectorAll('.day-pill-hero').forEach(p => p.classList.remove('day-pill-hero--active'));
+        document.querySelectorAll('.day-task-panel').forEach(p => { p.style.display = 'none'; });
+        const pill = document.querySelector(`.day-pill-hero[data-day="${day}"]`);
+        if (pill) pill.classList.add('day-pill-hero--active');
+        const panel = document.getElementById(`day-panel-${day}`);
+        if (panel) panel.style.display = 'block';
+    };
+
+    // Auto-select today (or first day with tasks)
+    const todayPill = document.querySelector('.day-pill-hero--today');
+    if (todayPill) {
+        selectDay(todayPill.dataset.day);
+    } else {
+        const firstWithTasks = document.querySelector('.day-pill-hero[data-day]');
+        if (firstWithTasks) selectDay(firstWithTasks.dataset.day);
+    }
+
+    // ── Live coach ───────────────────────────────────────────────────────
+
+    // Show pending feedback from a previous coach job (stored across reload)
+    const pendingFeedback = localStorage.getItem('coachFeedback');
+    if (pendingFeedback) {
+        localStorage.removeItem('coachFeedback');
+        const banner = document.getElementById('coach-feedback-banner');
+        if (banner) {
+            banner.textContent = pendingFeedback;
+            banner.style.display = 'block';
+        }
+    }
+
+    window.applyCheckedSuggestions = function applyCheckedSuggestions(weekLabel) {
+        const checked = Array.from(document.querySelectorAll('.suggestion-cb:checked')).map(cb => cb.value);
+        if (!checked.length) { alert('Check at least one suggestion first.'); return; }
+        const message = 'Please apply these suggested adjustments to my plan:\n' +
+            checked.map((s, i) => `${i + 1}. ${s}`).join('\n');
+        const textarea = document.getElementById('coach-message');
+        if (textarea) {
+            textarea.value = message;
+            textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            document.getElementById('coach-submit')?.focus();
+        } else {
+            submitCoach(weekLabel, message);
+        }
+    };
+
+    window.submitCoach = async function submitCoach(weekLabel, overrideMessage) {
+        const textarea = document.getElementById('coach-message');
+        const btn = document.getElementById('coach-submit');
+        const message = overrideMessage || textarea?.value.trim();
+        if (!message) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Thinking...';
+        const banner = document.getElementById('coach-feedback-banner');
+        if (banner) banner.style.display = 'none';
+
+        try {
+            const body = new URLSearchParams({ week_label: weekLabel, message });
+            const res = await fetch('/interview/coach', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString(),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed');
+
+            // Poll until done
+            const jobId = data.job_id;
+            const timer = setInterval(async () => {
+                try {
+                    const r = await fetch(`/interview/coach/status?job_id=${jobId}`);
+                    const job = await r.json();
+                    if (job.status === 'done') {
+                        clearInterval(timer);
+                        if (job.feedback) localStorage.setItem('coachFeedback', job.feedback);
+                        window.location.href = '/?tab=interview';
+                    } else if (job.status === 'error') {
+                        clearInterval(timer);
+                        btn.disabled = false;
+                        btn.textContent = '✦ Ask coach';
+                        alert('Coach error: ' + (job.error || 'Unknown error'));
+                    }
+                } catch { /* keep polling */ }
+            }, 1500);
+        } catch (e) {
+            btn.disabled = false;
+            btn.textContent = '✦ Ask coach';
+            alert('Error: ' + e.message);
+        }
+    };
+
+    // Allow Ctrl+Enter to submit coach input
+    document.getElementById('coach-message')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            const weekLabel = document.getElementById('coach-submit')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+            if (weekLabel) submitCoach(weekLabel);
+        }
+    });
+
+    // ── Curriculum setup modal (2-step) ──────────────────────────────────
+
+    const cpOverlay = document.getElementById('curriculum-modal-overlay');
+
+    function _readCurriculumIntake() {
+        return {
+            target_roles:     document.getElementById('cp-target-roles')?.value.trim()     || '',
+            target_companies: document.getElementById('cp-target-companies')?.value.trim() || '',
+            interview_timeline: document.getElementById('cp-timeline')?.value.trim()       || '',
+            current_level:    document.getElementById('cp-level')?.value                   || '',
+            weekly_hours:     document.getElementById('cp-hours')?.value.trim()            || '',
+            current_strengths: document.getElementById('cp-strengths')?.value.trim()       || '',
+            notes:            document.getElementById('cp-notes')?.value.trim()            || '',
+        };
+    }
+
+    function _showCpStep(num) {
+        const s1 = document.getElementById('cp-step-1');
+        const s2 = document.getElementById('cp-step-2');
+        const ind = document.getElementById('cp-step-indicator');
+        if (s1) s1.style.display = num === 1 ? '' : 'none';
+        if (s2) s2.style.display = num === 2 ? '' : 'none';
+        if (ind) ind.textContent = num === 1 ? 'Step 1 of 2 — Your goals' : 'Step 2 of 2 — Claude\'s questions';
+    }
+
+    function openCurriculumModal() {
+        if (!cpOverlay) return false;
+        _showCpStep(1);
+        const title = document.getElementById('curriculum-modal-title');
+        if (title) title.textContent = '✦ Set up curriculum';
+        cpOverlay.setAttribute('aria-hidden', 'false');
+        cpOverlay.classList.add('modal--open');
+        setTimeout(() => document.getElementById('cp-target-roles')?.focus(), 50);
+        return false;
+    }
+    window.openCurriculumModal = openCurriculumModal;
+
+    function closeCurriculumModal() {
+        if (!cpOverlay) return;
+        cpOverlay.classList.remove('modal--open');
+        cpOverlay.setAttribute('aria-hidden', 'true');
+    }
+
+    if (cpOverlay) {
+        cpOverlay.addEventListener('click', (e) => { if (e.target === cpOverlay) closeCurriculumModal(); });
+        document.getElementById('cp-cancel')?.addEventListener('click', closeCurriculumModal);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && cpOverlay.classList.contains('modal--open')) closeCurriculumModal();
+        });
+
+        document.getElementById('cp-continue')?.addEventListener('click', async () => {
+            const btn = document.getElementById('cp-continue');
+            btn.disabled = true;
+            btn.textContent = 'Thinking...';
+            try {
+                const body = new URLSearchParams(_readCurriculumIntake());
+                const res = await fetch('/interview/intake-questions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body.toString(),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to get questions');
+                const block = document.getElementById('cp-questions-block');
+                if (block) block.textContent = data.questions;
+                document.getElementById('cp-answers').value = '';
+                _showCpStep(2);
+                setTimeout(() => document.getElementById('cp-answers')?.focus(), 50);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Continue →';
+            }
+        });
+
+        document.getElementById('cp-back')?.addEventListener('click', () => _showCpStep(1));
+
+        document.getElementById('cp-confirm')?.addEventListener('click', () => {
+            const intake = _readCurriculumIntake();
+            const questions = document.getElementById('cp-questions-block')?.textContent || '';
+            const answers = document.getElementById('cp-answers')?.value.trim() || '';
+            if (questions) {
+                intake.qa_context = `Claude's questions:\n${questions}\n\nAnswers:\n${answers}`;
+            }
+            closeCurriculumModal();
+            _startCurriculumGenerate(intake);
+        });
+    }
+
+    async function _startCurriculumGenerate(intake) {
+        // Show curriculum skeleton, hide everything else in interview tab
+        const headerBlock = document.getElementById('curriculum-header-block');
+        const overview = document.querySelector('.interview-overview');
+        const skel = document.getElementById('curriculum-skeleton');
+        if (headerBlock) headerBlock.style.display = 'none';
+        if (overview) overview.style.display = 'none';
+        if (skel) skel.style.display = 'block';
+        const tabBtn = document.querySelector('[data-target="#interview"]');
+        if (tabBtn && tabBtn.getAttribute('aria-selected') !== 'true') tabBtn.click();
+
+        localStorage.setItem('claudeGenJob', JSON.stringify({ type: 'curriculum' }));
+        try {
+            const body = new URLSearchParams(intake);
+            const res = await fetch('/interview/generate-curriculum', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+                body: body.toString(),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to start generation');
+            localStorage.setItem('claudeGenJob', JSON.stringify({ jobId: data.job_id, type: 'curriculum' }));
+            pollJob(data.job_id, 'curriculum');
+        } catch (e) {
+            if (headerBlock) headerBlock.style.display = '';
+            if (overview) overview.style.display = '';
+            if (skel) skel.style.display = 'none';
+            localStorage.removeItem('claudeGenJob');
+            alert('Error: ' + e.message);
+        }
+    }
 
     // ── New training plan modal (2-step) ─────────────────────────────────
 
@@ -361,10 +693,22 @@ document.addEventListener("DOMContentLoaded", () => {
         // Step 1 → Step 2: fetch Claude's questions
         document.getElementById('np-continue')?.addEventListener('click', async () => {
             const continueBtn = document.getElementById('np-continue');
+            const formData = _readIntakeForm();
+
+            // Validate: distance required when race name or date is provided
+            if ((formData.race_name || formData.race_date) && !formData.race_miles) {
+                const distInput = document.getElementById('np-race-distance');
+                if (distInput) { distInput.focus(); distInput.style.outline = '2px solid var(--danger)'; }
+                alert('Please enter the race distance — it\'s needed to build your long run progression correctly.');
+                return;
+            }
+            if (document.getElementById('np-race-distance')) {
+                document.getElementById('np-race-distance').style.outline = '';
+            }
+
             continueBtn.disabled = true;
             continueBtn.textContent = 'Thinking...';
             try {
-                const formData = _readIntakeForm();
                 const body = new URLSearchParams(formData);
                 const res = await fetch('/running/intake-questions', {
                     method: 'POST',
@@ -468,6 +812,13 @@ document.addEventListener("DOMContentLoaded", () => {
             if (skel) skel.style.display = 'none';
             const content = document.getElementById('running-plan-content');
             if (content) content.style.display = '';
+        } else if (type === 'curriculum') {
+            const skel = document.getElementById('curriculum-skeleton');
+            if (skel) skel.style.display = 'none';
+            const headerBlock = document.getElementById('curriculum-header-block');
+            if (headerBlock) headerBlock.style.display = '';
+            const overview = document.querySelector('.interview-overview');
+            if (overview) overview.style.display = '';
         } else {
             const skel = document.getElementById('claude-skeleton');
             if (skel) skel.style.display = 'none';
@@ -486,6 +837,8 @@ document.addEventListener("DOMContentLoaded", () => {
             endpoint = `/running/generate-full-plan/status?job_id=${jobId}`;
         } else if (type === 'running-edit' || type === 'running') {
             endpoint = `/running/generate-ai/status?job_id=${jobId}`;
+        } else if (type === 'curriculum') {
+            endpoint = `/interview/generate-curriculum/status?job_id=${jobId}`;
         } else {
             endpoint = `/interview/generate-ai/status?job_id=${jobId}`;
         }
@@ -508,6 +861,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     localStorage.removeItem('claudeGenJob');
                     hideSkeleton(type);
                     alert('Claude generation failed: ' + (data.error || 'Unknown error'));
+                } else if (data.message && type === 'curriculum') {
+                    const skelMsg = document.getElementById('curriculum-skel-msg');
+                    if (skelMsg) skelMsg.innerHTML = `<span class="spinner"></span>${data.message}`;
                 } else if (data.message && type.startsWith('running')) {
                     const skelMsg = document.querySelector('#running-skeleton .skel-status');
                     if (skelMsg) skelMsg.innerHTML = `<span class="spinner"></span>${data.message}`;
@@ -562,7 +918,17 @@ document.addEventListener("DOMContentLoaded", () => {
             const {jobId, weekLabel, type} = JSON.parse(pendingJobStr);
             const resolvedType = type || 'interview';
             if (jobId) {
-                showSkeleton(resolvedType);
+                if (resolvedType === 'curriculum') {
+                    _startCurriculumGenerate.__resuming = true;
+                    const headerBlock = document.getElementById('curriculum-header-block');
+                    const overview = document.querySelector('.interview-overview');
+                    const skel = document.getElementById('curriculum-skeleton');
+                    if (headerBlock) headerBlock.style.display = 'none';
+                    if (overview) overview.style.display = 'none';
+                    if (skel) skel.style.display = 'block';
+                } else {
+                    showSkeleton(resolvedType);
+                }
                 pollJob(jobId, resolvedType);
             } else {
                 localStorage.removeItem('claudeGenJob');
