@@ -203,9 +203,6 @@
                     <div class="summary-panel__body">
                         <p class="summary-panel__summary">{{ interview_summary.summary }}</p>
                         <p class="summary-panel__encourage">{{ interview_summary.encouragement }}</p>
-                        {% if interview_summary.motivation_snippet %}
-                        <p class="summary-panel__motivation">✦ {{ interview_summary.motivation_snippet }}</p>
-                        {% endif %}
                         {% if interview_summary.pointers %}
                         <ul class="summary-panel__pointers">
                             {% for tip in interview_summary.pointers %}
@@ -215,7 +212,6 @@
                         {% endif %}
                         {% if interview_summary.suggestions %}
                         <div class="summary-panel__suggestions">
-                            <div class="summary-panel__suggestions-label">Suggested adjustments</div>
                             {% for s in interview_summary.suggestions %}
                             <label class="summary-suggestion">
                                 <input type="checkbox" class="suggestion-cb" value="{{ s }}">

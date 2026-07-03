@@ -300,25 +300,37 @@ def _curriculum_generate_thread(job_id: str, intake: dict) -> None:
 
         curriculum = generate_curriculum(intake, progress_cb=_progress)
 
+        # Always anchor start_date to this week's Monday so week counter = 1
+        today = date.today()
+        this_monday = (today - timedelta(days=today.weekday())).isoformat()
+        curriculum["start_date"] = this_monday
+
         Config.DATA_DIR.mkdir(parents=True, exist_ok=True)
         (Config.DATA_DIR / "curriculum.json").write_text(json.dumps(curriculum, indent=2))
 
-        # Auto-generate the current week if it has no plan yet
+        # Clear stale interview_prep data — regeneration is a fresh start
+        fresh_plan = load_plan()
+        fresh_plan["interview_prep"] = {}
+        _save_plan(fresh_plan)
+
+        # Clear stale coaching summary so it regenerates from the new curriculum
+        if Config.INTERVIEW_SUMMARY_FILE.exists():
+            Config.INTERVIEW_SUMMARY_FILE.unlink()
+
+        # Generate this week's plan
         _progress("Generating this week's plan...")
-        today = date.today()
         from utils.plan import get_week_label as _gwl
         week_label = _gwl(today)
         plan = load_plan()
-        if not plan.get("interview_prep", {}).get(week_label):
-            from integrations.claude_api import generate_weekly_interview_prep
-            result = generate_weekly_interview_prep(
-                week_label=week_label,
-                plan=plan,
-                curriculum=curriculum,
-            )
-            fresh_plan = load_plan()
-            fresh_plan.setdefault("interview_prep", {})[week_label] = result
-            _save_plan(fresh_plan)
+        from integrations.claude_api import generate_weekly_interview_prep
+        result = generate_weekly_interview_prep(
+            week_label=week_label,
+            plan=plan,
+            curriculum=curriculum,
+        )
+        fresh_plan = load_plan()
+        fresh_plan.setdefault("interview_prep", {})[week_label] = result
+        _save_plan(fresh_plan)
 
         job_store.mark_done(job_id)
     except Exception as e:

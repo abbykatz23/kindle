@@ -339,8 +339,6 @@ Return ONLY valid JSON — no markdown, no explanation:
 {
   "summary": "<2-3 honest, constructive sentences on overall progress — reference specific numbers>",
   "encouragement": "<1-2 sentences of genuine encouragement grounded in what they have actually done>",
-  "motivation_snippet": "<1-2 sentences about why landing a role at ONE specific target company would be exciting — \
-be technically specific, not generic. Rotate which company you highlight each time.>",
   "pointers": ["<specific tactical tip tailored to current phase/topic>"],
   "suggestions": ["<specific, actionable plan adjustment phrased as an action>"]
 }
@@ -350,8 +348,6 @@ RULES:
 - suggestions: 2-4 items. Self-contained, specific adjustments to the plan. Each will be presented \
 as a checkbox the candidate can send to their coach. Phrase as an action: "Add one extra DP problem \
 this week", "Move Thursday's system design to Tuesday so you have more energy for it".
-- motivation_snippet: pick ONE company from their target list. Highlight something technically exciting \
-and specific about working there — a system, a team, a research direction, a product challenge.
 - If on track or ahead, say so clearly. Do not invent concern.
 - If significantly behind, be honest and include recovery steps in suggestions.\
 """

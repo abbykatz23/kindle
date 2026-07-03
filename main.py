@@ -113,7 +113,10 @@ def run(push: bool = True) -> None:
     else:
         last_refreshed_label = _format_now(datetime.now())
         leetcode_tasks, other_tasks = _attach_completion(today)
-        interview_tasks = leetcode_tasks + other_tasks
+        interview_tasks = [
+            t for t in leetcode_tasks + other_tasks
+            if t.get("date") == today.isoformat()
+        ]
         run_plan = get_todays_run_plan(today)
         run_completed = is_run_completed_today()
         birthdays = get_upcoming_birthdays(today, days_ahead=7)
