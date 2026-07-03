@@ -54,14 +54,15 @@ def _push_subprocess(image_path: Path) -> None:
 
 
 def _push_paramiko(image_path: Path) -> None:
-    """Linux/Pi: use paramiko for non-interactive password auth."""
+    """Linux/Pi: use paramiko with SSH key auth."""
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    key_path = Path.home() / ".ssh" / "id_ed25519"
     try:
         client.connect(
             hostname=Config.KINDLE_HOST,
             username=Config.KINDLE_USER,
-            password=Config.KINDLE_PASSWORD,
+            key_filename=str(key_path) if key_path.exists() else None,
         )
         with client.open_sftp() as sftp:
             sftp.put(str(image_path), Config.KINDLE_IMAGE_PATH)
