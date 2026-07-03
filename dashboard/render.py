@@ -26,6 +26,10 @@ MAX_BIRTHDAYS = 3
 BACK_BUTTON_MAX_X = 160
 BACK_BUTTON_MAX_Y = 80
 
+# Weekly detail view layout — used by tap_handler to map y → day row
+WEEKLY_HEADER_Y = 78   # y where day rows begin
+WEEKLY_ROW_H = 130     # height of each day row
+
 _FONTS_DIR = Path(__file__).parent / "assets" / "fonts"
 _font_cache: dict[tuple[int, bool], ImageFont.ImageFont] = {}
 
@@ -330,14 +334,14 @@ def render_running_detail(
     today: date,
     run_completed: bool,
 ) -> Image.Image:
-    """Full-page Kindle view: this week's running plan, one row per day."""
+    """Full-page Kindle view: this week's running plan, condensed one-line summary per day."""
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
     img = Image.new("L", (width, height), color=255)
     draw = ImageDraw.Draw(img)
 
     # ── Header ───────────────────────────────────────────────────────────────
     _draw_back_button(draw)
-    title = "THIS WEEK’S RUNS"
+    title = "THIS WEEK'S RUNS"
     title_font = _font(28, bold=True)
     tb = draw.textbbox((0, 0), title, font=title_font)
     draw.text(((width - (tb[2] - tb[0])) // 2, 18), title, font=title_font, fill=80)
@@ -352,56 +356,50 @@ def render_running_detail(
     rb = draw.textbbox((0, 0), week_range, font=range_font)
     draw.text((width - PADDING_X - (rb[2] - rb[0]), 24), week_range, font=range_font, fill=130)
 
-    draw.line([(PADDING_X, 68), (width - PADDING_X, 68)], fill=80, width=2)
+    draw.line([(PADDING_X, WEEKLY_HEADER_Y - 10), (width - PADDING_X, WEEKLY_HEADER_Y - 10)],
+              fill=80, width=2)
 
     if not week_plan:
         draw.text((PADDING_X, 120), "No active running plan.", font=_font(28), fill=130)
         return img
 
-    # ── Day rows ─────────────────────────────────────────────────────────────
+    # ── Day rows (condensed: day label + one summary line, tap to see full detail) ───────────
     DAY_NAMES = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
     DAY_ABBREVS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
-    ROW_H = 130
 
     for i, (day_name, abbrev) in enumerate(zip(DAY_NAMES, DAY_ABBREVS)):
-        row_y = 78 + i * ROW_H
+        row_y = WEEKLY_HEADER_Y + i * WEEKLY_ROW_H
         row_date = monday + timedelta(days=i)
         is_today = row_date == today
         run = week_plan.get(day_name)
 
         if is_today:
             draw.rectangle(
-                [PADDING_X - 8, row_y + 2, width - PADDING_X + 8, row_y + ROW_H - 3],
+                [PADDING_X - 8, row_y + 2, width - PADDING_X + 8, row_y + WEEKLY_ROW_H - 3],
                 outline=60, width=2,
             )
 
-        # Day + date label
         label = f"{abbrev}  {row_date.strftime('%b')} {row_date.day}"
         if is_today:
             label += "  ·  TODAY"
         draw.text((PADDING_X, row_y + 10), label, font=_font(24, bold=True), fill=0)
 
-        # DONE badge (today only)
         if is_today and run and run_completed:
             _draw_done_badge(draw, width - PADDING_X, row_y + 10)
 
         if run:
             formatted = _format_run(run)
-            run_line = formatted["title"]
+            summary = formatted["title"]
             if formatted.get("subtitle"):
-                run_line += f"  ·  {formatted['subtitle']}"
-            draw.text((PADDING_X, row_y + 46), run_line, font=_font(22), fill=40)
-
-            if formatted.get("notes"):
-                wrapped = _wrap_text(formatted["notes"], _font(20), width - 2 * PADDING_X)
-                for j, line in enumerate(wrapped[:2]):
-                    draw.text((PADDING_X, row_y + 76 + j * 26), line, font=_font(20), fill=80)
+                summary += f"  ·  {formatted['subtitle']}"
+            draw.text((PADDING_X, row_y + 52), summary, font=_font(22), fill=40)
         else:
-            draw.text((PADDING_X, row_y + 46), "—", font=_font(22), fill=130)
+            draw.text((PADDING_X, row_y + 52), "—", font=_font(22), fill=130)
 
         if i < 6:
             draw.line(
-                [(PADDING_X, row_y + ROW_H - 1), (width - PADDING_X, row_y + ROW_H - 1)],
+                [(PADDING_X, row_y + WEEKLY_ROW_H - 1),
+                 (width - PADDING_X, row_y + WEEKLY_ROW_H - 1)],
                 fill=140, width=1,
             )
 
@@ -412,22 +410,19 @@ def render_interview_detail(
     interview_tasks: list[dict],
     today: date,
 ) -> Image.Image:
-    """Full-page Kindle view: this week's interview prep tasks grouped by day."""
+    """Full-page Kindle view: this week's tasks, condensed one-line summary per day."""
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
     img = Image.new("L", (width, height), color=255)
     draw = ImageDraw.Draw(img)
 
     # ── Header ───────────────────────────────────────────────────────────────
     _draw_back_button(draw)
-    title = "THIS WEEK’S TASKS"
+    title = "THIS WEEK'S TASKS"
     title_font = _font(28, bold=True)
     tb = draw.textbbox((0, 0), title, font=title_font)
     draw.text(((width - (tb[2] - tb[0])) // 2, 18), title, font=title_font, fill=80)
-    draw.line([(PADDING_X, 68), (width - PADDING_X, 68)], fill=80, width=2)
-
-    if not interview_tasks:
-        draw.text((PADDING_X, 120), "No tasks planned for this week.", font=_font(28), fill=130)
-        return img
+    draw.line([(PADDING_X, WEEKLY_HEADER_Y - 10), (width - PADDING_X, WEEKLY_HEADER_Y - 10)],
+              fill=80, width=2)
 
     # ── Group tasks by date ───────────────────────────────────────────────────
     monday = today - timedelta(days=today.weekday())
@@ -439,39 +434,35 @@ def render_interview_detail(
         if key in day_buckets:
             day_buckets[key].append(task)
 
-    DAY_FULL = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    DAY_HEADER_H = 36
-    TASK_ROW_H = 42
-    DAY_GAP = 6
-    task_font = _font(20)
-    max_task_w = width - 2 * PADDING_X - CHECKBOX_SIZE - 14
+    DAY_ABBREVS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
 
-    cursor_y = 78
-    for i, day_full in enumerate(DAY_FULL):
-        day = monday + timedelta(days=i)
-        tasks = day_buckets.get(day.isoformat(), [])
-        if not tasks:
-            continue
-        if cursor_y + DAY_HEADER_H > height - 20:
-            break
+    for i, abbrev in enumerate(DAY_ABBREVS):
+        row_date = monday + timedelta(days=i)
+        row_y = WEEKLY_HEADER_Y + i * WEEKLY_ROW_H
+        is_today = row_date == today
+        tasks = day_buckets.get(row_date.isoformat(), [])
 
-        is_today = day == today
-        day_label = f"{day_full}  {day.strftime('%b')} {day.day}"
-        draw.text((PADDING_X, cursor_y), day_label,
-                  font=_font(22, bold=True), fill=0 if is_today else 80)
-        cursor_y += DAY_HEADER_H
+        if is_today:
+            draw.rectangle(
+                [PADDING_X - 8, row_y + 2, width - PADDING_X + 8, row_y + WEEKLY_ROW_H - 3],
+                outline=60, width=2,
+            )
 
-        for task in tasks:
-            if cursor_y + TASK_ROW_H > height - 20:
-                break
-            completed = task.get("completed", False)
-            _draw_checkbox(draw, PADDING_X, cursor_y + 7, completed)
-            name = _truncate_to_width(task.get("task", ""), task_font, max_task_w)
-            draw.text((PADDING_X + CHECKBOX_SIZE + 14, cursor_y + 7), name,
-                      font=task_font, fill=120 if completed else 0)
-            cursor_y += TASK_ROW_H
+        label = f"{abbrev}  {row_date.strftime('%b')} {row_date.day}"
+        if is_today:
+            label += "  ·  TODAY"
+        draw.text((PADDING_X, row_y + 10), label, font=_font(24, bold=True), fill=0)
 
-        cursor_y += DAY_GAP
+        summary = _interview_day_summary(tasks, width - 2 * PADDING_X)
+        draw.text((PADDING_X, row_y + 52), summary, font=_font(22),
+                  fill=40 if tasks else 130)
+
+        if i < 6:
+            draw.line(
+                [(PADDING_X, row_y + WEEKLY_ROW_H - 1),
+                 (width - PADDING_X, row_y + WEEKLY_ROW_H - 1)],
+                fill=140, width=1,
+            )
 
     return img
 
@@ -550,6 +541,93 @@ def render_birthdays_detail(
             db = draw.textbbox((0, 0), date_str, font=_font(20, bold=bold))
             draw.text((date_right_x - (db[2] - db[0]), ey), date_str,
                       font=_font(20, bold=bold), fill=fill)
+
+    return img
+
+
+def _interview_day_summary(tasks: list[dict], max_width: int) -> str:
+    if not tasks:
+        return "—"
+    names = [t.get("task", "task") for t in tasks]
+    line = " · ".join(names)
+    return _truncate_to_width(line, _font(22), max_width)
+
+
+def render_running_day_detail(
+    run: dict | None,
+    selected_date: date,
+    run_completed: bool,
+) -> Image.Image:
+    """Full-page Kindle view: detailed info for a single day's run."""
+    width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
+    img = Image.new("L", (width, height), color=255)
+    draw = ImageDraw.Draw(img)
+
+    _draw_back_button(draw)
+
+    day_label = f"{selected_date.strftime('%A')}, {selected_date.strftime('%B')} {selected_date.day}"
+    draw.text((PADDING_X, 100), day_label, font=_font(30, bold=True), fill=0)
+    draw.line([(PADDING_X, 148), (width - PADDING_X, 148)], fill=80, width=2)
+
+    if run and run_completed:
+        _draw_done_badge(draw, width - PADDING_X, 100)
+
+    if not run:
+        draw.text((PADDING_X, 180), "Nothing planned.", font=_font(34), fill=140)
+        return img
+
+    formatted = _format_run(run)
+    draw.text((PADDING_X, 170), formatted["title"], font=_font(54, bold=True), fill=0)
+
+    cursor_y = 242
+    if formatted.get("subtitle"):
+        draw.text((PADDING_X, cursor_y), formatted["subtitle"], font=_font(30), fill=70)
+        cursor_y += 50
+
+    if formatted.get("notes"):
+        cursor_y += 10
+        wrapped = _wrap_text(formatted["notes"], _font(24), width - 2 * PADDING_X)
+        for line in wrapped:
+            if cursor_y + 34 > height - 20:
+                break
+            draw.text((PADDING_X, cursor_y), line, font=_font(24), fill=60)
+            cursor_y += 34
+
+    return img
+
+
+def render_interview_day_detail(
+    tasks: list[dict],
+    selected_date: date,
+) -> Image.Image:
+    """Full-page Kindle view: all tasks for a single day with checkboxes."""
+    width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
+    img = Image.new("L", (width, height), color=255)
+    draw = ImageDraw.Draw(img)
+
+    _draw_back_button(draw)
+
+    day_label = f"{selected_date.strftime('%A')}, {selected_date.strftime('%B')} {selected_date.day}"
+    draw.text((PADDING_X, 100), day_label, font=_font(30, bold=True), fill=0)
+    draw.line([(PADDING_X, 148), (width - PADDING_X, 148)], fill=80, width=2)
+
+    if not tasks:
+        draw.text((PADDING_X, 180), "No tasks planned.", font=_font(28), fill=130)
+        return img
+
+    task_font = _font(24)
+    max_task_w = width - 2 * PADDING_X - CHECKBOX_SIZE - 14
+    cursor_y = 168
+
+    for task in tasks:
+        if cursor_y + 55 > height - 20:
+            break
+        completed = task.get("completed", False)
+        _draw_checkbox(draw, PADDING_X, cursor_y + 4, completed)
+        name = _truncate_to_width(task.get("task", ""), task_font, max_task_w)
+        draw.text((PADDING_X + CHECKBOX_SIZE + 14, cursor_y + 4), name,
+                  font=task_font, fill=120 if completed else 0)
+        cursor_y += 55
 
     return img
 

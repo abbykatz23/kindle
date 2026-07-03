@@ -7,15 +7,18 @@ from dashboard.push import push_to_kindle
 from dashboard.render import (
     render_birthdays_detail,
     render_dashboard,
+    render_interview_day_detail,
     render_interview_detail,
+    render_running_day_detail,
     render_running_detail,
     save_dashboard,
 )
 from integrations.intervals_api import is_run_completed_today
 from integrations.leetcode import get_recent_accepted_submissions
 from utils.completions import get_manual_completions
-from utils.kindle_state import get_view
+from utils.kindle_state import get_selected_date, get_view
 from utils.plan import (
+    get_tasks_for_date,
     get_todays_run_plan,
     get_upcoming_birthdays,
     get_week_run_plan,
@@ -79,9 +82,30 @@ def run(push: bool = True) -> None:
         run_completed = is_run_completed_today()
         img = render_running_detail(week_plan, today, run_completed)
 
+    elif view == "running_day":
+        selected_iso = get_selected_date()
+        selected = date.fromisoformat(selected_iso) if selected_iso else today
+        week_plan = get_week_run_plan(today)
+        day_name = selected.strftime("%A").lower()
+        run_day = week_plan.get(day_name)
+        day_completed = is_run_completed_today() if selected == today else False
+        img = render_running_day_detail(run_day, selected, day_completed)
+
     elif view == "interview":
         leetcode_tasks, other_tasks = _attach_completion(today)
         img = render_interview_detail(leetcode_tasks + other_tasks, today)
+
+    elif view == "interview_day":
+        selected_iso = get_selected_date()
+        selected = date.fromisoformat(selected_iso) if selected_iso else today
+        monday = today - timedelta(days=today.weekday())
+        if monday <= selected < monday + timedelta(days=7):
+            leetcode_tasks, other_tasks = _attach_completion(today)
+            all_tasks = leetcode_tasks + other_tasks
+            day_tasks = [t for t in all_tasks if t.get("date") == selected.isoformat()]
+        else:
+            day_tasks = [dict(t, completed=False) for t in get_tasks_for_date(selected)]
+        img = render_interview_day_detail(day_tasks, selected)
 
     elif view == "birthdays":
         img = render_birthdays_detail(load_birthdays(), today)

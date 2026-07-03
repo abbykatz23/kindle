@@ -1,6 +1,7 @@
-"""Shared tap routing logic — used by both the Flask /tap endpoint and scheduler/poller.py."""
+"""Shared tap routing logic — used by both the Flask /tap endpoint and scheduler."""
 import subprocess
 import sys
+from datetime import date, timedelta
 from pathlib import Path
 
 from config import Config
@@ -11,6 +12,8 @@ from dashboard.render import (
     INTERVIEW_SECTION_HEIGHT,
     RUNNING_SECTION_HEIGHT,
     TOP_PADDING,
+    WEEKLY_HEADER_Y,
+    WEEKLY_ROW_H,
 )
 from utils.kindle_state import get_view, set_view
 
@@ -30,13 +33,40 @@ def handle_tap(x: int, y: int) -> str:
     """Process a Kindle tap and return a human-readable result string."""
     view = get_view()
 
-    # ── In a detail view: only the back button is interactive ────────────────
-    if view != "dashboard":
+    # ── Day detail views: only the back button is interactive ─────────────────
+    if view in ("running_day", "interview_day"):
+        if x <= BACK_BUTTON_MAX_X and y <= BACK_BUTTON_MAX_Y:
+            parent = "running" if view == "running_day" else "interview"
+            set_view(parent)
+            _safe_refresh()
+            return f"Tap ({x},{y}) -> BACK -> {parent}"
+        return f"Tap ({x},{y}) -> {view} tap -- ignored"
+
+    # ── Weekly detail views: back goes to dashboard, row tap opens day detail ─
+    if view in ("running", "interview"):
         if x <= BACK_BUTTON_MAX_X and y <= BACK_BUTTON_MAX_Y:
             set_view("dashboard")
             _safe_refresh()
             return f"Tap ({x},{y}) -> BACK -> dashboard"
-        return f"Tap ({x},{y}) -> {view} detail view tap -- ignored"
+        if y >= WEEKLY_HEADER_Y:
+            row_idx = (y - WEEKLY_HEADER_Y) // WEEKLY_ROW_H
+            if 0 <= row_idx <= 6:
+                today = date.today()
+                monday = today - timedelta(days=today.weekday())
+                selected = monday + timedelta(days=row_idx)
+                day_view = "running_day" if view == "running" else "interview_day"
+                set_view(day_view, selected.isoformat())
+                _safe_refresh()
+                return f"Tap ({x},{y}) -> {view} day {selected.isoformat()}"
+        return f"Tap ({x},{y}) -> weekly tap -- ignored"
+
+    # ── Birthdays detail: only back ───────────────────────────────────────────
+    if view == "birthdays":
+        if x <= BACK_BUTTON_MAX_X and y <= BACK_BUTTON_MAX_Y:
+            set_view("dashboard")
+            _safe_refresh()
+            return f"Tap ({x},{y}) -> BACK -> dashboard"
+        return f"Tap ({x},{y}) -> birthdays tap -- ignored"
 
     # ── Dashboard view ────────────────────────────────────────────────────────
     interview_top = TOP_PADDING
