@@ -68,6 +68,51 @@ def run_summary_generation() -> None:
         log.error("Summary generation failed: %s", exc)
 
 
+def apply_actuals_to_week(active_plan: dict, week_num: int, week_data: dict, week_monday: date) -> bool:
+    """Overwrite past days in week_data with actual distances from intervals.icu.
+
+    Returns True if any day was changed. week_data is mutated in place.
+    Only updates days that have a logged activity — days with no recorded run are left alone.
+    """
+    if not Config.INTERVALS_API_KEY:
+        return False
+    try:
+        from integrations.intervals_api import analyze_week_compliance
+        compliance = analyze_week_compliance(week_data, week_monday, active_plan.get("start_date", ""))
+    except Exception as exc:
+        log.error("apply_actuals_to_week failed: %s", exc)
+        return False
+
+    if not compliance.get("has_data"):
+        return False
+
+    actuals = compliance.get("actuals", {})
+    plan_start_dt = date.fromisoformat(active_plan.get("start_date", str(week_monday)))
+    today = date.today()
+    changed = False
+
+    for i, day_name in enumerate(_PLAN_DAYS):
+        day_date = week_monday + timedelta(days=i)
+        if day_date >= today or day_date < plan_start_dt:
+            continue
+        iso = day_date.isoformat()
+        if iso not in actuals:
+            continue
+        actual_mi = round(actuals[iso], 2)
+        day_entry = week_data.setdefault(day_name, {})
+        planned_mi = float(day_entry.get("distance_miles") or 0)
+        if abs(actual_mi - planned_mi) < 0.05:
+            continue
+        day_entry["distance_miles"] = actual_mi
+        if actual_mi == 0 and day_entry.get("type") not in ("rest", None):
+            day_entry["type"] = "rest"
+        elif actual_mi > 0 and day_entry.get("type") == "rest":
+            day_entry["type"] = "easy"
+        changed = True
+
+    return changed
+
+
 def run_running_compliance_check() -> None:
     """Daily 1am job: compare yesterday's actual runs against the plan and auto-adjust."""
     if not Config.ANTHROPIC_API_KEY or not Config.INTERVALS_API_KEY:
@@ -88,9 +133,8 @@ def run_running_compliance_check() -> None:
     today_monday = today - timedelta(days=today.weekday())
     week_num = max(1, ((today_monday - start_monday).days // 7) + 1)
     week_monday = start_monday + timedelta(weeks=(week_num - 1))
-    week_sunday = week_monday + timedelta(days=6)
 
-    # Nothing to redistribute if we're at the start of the week (Monday) or past it
+    # Nothing to redistribute if we're at the start of the week (Monday)
     if today == week_monday:
         return
 
@@ -98,38 +142,8 @@ def run_running_compliance_check() -> None:
     if not week_data:
         return
 
-    try:
-        from integrations.intervals_api import analyze_week_compliance
-        compliance = analyze_week_compliance(week_data, week_monday, active_plan.get("start_date", ""))
-    except Exception as exc:
-        log.error("Running compliance check failed: %s", exc)
-        return
-
-    if not compliance.get("has_data"):
-        return
-
     # ── Retroactively update past days to match what was actually run ─────────
-    actuals = compliance.get("actuals", {})
-    plan_start_dt = date.fromisoformat(active_plan.get("start_date", str(week_monday)))
-    retroactive_changed = False
-    for i, day_name in enumerate(_PLAN_DAYS):
-        day_date = week_monday + timedelta(days=i)
-        if day_date >= today or day_date < plan_start_dt:
-            continue
-        iso = day_date.isoformat()
-        if iso not in actuals:
-            continue  # no logged activity — leave plan as-is
-        actual_mi = round(actuals[iso], 2)
-        day_entry = week_data.setdefault(day_name, {})
-        planned_mi = float(day_entry.get("distance_miles") or 0)
-        if abs(actual_mi - planned_mi) < 0.05:
-            continue  # matches closely enough
-        day_entry["distance_miles"] = actual_mi
-        if actual_mi == 0 and day_entry.get("type") not in ("rest", None):
-            day_entry["type"] = "rest"
-        elif actual_mi > 0 and day_entry.get("type") == "rest":
-            day_entry["type"] = "easy"
-        retroactive_changed = True
+    retroactive_changed = apply_actuals_to_week(active_plan, week_num, week_data, week_monday)
 
     if retroactive_changed:
         try:

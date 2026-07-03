@@ -235,6 +235,21 @@ def _running_generate_full_thread(job_id: str, intake: dict) -> None:
 
         running["active"] = new_active
         _save_plan(fresh_plan)
+
+        # Immediately backfill week 1 past days with actual run data
+        try:
+            from utils.weekly_generator import apply_actuals_to_week
+            start_dt = date.fromisoformat(new_active["start_date"])
+            week1_monday = start_dt - timedelta(days=start_dt.weekday())
+            week1_data = new_active["weeks"].get("1", {})
+            if apply_actuals_to_week(new_active, 1, week1_data, week1_monday):
+                fresh_plan2 = load_plan()
+                if fresh_plan2.get("running", {}).get("active"):
+                    fresh_plan2["running"]["active"]["weeks"]["1"] = week1_data
+                    _save_plan(fresh_plan2)
+        except Exception:
+            pass  # non-fatal — nightly job will catch it
+
         job_store.mark_done(job_id)
     except Exception as e:
         job_store.mark_failed(job_id, str(e))
