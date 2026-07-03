@@ -4,7 +4,7 @@
 #
 # Usage: sh /mnt/us/kindle/tap_listener.sh
 
-HOST="192.168.0.26"
+HOST="192.168.0.16"
 PORT="5000"
 DEBOUNCE_SECONDS=2
 TOUCH_DEV="/dev/input/event0"
