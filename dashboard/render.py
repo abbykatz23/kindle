@@ -30,6 +30,10 @@ BACK_BUTTON_MAX_Y = 80
 WEEKLY_HEADER_Y = 78   # y where day rows begin
 WEEKLY_ROW_H = 130     # height of each day row
 
+# Interview day detail task list layout — used by tap_handler to map y → task row
+TASK_LIST_START_Y = 168  # y where task rows begin in render_interview_day_detail
+TASK_ROW_H = 55           # height of each task row
+
 _FONTS_DIR = Path(__file__).parent / "assets" / "fonts"
 _font_cache: dict[tuple[int, bool], ImageFont.ImageFont] = {}
 

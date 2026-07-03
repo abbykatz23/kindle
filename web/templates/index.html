@@ -169,7 +169,9 @@
                         {% if day_tasks %}
                         <ul class="day-task-list">
                             {% for task in day_tasks %}
-                            <li class="day-task-item{% if task.get('completed') %} day-task-item--done{% endif %}">
+                            <li class="day-task-item{% if task.get('completed') %} day-task-item--done{% endif %}"
+                                data-date="{{ task.get('date', '') }}"
+                                data-task="{{ task.get('task', '') | e }}">
                                 <span class="day-task-badge day-task-badge--{{ task.get('type','other') }}">{{ task.get('type','other').replace('_',' ') }}</span>
                                 <span class="day-task-text">{{ task.get('task','') }}</span>
                                 {% if task.get('carryover_from') %}<span class="carryover-badge">↩ carried over</span>{% endif %}
@@ -308,6 +310,24 @@
 
         {# Inject curriculum target date for countdown badge #}
         <script>window.CURRICULUM_TARGET_DATE = "{{ curriculum.target_date if curriculum else '' }}";</script>
+
+        <script>
+        document.querySelectorAll('.day-task-item[data-task]').forEach(function(item) {
+            item.addEventListener('click', function() {
+                var d = this.getAttribute('data-date');
+                var t = this.getAttribute('data-task');
+                if (!d || !t) return;
+                var el = this;
+                fetch('/interview/toggle-completion', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({date: d, task: t})
+                }).then(function(r) { return r.json(); }).then(function(data) {
+                    el.classList.toggle('day-task-item--done', data.completed);
+                });
+            });
+        });
+        </script>
 
         </section>
 

@@ -375,12 +375,27 @@ def index():
         [w for w in plan.get("interview_prep", {}) if w < current_week],
         reverse=True,
     )
+
+    current_interview = plan.get("interview_prep", {}).get(current_week, {})
+
+    # Attach date + completion status to current week's tasks (in-memory only)
+    from utils.completions import get_manual_completions
+    _comp_cache: dict[str, set] = {}
+    today_monday = today - timedelta(days=today.weekday())
+    for _i, _day in enumerate(DAYS):
+        _day_date = today_monday + timedelta(days=_i)
+        _iso = _day_date.isoformat()
+        if _iso not in _comp_cache:
+            _comp_cache[_iso] = get_manual_completions(_day_date)
+        for _task in current_interview.get(_day, []):
+            _task["date"] = _iso
+            _task["completed"] = _task.get("task", "") in _comp_cache[_iso]
+
     interview_week_stats = {
         w: _interview_week_stats(data)
         for w, data in plan.get("interview_prep", {}).items()
     }
 
-    current_interview = plan.get("interview_prep", {}).get(current_week, {})
     carryover_by_day: dict[str, int] = {}
     total_carryovers = 0
     for _day in DAYS:
@@ -1050,6 +1065,19 @@ def delete_interview_outcome():
     delete_interview(interview_id)
     flash("Interview outcome deleted.", "success")
     return redirect(url_for("main.index", tab="interview"))
+
+
+@bp.route("/interview/toggle-completion", methods=["POST"])
+def toggle_completion():
+    data = request.get_json() or {}
+    try:
+        task_date = date.fromisoformat(data["date"])
+        task_name = data["task"]
+    except (KeyError, ValueError):
+        return jsonify({"error": "invalid"}), 400
+    from utils.completions import toggle_manual_completion
+    new_state = toggle_manual_completion(task_date, task_name)
+    return jsonify({"completed": new_state})
 
 
 @bp.route("/leetcode/lookup")

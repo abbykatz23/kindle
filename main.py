@@ -98,13 +98,19 @@ def run(push: bool = True) -> None:
     elif view == "interview_day":
         selected_iso = get_selected_date()
         selected = date.fromisoformat(selected_iso) if selected_iso else today
+        day_tasks = list(get_tasks_for_date(selected))
         monday = today - timedelta(days=today.weekday())
         if monday <= selected < monday + timedelta(days=7):
-            leetcode_tasks, other_tasks = _attach_completion(today)
-            all_tasks = leetcode_tasks + other_tasks
-            day_tasks = [t for t in all_tasks if t.get("date") == selected.isoformat()]
+            # Attach completion: LeetCode API + manual overrides
+            leetcode_done = _fetch_leetcode_completions_for_week(monday)
+            from utils.completions import get_manual_completions
+            manual_done = get_manual_completions(selected)
+            for t in day_tasks:
+                api = (t.get("leetcode_slug"), selected.isoformat()) in leetcode_done if t.get("leetcode_slug") else False
+                t["completed"] = api or t.get("task", "") in manual_done
         else:
-            day_tasks = [dict(t, completed=False) for t in get_tasks_for_date(selected)]
+            for t in day_tasks:
+                t["completed"] = False
         img = render_interview_day_detail(day_tasks, selected)
 
     elif view == "birthdays":

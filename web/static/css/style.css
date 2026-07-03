@@ -250,7 +250,7 @@ input:focus, select:focus, textarea:focus {
 /* Interview prep — week overview cards */
 .iweek-pills { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .4rem }
 .itask-pill { padding: .25rem .55rem; border-radius: 8px; font-size: .78rem; font-weight: 600; display: inline-flex; align-items: center; gap: .25rem }
-.itask-pill--leetcode { background: rgba(245,158,11,0.12); color: #fbbf24 }
+.itask-pill--leetcode { background: rgba(79,142,247,.12); color: var(--accent) }
 .itask-pill--system_design { background: var(--accent-dim); color: var(--accent) }
 .itask-pill--behavioral { background: rgba(168,85,247,0.12); color: #c084fc }
 .itask-pill--reading { background: var(--success-dim); color: var(--success) }
@@ -404,8 +404,10 @@ button, input[type=text] { font-size: 16px }
 /* Day task panel */
 .day-task-panel { padding: .6rem 0 .25rem; border-top: 1px solid var(--border); margin-top: .5rem; }
 .day-task-list { list-style: none; display: flex; flex-direction: column; gap: .35rem; }
-.day-task-item { display: flex; align-items: baseline; gap: .5rem; font-size: .875rem; line-height: 1.45; padding: .2rem 0; }
+.day-task-item { display: flex; align-items: baseline; gap: .5rem; font-size: .875rem; line-height: 1.45; padding: .2rem 0; cursor: pointer; border-radius: 6px; padding-left: .25rem; padding-right: .25rem; }
+.day-task-item:hover { background: var(--glass); }
 .day-task-item--done .day-task-text { text-decoration: line-through; color: var(--muted); }
+.day-task-item--done .day-task-badge { opacity: .5; }
 .day-task-badge {
   font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
   padding: .15rem .4rem; border-radius: 4px; white-space: nowrap; flex-shrink: 0;
@@ -413,7 +415,7 @@ button, input[type=text] { font-size: 16px }
 }
 .day-task-badge--leetcode { background: rgba(79,142,247,.15); color: var(--accent); }
 .day-task-badge--system_design { background: rgba(167,139,250,.15); color: #a78bfa; }
-.day-task-badge--behavioral { background: rgba(251,191,36,.12); color: #fbbf24; }
+.day-task-badge--behavioral { background: rgba(168,85,247,0.15); color: #c084fc; }
 .day-task-badge--reading { background: rgba(74,222,128,.1); color: var(--success); }
 .day-pill-hero--active { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--accent-dim); }
 

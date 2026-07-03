@@ -11,11 +11,13 @@ from dashboard.render import (
     FOOTER_HEIGHT,
     INTERVIEW_SECTION_HEIGHT,
     RUNNING_SECTION_HEIGHT,
+    TASK_LIST_START_Y,
+    TASK_ROW_H,
     TOP_PADDING,
     WEEKLY_HEADER_Y,
     WEEKLY_ROW_H,
 )
-from utils.kindle_state import get_view, set_view
+from utils.kindle_state import get_selected_date, get_view, set_view
 
 _PROJECT_ROOT = Path(__file__).parent.parent
 
@@ -33,14 +35,34 @@ def handle_tap(x: int, y: int) -> str:
     """Process a Kindle tap and return a human-readable result string."""
     view = get_view()
 
-    # ── Day detail views: only the back button is interactive ─────────────────
-    if view in ("running_day", "interview_day"):
+    # ── Running day detail: only back button ──────────────────────────────────
+    if view == "running_day":
         if x <= BACK_BUTTON_MAX_X and y <= BACK_BUTTON_MAX_Y:
-            parent = "running" if view == "running_day" else "interview"
-            set_view(parent)
+            set_view("running")
             _safe_refresh()
-            return f"Tap ({x},{y}) -> BACK -> {parent}"
-        return f"Tap ({x},{y}) -> {view} tap -- ignored"
+            return f"Tap ({x},{y}) -> BACK -> running"
+        return f"Tap ({x},{y}) -> running_day tap -- ignored"
+
+    # ── Interview day detail: back button or task toggle ──────────────────────
+    if view == "interview_day":
+        if x <= BACK_BUTTON_MAX_X and y <= BACK_BUTTON_MAX_Y:
+            set_view("interview")
+            _safe_refresh()
+            return f"Tap ({x},{y}) -> BACK -> interview"
+        if y >= TASK_LIST_START_Y:
+            selected_iso = get_selected_date()
+            if selected_iso:
+                from utils.completions import toggle_manual_completion
+                from utils.plan import get_tasks_for_date
+                selected = date.fromisoformat(selected_iso)
+                tasks = list(get_tasks_for_date(selected))
+                task_idx = (y - TASK_LIST_START_Y) // TASK_ROW_H
+                if 0 <= task_idx < len(tasks):
+                    task_name = tasks[task_idx].get("task", "")
+                    new_state = toggle_manual_completion(selected, task_name)
+                    _safe_refresh()
+                    return f"Tap ({x},{y}) -> toggle task[{task_idx}] -> {'done' if new_state else 'undone'}"
+        return f"Tap ({x},{y}) -> interview_day tap -- ignored"
 
     # ── Weekly detail views: back goes to dashboard, row tap opens day detail ─
     if view in ("running", "interview"):
