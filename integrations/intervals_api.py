@@ -301,6 +301,7 @@ def analyze_week_compliance(week_plan: dict, week_monday: date, plan_start_date:
             "missed_runs": [],
             "short_runs": [],
             "summary_text": "",
+            "actuals": dict(actuals),
         }
 
     lines = ["Training compliance gaps detected this week:"]
@@ -327,4 +328,5 @@ def analyze_week_compliance(week_plan: dict, week_monday: date, plan_start_date:
         "missed_runs": missed_runs,
         "short_runs": short_runs,
         "summary_text": "\n".join(lines),
+        "actuals": dict(actuals),
     }

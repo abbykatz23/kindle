@@ -107,6 +107,40 @@ def run_running_compliance_check() -> None:
 
     if not compliance.get("has_data"):
         return
+
+    # ── Retroactively update past days to match what was actually run ─────────
+    actuals = compliance.get("actuals", {})
+    plan_start_dt = date.fromisoformat(active_plan.get("start_date", str(week_monday)))
+    retroactive_changed = False
+    for i, day_name in enumerate(_PLAN_DAYS):
+        day_date = week_monday + timedelta(days=i)
+        if day_date >= today or day_date < plan_start_dt:
+            continue
+        iso = day_date.isoformat()
+        if iso not in actuals:
+            continue  # no logged activity — leave plan as-is
+        actual_mi = round(actuals[iso], 2)
+        day_entry = week_data.setdefault(day_name, {})
+        planned_mi = float(day_entry.get("distance_miles") or 0)
+        if abs(actual_mi - planned_mi) < 0.05:
+            continue  # matches closely enough
+        day_entry["distance_miles"] = actual_mi
+        if actual_mi == 0 and day_entry.get("type") not in ("rest", None):
+            day_entry["type"] = "rest"
+        elif actual_mi > 0 and day_entry.get("type") == "rest":
+            day_entry["type"] = "easy"
+        retroactive_changed = True
+
+    if retroactive_changed:
+        try:
+            fresh_plan = load_plan()
+            if fresh_plan.get("running", {}).get("active"):
+                fresh_plan["running"]["active"]["weeks"][str(week_num)] = week_data
+                save_plan(fresh_plan)
+                log.info("Running compliance: retroactively updated past days for week %s", week_num)
+        except Exception as exc:
+            log.error("Running compliance retroactive update failed: %s", exc)
+
     if not compliance.get("missed_runs") and not compliance.get("short_runs"):
         return
 
