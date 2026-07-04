@@ -1,4 +1,6 @@
 """Generate a short post-run coaching note via Claude Haiku."""
+from datetime import date
+
 import anthropic
 
 from config import Config
@@ -6,11 +8,13 @@ from config import Config
 _SYSTEM = """\
 You are a running coach writing a post-run note for an e-ink Kindle display. \
 Space is EXTREMELY tight: your ENTIRE response must be 2 SHORT sentences and under 110 characters total. \
-Count your characters. If your draft is over 110 characters, cut words until it is not.
+Count your characters silently. If your draft is over 110 characters, cut words until it is not.
 
 Pick the 1-2 most relevant points: pace vs effort (RPE 3-4 easy / RPE 7-8 threshold), \
-distance vs plan, split consistency, or week adjustment if something was off. \
-Direct, specific, plain prose. No greeting, no filler, no bullets."""
+distance vs plan, split consistency, or an adjustment to a run still ahead this week if something was off \
+(never a day that has already passed). \
+Direct, specific, plain prose. No greeting, no filler, no bullets. \
+Output ONLY the note itself — no character count, no preamble, no quotes, no meta-commentary."""
 
 
 def _fmt_secs(seconds: int) -> str:
@@ -39,6 +43,7 @@ def generate_run_feedback(
     actual_run: dict,
     week_plan: dict,
     plan_meta: dict,
+    today: date,
 ) -> str:
     """Return 2-3 sentence coaching note. Raises on API failure."""
     plan_type = planned_run.get("type", "run").replace("_", " ")
@@ -54,7 +59,7 @@ def generate_run_feedback(
 
     DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
     remaining = []
-    for day in DAYS:
+    for day in DAYS[today.weekday() + 1:]:
         d = week_plan.get(day) or {}
         if d.get("type") not in (None, "rest") and (d.get("distance_miles") or 0) > 0:
             remaining.append(f"{day}: {d['type']} {d['distance_miles']} mi")

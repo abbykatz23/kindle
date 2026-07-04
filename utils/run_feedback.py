@@ -46,7 +46,7 @@ def get_or_generate_feedback(
             return None
 
         from integrations.run_feedback_claude import generate_run_feedback
-        feedback = generate_run_feedback(planned_run, actual_run, week_plan, plan_meta)
+        feedback = generate_run_feedback(planned_run, actual_run, week_plan, plan_meta, today)
         save_feedback(today, feedback)
         return feedback
     except Exception as e:
