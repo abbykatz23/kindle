@@ -240,19 +240,25 @@ def _draw_birthdays_section(
 ) -> None:
     draw.text((PADDING_X, y + 14), "BIRTHDAYS", font=_font(36, bold=True), fill=80)
 
+    todays_names = [b["name"] for b in birthdays if b.get("days_until", 0) == 0]
+    if todays_names:
+        text = f"{' & '.join(todays_names)}!"
+        font = _font(64, bold=True)
+        text = _truncate_to_width(text, font, width - 2 * PADDING_X)
+        draw.text((PADDING_X, y + 78), text, font=font, fill=0)
+        return
+
     line_y = y + 72
     for bday in birthdays[:MAX_BIRTHDAYS]:
         days = bday.get("days_until", 0)
-        if days == 0:
-            when = "today"
-        elif days == 1:
+        if days == 1:
             when = "tomorrow"
         else:
             when = f"{days} days away"
         date_str = bday.get("formatted_date", "")
         text = f"• {bday['name']} — {date_str} ({when})"
         draw.text((PADDING_X, line_y), text,
-                  font=_font(22, bold=days == 0), fill=0)
+                  font=_font(22), fill=0)
         line_y += 34
 
 
