@@ -56,6 +56,32 @@ def get_todays_run_plan(today: date) -> dict | None:
     return active.get("weeks", {}).get(str(week_num), {}).get(day_name)
 
 
+def update_run_plan_day(d: date, updates: dict) -> bool:
+    """Merge `updates` into the active running plan's entry for date `d`.
+
+    Returns False if there's no active plan covering this date.
+    """
+    plan = load_plan()
+    running = plan.get("running", {})
+    active = running.get("active") if isinstance(running, dict) else None
+    if not active:
+        return False
+    start_date = active.get("start_date")
+    if not start_date:
+        return False
+    start = date.fromisoformat(start_date)
+    start_monday = start - timedelta(days=start.weekday())
+    d_monday = d - timedelta(days=d.weekday())
+    week_num = max(1, ((d_monday - start_monday).days // 7) + 1)
+    day_name = d.strftime("%A").lower()
+
+    weeks = active.setdefault("weeks", {})
+    day_entry = weeks.setdefault(str(week_num), {}).setdefault(day_name, {})
+    day_entry.update(updates)
+    save_plan(plan)
+    return True
+
+
 def get_tasks_for_date(d: date) -> list[dict]:
     """Return interview prep tasks for the given date (may be empty list)."""
     plan = load_plan()

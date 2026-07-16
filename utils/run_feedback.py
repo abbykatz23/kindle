@@ -1,7 +1,7 @@
 """Cache one AI coaching note per calendar day in data/run_feedback.json."""
 import json
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 _CACHE_FILE = Path(__file__).parent.parent / "data" / "run_feedback.json"
@@ -45,10 +45,24 @@ def get_or_generate_feedback(
         if not actual_run:
             return None
 
+        compliance = {}
+        start_date = plan_meta.get("start_date")
+        if start_date:
+            from integrations.intervals_api import analyze_week_compliance
+            week_monday = today - timedelta(days=today.weekday())
+            compliance = analyze_week_compliance(week_plan, week_monday, start_date)
+
         from integrations.run_feedback_claude import generate_run_feedback
-        feedback = generate_run_feedback(planned_run, actual_run, week_plan, plan_meta, today)
-        save_feedback(today, feedback)
-        return feedback
+        result = generate_run_feedback(planned_run, actual_run, week_plan, plan_meta, today, compliance)
+        note = result["note"]
+
+        adjustment = result.get("adjust_tomorrow")
+        if adjustment:
+            from utils.plan import update_run_plan_day
+            update_run_plan_day(today + timedelta(days=1), adjustment)
+
+        save_feedback(today, note)
+        return note
     except Exception as e:
         print(f"run feedback generation failed: {e}", file=sys.stderr)
         return None

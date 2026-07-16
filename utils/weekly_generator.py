@@ -163,7 +163,12 @@ def run_running_compliance_check() -> None:
         log.error("Running compliance check failed: %s", exc)
         return
 
-    if not compliance.get("missed_runs") and not compliance.get("short_runs"):
+    # Only react to fully-missed days here. A short-but-completed run already gets
+    # a same-day reconciliation (see run_feedback.get_or_generate_feedback) that
+    # weighs this week's compliance against how that specific run actually felt —
+    # this blind nightly pass would otherwise second-guess that decision using
+    # only the mileage gap, with no idea a run happened at all.
+    if not compliance.get("missed_runs"):
         return
 
     remaining = [

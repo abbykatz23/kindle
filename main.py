@@ -134,6 +134,7 @@ def run(push: bool = True) -> None:
             plan_meta = {
                 "race_name": active.get("race_name", ""),
                 "race_date": active.get("race_date", ""),
+                "start_date": active.get("start_date", ""),
             }
             run_feedback = get_or_generate_feedback(today, run_plan, week_plan, plan_meta)
 
