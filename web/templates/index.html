@@ -32,11 +32,9 @@
             {# Fixed categories: System Design #}
             {% for category in fixed_categories %}
             <div class="prep-section">
-                <div class="prep-section__header">
-                    <h3>{{ category_labels[category] }}</h3>
-                </div>
                 <ul class="prep-item-list">
                     <li class="prep-item-row">
+                        <span class="prep-item-title">{{ category_labels[category] }}</span>
                         <span class="prep-item-today" data-today-total data-category="{{ category }}">{% if fixed_totals.get(category, 0) > 0 %}{{ fixed_totals.get(category, 0) }}m today{% endif %}</span>
                         <div class="prep-item-actions">
                             <button type="button" class="btn log-time-btn" data-category="{{ category }}" data-minutes="5">+5</button>
