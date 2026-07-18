@@ -34,21 +34,21 @@ WEEKLY_ROW_H = 130     # height of each day row
 # Interview prep detail view layout — used by tap_handler to map y → loggable row
 INTERVIEW_PREP_HEADER_Y = 110  # y where the tappable row list begins
 INTERVIEW_PREP_ROW_H = 64      # height of each row
-LOG_BTN_W = 68                 # width of a +5/+15 tap button
-LOG_BTN_H = 40                 # height of a +5/+15 tap button
-LOG_BTN_GAP = 10               # gap between the +5 and +15 buttons
+LOG_BTN_W = 68                 # width of a +5/+15/+30 tap button
+LOG_BTN_H = 40                 # height of a +5/+15/+30 tap button
+LOG_BTN_GAP = 10               # gap between adjacent buttons
 
-# Interview prep dashboard summary layout — one shared "arm" control (5/15) plus
-# a compact list of every loggable row (same rows as the detail view). Tap a
-# number to arm it, then tap a row to log that amount against it.
+# Interview prep dashboard summary layout — one shared "arm" control (+5/+15/+30)
+# plus a compact list of every loggable row (same rows as the detail view). Tap
+# a number to arm it, then tap a row to log that amount against it.
 INTERVIEW_PREP_DASH_ARM_Y = 12      # y-offset from section top where the arm buttons sit
-DASH_ARM_BTN_W = 56                 # width of the shared "5"/"15" arm button
-DASH_ARM_BTN_H = 36                 # height of the shared "5"/"15" arm button
-DASH_ARM_BTN_GAP = 8                # gap between the "5" and "15" arm buttons
+DASH_ARM_BTN_W = 56                 # width of a shared "+5"/"+15"/"+30" arm button
+DASH_ARM_BTN_H = 36                 # height of a shared "+5"/"+15"/"+30" arm button
+DASH_ARM_BTN_GAP = 8                # gap between adjacent arm buttons
 INTERVIEW_PREP_DASH_SUBTITLE_Y = 58  # y-offset for the "LeetCode: N solved" subtitle
 INTERVIEW_PREP_DASH_DIVIDER_Y = 88   # y-offset for the divider above the row list
 INTERVIEW_PREP_DASH_LIST_Y = 98      # y-offset from section top where the row list begins
-INTERVIEW_PREP_DASH_ROW_H = 32       # height of each compact dashboard row
+INTERVIEW_PREP_DASH_ROW_H = 44       # height of each compact dashboard row
 
 _FONTS_DIR = Path(__file__).parent / "assets" / "fonts"
 _font_cache: dict[tuple[int, bool], ImageFont.ImageFont] = {}
@@ -139,7 +139,7 @@ def _draw_interview_prep_section(
         fill=140, width=1,
     )
 
-    row_font = _font(20)
+    row_font = _font(22)
     cursor_y = y + INTERVIEW_PREP_DASH_LIST_Y
     max_row_bottom = y + INTERVIEW_SECTION_HEIGHT - 16
 
@@ -150,7 +150,10 @@ def _draw_interview_prep_section(
         for row in rows:
             if cursor_y + INTERVIEW_PREP_DASH_ROW_H > max_row_bottom:
                 break
-            text = f"{row['label']} — {row['today_minutes']}m today"
+            if row["today_minutes"] > 0:
+                text = f"{row['label']} — {row['today_minutes']}m today"
+            else:
+                text = row["label"]
             text = _truncate_to_width(text, row_font, width - 2 * PADDING_X)
             draw.text((PADDING_X, cursor_y), text, font=row_font, fill=0)
             cursor_y += INTERVIEW_PREP_DASH_ROW_H
@@ -169,24 +172,28 @@ def _draw_interview_prep_section(
     )
 
 
-def get_dash_arm_button_ranges(width: int) -> tuple[tuple[int, int], tuple[int, int]]:
-    """Return ((x0,x1) for the shared '5' button, (x0,x1) for '15'), right-aligned.
+def get_dash_arm_button_ranges(width: int) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
+    """Return ((x0,x1) for '+5', (x0,x1) for '+15', (x0,x1) for '+30'), right-aligned.
 
     Shared by _draw_arm_buttons and tap_handler so button geometry can never
     drift between what's drawn and what's tap-hit-tested.
     """
-    btn15_x1 = width - PADDING_X
+    btn30_x1 = width - PADDING_X
+    btn30_x0 = btn30_x1 - DASH_ARM_BTN_W
+    btn15_x1 = btn30_x0 - DASH_ARM_BTN_GAP
     btn15_x0 = btn15_x1 - DASH_ARM_BTN_W
     btn5_x1 = btn15_x0 - DASH_ARM_BTN_GAP
     btn5_x0 = btn5_x1 - DASH_ARM_BTN_W
-    return (btn5_x0, btn5_x1), (btn15_x0, btn15_x1)
+    return (btn5_x0, btn5_x1), (btn15_x0, btn15_x1), (btn30_x0, btn30_x1)
 
 
 def _draw_arm_buttons(draw: ImageDraw.ImageDraw, width: int, btn_y: int, pending_minutes: int | None) -> None:
-    (x0_5, x1_5), (x0_15, x1_15) = get_dash_arm_button_ranges(width)
+    (x0_5, x1_5), (x0_15, x1_15), (x0_30, x1_30) = get_dash_arm_button_ranges(width)
     btn_font = _font(20, bold=True)
 
-    for x0, x1, minutes, text in ((x0_5, x1_5, 5, "5"), (x0_15, x1_15, 15, "15")):
+    for x0, x1, minutes, text in (
+        (x0_5, x1_5, 5, "+5"), (x0_15, x1_15, 15, "+15"), (x0_30, x1_30, 30, "+30"),
+    ):
         armed = pending_minutes == minutes
         draw.rectangle([x0, btn_y, x1, btn_y + DASH_ARM_BTN_H],
                        fill=(0 if armed else 255), outline=100, width=2)
@@ -216,7 +223,7 @@ def _draw_running_section(
         if has_map:
             text_width -= ROUTE_THUMB_W + ROUTE_THUMB_GAP
             thumb_x0 = width - PADDING_X - ROUTE_THUMB_W
-            thumb_y0 = y + 60
+            thumb_y0 = y + 80
             _draw_route(draw, thumb_x0, thumb_y0, ROUTE_THUMB_W, ROUTE_THUMB_H, route)
 
         if feedback:
@@ -525,24 +532,26 @@ def render_running_detail(
     return img
 
 
-def get_log_button_ranges(width: int) -> tuple[tuple[int, int], tuple[int, int]]:
-    """Return ((x0,x1) for +5, (x0,x1) for +15), right-aligned within a row.
+def get_log_button_ranges(width: int) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
+    """Return ((x0,x1) for +5, (x0,x1) for +15, (x0,x1) for +30), right-aligned within a row.
 
     Shared by _draw_log_buttons and tap_handler so button geometry can never
     drift between what's drawn and what's tap-hit-tested.
     """
-    btn15_x1 = width - PADDING_X
+    btn30_x1 = width - PADDING_X
+    btn30_x0 = btn30_x1 - LOG_BTN_W
+    btn15_x1 = btn30_x0 - LOG_BTN_GAP
     btn15_x0 = btn15_x1 - LOG_BTN_W
     btn5_x1 = btn15_x0 - LOG_BTN_GAP
     btn5_x0 = btn5_x1 - LOG_BTN_W
-    return (btn5_x0, btn5_x1), (btn15_x0, btn15_x1)
+    return (btn5_x0, btn5_x1), (btn15_x0, btn15_x1), (btn30_x0, btn30_x1)
 
 
 def render_interview_prep_detail(
     rows: list[dict],
     leetcode_today: dict,
 ) -> Image.Image:
-    """Full-page Kindle view: every loggable category/item with +5/+15 tap targets.
+    """Full-page Kindle view: every loggable category/item with +5/+15/+30 tap targets.
 
     `rows` is utils.interview_prep.get_loggable_rows()'s output, passed through
     by the caller — render.py stays pure-Pillow with no utils/integrations imports.
@@ -562,7 +571,7 @@ def render_interview_prep_detail(
     lc_text = f"LeetCode: {lc_count} solved today"
     lc_font = _font(19)
     lb = draw.textbbox((0, 0), lc_text, font=lc_font)
-    draw.text((width - PADDING_X - (lb[2] - lb[0]), 24), lc_text, font=lc_font, fill=130)
+    draw.text((width - PADDING_X - (lb[2] - lb[0]), 56), lc_text, font=lc_font, fill=130)
 
     draw.line([(PADDING_X, INTERVIEW_PREP_HEADER_Y - 10), (width - PADDING_X, INTERVIEW_PREP_HEADER_Y - 10)],
               fill=80, width=2)
@@ -601,23 +610,24 @@ def _draw_log_row(draw: ImageDraw.ImageDraw, width: int, row_y: int, row: dict) 
     label = f"{tag} · {row['label']}" if tag else row["label"]
 
     label_font = _font(22)
-    buttons_w = 2 * LOG_BTN_W + LOG_BTN_GAP
+    buttons_w = 3 * LOG_BTN_W + 2 * LOG_BTN_GAP
     max_label_w = width - 2 * PADDING_X - buttons_w - 20
     label = _truncate_to_width(label, label_font, max_label_w)
     draw.text((PADDING_X, row_y + 8), label, font=label_font, fill=0)
 
-    today_text = f"{row.get('today_minutes', 0)}m today"
-    draw.text((PADDING_X, row_y + 36), today_text, font=_font(17), fill=130)
+    if row.get("today_minutes", 0) > 0:
+        today_text = f"{row['today_minutes']}m today"
+        draw.text((PADDING_X, row_y + 36), today_text, font=_font(17), fill=130)
 
     _draw_log_buttons(draw, width, row_y)
 
 
 def _draw_log_buttons(draw: ImageDraw.ImageDraw, width: int, row_y: int) -> None:
-    (x0_5, x1_5), (x0_15, x1_15) = get_log_button_ranges(width)
+    (x0_5, x1_5), (x0_15, x1_15), (x0_30, x1_30) = get_log_button_ranges(width)
     btn_y = row_y + (INTERVIEW_PREP_ROW_H - LOG_BTN_H) // 2
     btn_font = _font(20, bold=True)
 
-    for x0, x1, text in ((x0_5, x1_5, "+5"), (x0_15, x1_15, "+15")):
+    for x0, x1, text in ((x0_5, x1_5, "+5"), (x0_15, x1_15, "+15"), (x0_30, x1_30, "+30")):
         draw.rectangle([x0, btn_y, x1, btn_y + LOG_BTN_H], fill=255, outline=100, width=2)
         tb = draw.textbbox((0, 0), text, font=btn_font)
         tw, th = tb[2] - tb[0], tb[3] - tb[1]

@@ -50,7 +50,7 @@ def handle_tap(x: int, y: int) -> str:
             return f"Tap ({x},{y}) -> BACK -> running"
         return f"Tap ({x},{y}) -> running_day tap -- ignored"
 
-    # ── Interview prep detail: back button or +5/+15 log tap ──────────────────
+    # ── Interview prep detail: back button or +5/+15/+30 log tap ──────────────
     if view == "interview_prep":
         if x <= BACK_BUTTON_MAX_X and y <= BACK_BUTTON_MAX_Y:
             set_view("dashboard")
@@ -66,13 +66,15 @@ def handle_tap(x: int, y: int) -> str:
                 row_y = INTERVIEW_PREP_HEADER_Y + row_idx * INTERVIEW_PREP_ROW_H
                 btn_y = row_y + (INTERVIEW_PREP_ROW_H - LOG_BTN_H) // 2
                 if btn_y <= y <= btn_y + LOG_BTN_H:
-                    (x0_5, x1_5), (x0_15, x1_15) = get_log_button_ranges(Config.DASHBOARD_WIDTH)
+                    (x0_5, x1_5), (x0_15, x1_15), (x0_30, x1_30) = get_log_button_ranges(Config.DASHBOARD_WIDTH)
                     row = rows[row_idx]
                     minutes = None
                     if x0_5 <= x <= x1_5:
                         minutes = 5
                     elif x0_15 <= x <= x1_15:
                         minutes = 15
+                    elif x0_30 <= x <= x1_30:
+                        minutes = 30
                     if minutes:
                         log_time(row["category"], minutes, item_id=row["item_id"])
                         _safe_refresh()
@@ -123,17 +125,19 @@ def handle_tap(x: int, y: int) -> str:
         return f"Tap ({x},{y}) -> RUNNING section -> running detail view"
 
     if interview_top <= y < interview_bottom:
-        # 1. Shared "5"/"15" arm buttons: tap to arm that amount (tap the same
-        #    value again to un-arm). Nothing is logged until a row is tapped.
+        # 1. Shared "+5"/"+15"/"+30" arm buttons: tap to arm that amount (tap the
+        #    same value again to un-arm). Nothing is logged until a row is tapped.
         arm_y0 = interview_top + INTERVIEW_PREP_DASH_ARM_Y
         arm_y1 = arm_y0 + DASH_ARM_BTN_H
         if arm_y0 <= y <= arm_y1:
-            (x0_5, x1_5), (x0_15, x1_15) = get_dash_arm_button_ranges(Config.DASHBOARD_WIDTH)
+            (x0_5, x1_5), (x0_15, x1_15), (x0_30, x1_30) = get_dash_arm_button_ranges(Config.DASHBOARD_WIDTH)
             tapped = None
             if x0_5 <= x <= x1_5:
                 tapped = 5
             elif x0_15 <= x <= x1_15:
                 tapped = 15
+            elif x0_30 <= x <= x1_30:
+                tapped = 30
             if tapped:
                 new_value = None if get_pending_minutes() == tapped else tapped
                 set_pending_minutes(new_value)
