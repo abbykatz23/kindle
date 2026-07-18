@@ -7,7 +7,7 @@ from flask import Blueprint, flash, jsonify, redirect, render_template, request,
 from config import Config
 from utils import jobs as job_store
 from utils.interview_items import ITEM_CATEGORIES, add_item, get_items, mark_item_complete
-from utils.interview_prep import CATEGORY_LABELS, get_dashboard_summary, get_loggable_rows
+from utils.interview_prep import CATEGORY_LABELS, get_loggable_rows
 from utils.leetcode_history import get_today as get_leetcode_today, get_history as get_leetcode_analytics_history
 from utils.plan import load_plan, load_birthdays, save_birthdays
 from utils.tap_handler import handle_tap

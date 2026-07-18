@@ -8,10 +8,11 @@ from config import Config
 from dashboard.render import (
     BACK_BUTTON_MAX_X,
     BACK_BUTTON_MAX_Y,
-    DASH_LOG_BTN_H,
+    DASH_ARM_BTN_H,
     FOOTER_HEIGHT,
-    INTERVIEW_PREP_DASH_LINE_H,
-    INTERVIEW_PREP_DASH_LINES_Y,
+    INTERVIEW_PREP_DASH_ARM_Y,
+    INTERVIEW_PREP_DASH_LIST_Y,
+    INTERVIEW_PREP_DASH_ROW_H,
     INTERVIEW_PREP_HEADER_Y,
     INTERVIEW_PREP_ROW_H,
     INTERVIEW_SECTION_HEIGHT,
@@ -20,10 +21,10 @@ from dashboard.render import (
     TOP_PADDING,
     WEEKLY_HEADER_Y,
     WEEKLY_ROW_H,
-    get_dashboard_log_button_ranges,
+    get_dash_arm_button_ranges,
     get_log_button_ranges,
 )
-from utils.kindle_state import get_selected_date, get_view, set_view
+from utils.kindle_state import get_pending_minutes, get_selected_date, get_view, set_pending_minutes, set_view
 
 _PROJECT_ROOT = Path(__file__).parent.parent
 
@@ -122,23 +123,50 @@ def handle_tap(x: int, y: int) -> str:
         return f"Tap ({x},{y}) -> RUNNING section -> running detail view"
 
     if interview_top <= y < interview_bottom:
-        # Quick-log buttons on the System Design / Behavioral summary lines —
-        # checked before the "tap anywhere -> drill in" fallback below.
-        (x0_5, x1_5), (x0_15, x1_15) = get_dashboard_log_button_ranges(Config.DASHBOARD_WIDTH)
-        for category, row_idx in (("system_design", 0), ("behavioral", 1)):
-            row_y = interview_top + INTERVIEW_PREP_DASH_LINES_Y + row_idx * INTERVIEW_PREP_DASH_LINE_H
-            if row_y <= y <= row_y + DASH_LOG_BTN_H:
-                minutes = None
-                if x0_5 <= x <= x1_5:
-                    minutes = 5
-                elif x0_15 <= x <= x1_15:
-                    minutes = 15
-                if minutes:
-                    from utils.time_log import log_time
-                    log_time(category, minutes, item_id=None)
-                    _safe_refresh()
-                    return f"Tap ({x},{y}) -> log +{minutes}m on {category}"
+        # 1. Shared "5"/"15" arm buttons: tap to arm that amount (tap the same
+        #    value again to un-arm). Nothing is logged until a row is tapped.
+        arm_y0 = interview_top + INTERVIEW_PREP_DASH_ARM_Y
+        arm_y1 = arm_y0 + DASH_ARM_BTN_H
+        if arm_y0 <= y <= arm_y1:
+            (x0_5, x1_5), (x0_15, x1_15) = get_dash_arm_button_ranges(Config.DASHBOARD_WIDTH)
+            tapped = None
+            if x0_5 <= x <= x1_5:
+                tapped = 5
+            elif x0_15 <= x <= x1_15:
+                tapped = 15
+            if tapped:
+                new_value = None if get_pending_minutes() == tapped else tapped
+                set_pending_minutes(new_value)
+                _safe_refresh()
+                return f"Tap ({x},{y}) -> {'armed' if new_value else 'un-armed'} {tapped}m"
 
+        # 2. A row in the loggable list: apply the armed amount if one is set,
+        #    otherwise drill into the full detail page (e.g. to reach overflow rows).
+        list_top = interview_top + INTERVIEW_PREP_DASH_LIST_Y
+        if y >= list_top:
+            from utils.interview_prep import get_loggable_rows
+
+            rows = get_loggable_rows(date.today())
+            row_idx = (y - list_top) // INTERVIEW_PREP_DASH_ROW_H
+            if 0 <= row_idx < len(rows):
+                pending = get_pending_minutes()
+                row = rows[row_idx]
+                if pending:
+                    from utils.time_log import log_time
+                    log_time(row["category"], pending, item_id=row["item_id"])
+                    set_pending_minutes(None)
+                    _safe_refresh()
+                    return f"Tap ({x},{y}) -> log +{pending}m on {row['label']}"
+                set_view("interview_prep")
+                _safe_refresh()
+                return f"Tap ({x},{y}) -> INTERVIEW row -> interview prep detail view"
+
+        # 3. Anywhere else in the section: a stray tap while armed just cancels
+        #    (safer than jumping to a different screen on e-ink); otherwise drill in.
+        if get_pending_minutes():
+            set_pending_minutes(None)
+            _safe_refresh()
+            return f"Tap ({x},{y}) -> cancelled pending log"
         set_view("interview_prep")
         _safe_refresh()
         return f"Tap ({x},{y}) -> INTERVIEW section -> interview prep detail view"

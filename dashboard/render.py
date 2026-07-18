@@ -1,4 +1,5 @@
 import calendar
+import math
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -13,6 +14,12 @@ INTERVIEW_SECTION_HEIGHT = 460
 RUNNING_SECTION_HEIGHT = 300
 BIRTHDAYS_SECTION_HEIGHT = 184  # 1024 - 30 - 460 - 300 - 50 footer
 FOOTER_HEIGHT = 50
+
+# Route map thumbnail — shown top-right of the home-screen RUNNING section
+# when today's run is completed and has GPS data.
+ROUTE_THUMB_W = 150
+ROUTE_THUMB_H = 110
+ROUTE_THUMB_GAP = 14
 
 MAX_BIRTHDAYS = 3
 
@@ -31,13 +38,17 @@ LOG_BTN_W = 68                 # width of a +5/+15 tap button
 LOG_BTN_H = 40                 # height of a +5/+15 tap button
 LOG_BTN_GAP = 10               # gap between the +5 and +15 buttons
 
-# Interview prep dashboard summary layout — used by tap_handler to map taps on
-# the System Design / Behavioral quick-log buttons shown on the home screen
-INTERVIEW_PREP_DASH_LINES_Y = 72  # y-offset from section top where summary lines begin
-INTERVIEW_PREP_DASH_LINE_H = 42   # height of each summary line
-DASH_LOG_BTN_W = 46               # width of a dashboard-row +5/+15 tap button
-DASH_LOG_BTN_H = 30               # height of a dashboard-row +5/+15 tap button
-DASH_LOG_BTN_GAP = 8              # gap between the +5 and +15 buttons
+# Interview prep dashboard summary layout — one shared "arm" control (5/15) plus
+# a compact list of every loggable row (same rows as the detail view). Tap a
+# number to arm it, then tap a row to log that amount against it.
+INTERVIEW_PREP_DASH_ARM_Y = 12      # y-offset from section top where the arm buttons sit
+DASH_ARM_BTN_W = 56                 # width of the shared "5"/"15" arm button
+DASH_ARM_BTN_H = 36                 # height of the shared "5"/"15" arm button
+DASH_ARM_BTN_GAP = 8                # gap between the "5" and "15" arm buttons
+INTERVIEW_PREP_DASH_SUBTITLE_Y = 58  # y-offset for the "LeetCode: N solved" subtitle
+INTERVIEW_PREP_DASH_DIVIDER_Y = 88   # y-offset for the divider above the row list
+INTERVIEW_PREP_DASH_LIST_Y = 98      # y-offset from section top where the row list begins
+INTERVIEW_PREP_DASH_ROW_H = 32       # height of each compact dashboard row
 
 _FONTS_DIR = Path(__file__).parent / "assets" / "fonts"
 _font_cache: dict[tuple[int, bool], ImageFont.ImageFont] = {}
@@ -70,27 +81,31 @@ def _font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 def render_dashboard(
-    interview_summary: dict,
+    interview_prep_rows: list[dict],
+    pending_minutes: int | None,
     leetcode_today: dict,
     run: dict | None,
     run_completed: bool,
     birthdays: list[dict],
     last_refreshed_label: str,
     run_feedback: str | None = None,
+    route: list[tuple[float, float]] | None = None,
 ) -> Image.Image:
-    """interview_summary is utils.interview_prep.get_dashboard_summary()'s output;
+    """interview_prep_rows is utils.interview_prep.get_loggable_rows()'s output;
+    pending_minutes is utils.kindle_state.get_pending_minutes()'s output;
     leetcode_today is utils.leetcode_history.get_today()'s output."""
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
     img = Image.new("L", (width, height), color=255)
     draw = ImageDraw.Draw(img)
 
     y = TOP_PADDING
-    _draw_interview_prep_section(draw, y, width, interview_summary, leetcode_today)
+    _draw_interview_prep_section(draw, y, width, interview_prep_rows, leetcode_today, pending_minutes)
     y += INTERVIEW_SECTION_HEIGHT
 
     _draw_running_section(draw, y, width, run, run_completed,
                           feedback=run_feedback,
-                          show_bottom_divider=bool(birthdays))
+                          show_bottom_divider=bool(birthdays),
+                          route=route)
     y += RUNNING_SECTION_HEIGHT
 
     if birthdays:
@@ -105,34 +120,46 @@ def _draw_interview_prep_section(
     draw: ImageDraw.ImageDraw,
     y: int,
     width: int,
-    summary: dict,
+    rows: list[dict],
     leetcode_today: dict,
+    pending_minutes: int | None,
 ) -> None:
+    """Shared arm-then-tap flow: tap 5/15 to arm an amount, then tap a row to log
+    it against that category/item. `rows` is the same list the detail view uses,
+    so every book/project/wildcard item gets its own unambiguous tap target."""
     draw.text((PADDING_X, y + 14), "INTERVIEW PREP", font=_font(36, bold=True), fill=80)
-
-    line_font = _font(24)
-    cursor_y = y + INTERVIEW_PREP_DASH_LINES_Y
-
-    sd = summary.get("system_design") or {}
-    _draw_dashboard_log_row(draw, width, cursor_y, f"System Design — {sd.get('today_minutes', 0)}m today")
-    cursor_y += INTERVIEW_PREP_DASH_LINE_H
-
-    beh = summary.get("behavioral") or {}
-    _draw_dashboard_log_row(draw, width, cursor_y, f"Behavioral — {beh.get('today_minutes', 0)}m today")
-    cursor_y += INTERVIEW_PREP_DASH_LINE_H
-
-    for category in ("books", "projects", "wildcard"):
-        entry = summary.get(category)
-        if entry is None:
-            continue
-        titles = " · ".join(entry.get("titles", []))
-        text = f"{titles} — {entry.get('today_minutes', 0)}m today"
-        text = _truncate_to_width(text, line_font, width - 2 * PADDING_X)
-        draw.text((PADDING_X, cursor_y), text, font=line_font, fill=0)
-        cursor_y += INTERVIEW_PREP_DASH_LINE_H
+    _draw_arm_buttons(draw, width, y + INTERVIEW_PREP_DASH_ARM_Y, pending_minutes)
 
     lc_count = (leetcode_today or {}).get("count", 0)
-    draw.text((PADDING_X, cursor_y), f"LeetCode — {lc_count} solved today", font=line_font, fill=0)
+    draw.text((PADDING_X, y + INTERVIEW_PREP_DASH_SUBTITLE_Y), f"LeetCode: {lc_count} solved today",
+              font=_font(18), fill=130)
+
+    draw.line(
+        [(PADDING_X, y + INTERVIEW_PREP_DASH_DIVIDER_Y), (width - PADDING_X, y + INTERVIEW_PREP_DASH_DIVIDER_Y)],
+        fill=140, width=1,
+    )
+
+    row_font = _font(20)
+    cursor_y = y + INTERVIEW_PREP_DASH_LIST_Y
+    max_row_bottom = y + INTERVIEW_SECTION_HEIGHT - 16
+
+    if not rows:
+        draw.text((PADDING_X, cursor_y), "Nothing to log yet.", font=row_font, fill=160)
+    else:
+        visible_count = 0
+        for row in rows:
+            if cursor_y + INTERVIEW_PREP_DASH_ROW_H > max_row_bottom:
+                break
+            text = f"{row['label']} — {row['today_minutes']}m today"
+            text = _truncate_to_width(text, row_font, width - 2 * PADDING_X)
+            draw.text((PADDING_X, cursor_y), text, font=row_font, fill=0)
+            cursor_y += INTERVIEW_PREP_DASH_ROW_H
+            visible_count += 1
+
+        overflow = len(rows) - visible_count
+        if overflow > 0:
+            draw.text((PADDING_X, cursor_y), f"+{overflow} more — tap to see all",
+                      font=_font(16), fill=140)
 
     # Section separator
     draw.line(
@@ -142,38 +169,31 @@ def _draw_interview_prep_section(
     )
 
 
-def get_dashboard_log_button_ranges(width: int) -> tuple[tuple[int, int], tuple[int, int]]:
-    """Return ((x0,x1) for +5, (x0,x1) for +15), right-aligned within a dashboard row.
+def get_dash_arm_button_ranges(width: int) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Return ((x0,x1) for the shared '5' button, (x0,x1) for '15'), right-aligned.
 
-    Shared by _draw_dashboard_log_buttons and tap_handler — same geometry-lives-in-
-    one-place convention as get_log_button_ranges.
+    Shared by _draw_arm_buttons and tap_handler so button geometry can never
+    drift between what's drawn and what's tap-hit-tested.
     """
     btn15_x1 = width - PADDING_X
-    btn15_x0 = btn15_x1 - DASH_LOG_BTN_W
-    btn5_x1 = btn15_x0 - DASH_LOG_BTN_GAP
-    btn5_x0 = btn5_x1 - DASH_LOG_BTN_W
+    btn15_x0 = btn15_x1 - DASH_ARM_BTN_W
+    btn5_x1 = btn15_x0 - DASH_ARM_BTN_GAP
+    btn5_x0 = btn5_x1 - DASH_ARM_BTN_W
     return (btn5_x0, btn5_x1), (btn15_x0, btn15_x1)
 
 
-def _draw_dashboard_log_row(draw: ImageDraw.ImageDraw, width: int, row_y: int, text: str) -> None:
-    line_font = _font(24)
-    buttons_w = 2 * DASH_LOG_BTN_W + DASH_LOG_BTN_GAP
-    max_text_w = width - 2 * PADDING_X - buttons_w - 16
-    text = _truncate_to_width(text, line_font, max_text_w)
-    draw.text((PADDING_X, row_y), text, font=line_font, fill=0)
-    _draw_dashboard_log_buttons(draw, width, row_y)
+def _draw_arm_buttons(draw: ImageDraw.ImageDraw, width: int, btn_y: int, pending_minutes: int | None) -> None:
+    (x0_5, x1_5), (x0_15, x1_15) = get_dash_arm_button_ranges(width)
+    btn_font = _font(20, bold=True)
 
-
-def _draw_dashboard_log_buttons(draw: ImageDraw.ImageDraw, width: int, row_y: int) -> None:
-    (x0_5, x1_5), (x0_15, x1_15) = get_dashboard_log_button_ranges(width)
-    btn_font = _font(15, bold=True)
-
-    for x0, x1, text in ((x0_5, x1_5, "+5"), (x0_15, x1_15, "+15")):
-        draw.rectangle([x0, row_y, x1, row_y + DASH_LOG_BTN_H], fill=255, outline=100, width=2)
+    for x0, x1, minutes, text in ((x0_5, x1_5, 5, "5"), (x0_15, x1_15, 15, "15")):
+        armed = pending_minutes == minutes
+        draw.rectangle([x0, btn_y, x1, btn_y + DASH_ARM_BTN_H],
+                       fill=(0 if armed else 255), outline=100, width=2)
         tb = draw.textbbox((0, 0), text, font=btn_font)
         tw, th = tb[2] - tb[0], tb[3] - tb[1]
-        draw.text((x0 + (DASH_LOG_BTN_W - tw) // 2, row_y + (DASH_LOG_BTN_H - th) // 2 - tb[1]),
-                  text, font=btn_font, fill=100)
+        draw.text((x0 + (DASH_ARM_BTN_W - tw) // 2, btn_y + (DASH_ARM_BTN_H - th) // 2 - tb[1]),
+                  text, font=btn_font, fill=(255 if armed else 100))
 
 
 def _draw_running_section(
@@ -184,20 +204,30 @@ def _draw_running_section(
     completed: bool,
     feedback: str | None = None,
     show_bottom_divider: bool = True,
+    route: list[tuple[float, float]] | None = None,
 ) -> None:
     draw.text((PADDING_X, y + 22), "RUNNING", font=_font(36, bold=True), fill=80)
 
     if run and completed:
         _draw_done_badge(draw, width - PADDING_X, y + 22)
+
+        has_map = bool(route) and len(route) >= 2
+        text_width = width - 2 * PADDING_X
+        if has_map:
+            text_width -= ROUTE_THUMB_W + ROUTE_THUMB_GAP
+            thumb_x0 = width - PADDING_X - ROUTE_THUMB_W
+            thumb_y0 = y + 60
+            _draw_route(draw, thumb_x0, thumb_y0, ROUTE_THUMB_W, ROUTE_THUMB_H, route)
+
         if feedback:
             # Replace the plan details with the coaching note.
             # Try font sizes largest-first; shrink until the whole message fits in 3 lines.
             fb_font_size, fb_line_h = 24, 34
             for fs, lh in ((24, 34), (22, 31), (20, 28)):
-                if len(_wrap_text(feedback, _font(fs), width - 2 * PADDING_X)) <= 3:
+                if len(_wrap_text(feedback, _font(fs), text_width)) <= 3:
                     fb_font_size, fb_line_h = fs, lh
                     break
-            wrapped = _wrap_text(feedback, _font(fb_font_size), width - 2 * PADDING_X)
+            wrapped = _wrap_text(feedback, _font(fb_font_size), text_width)
             cursor_y = y + 82
             for line in wrapped[:3]:
                 draw.text((PADDING_X, cursor_y), line, font=_font(fb_font_size), fill=50)
@@ -211,7 +241,7 @@ def _draw_running_section(
                 draw.text((PADDING_X, cursor_y), formatted["subtitle"], font=_font(30), fill=70)
                 cursor_y += 44
             if formatted.get("notes"):
-                wrapped = _wrap_text(formatted["notes"], _font(22), width - 2 * PADDING_X)
+                wrapped = _wrap_text(formatted["notes"], _font(22), text_width)
                 for line in wrapped[:3]:
                     draw.text((PADDING_X, cursor_y), line, font=_font(22), fill=80)
                     cursor_y += 30
@@ -347,6 +377,64 @@ def _truncate_to_width(text: str, font: ImageFont.ImageFont, max_width: int) -> 
     return text + "…"
 
 
+def _project_route(
+    points: list[tuple[float, float]], box_w: int, box_h: int, padding: int = 6
+) -> list[tuple[float, float]]:
+    """Project (lat, lng) points to pixel coords that fit within box_w x box_h.
+
+    Uses an equirectangular correction (scale longitude by cos(avg_lat)) so the
+    route's shape isn't horizontally stretched, then scales/centers to fit.
+    """
+    if len(points) < 2:
+        return []
+    lats = [p[0] for p in points]
+    lngs = [p[1] for p in points]
+    avg_lat_rad = math.radians(sum(lats) / len(lats))
+    xs = [lng * math.cos(avg_lat_rad) for lng in lngs]
+    ys = [-lat for lat in lats]  # invert so north ends up at the top of the box
+
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    span_x = max(max_x - min_x, 1e-9)
+    span_y = max(max_y - min_y, 1e-9)
+
+    avail_w = max(box_w - 2 * padding, 1)
+    avail_h = max(box_h - 2 * padding, 1)
+    scale = min(avail_w / span_x, avail_h / span_y)
+
+    offset_x = padding + (avail_w - span_x * scale) / 2
+    offset_y = padding + (avail_h - span_y * scale) / 2
+
+    return [
+        (offset_x + (x - min_x) * scale, offset_y + (y - min_y) * scale)
+        for x, y in zip(xs, ys)
+    ]
+
+
+def _draw_route(
+    draw: ImageDraw.ImageDraw,
+    x0: int,
+    y0: int,
+    box_w: int,
+    box_h: int,
+    points: list[tuple[float, float]],
+    line_width: int = 3,
+) -> None:
+    """Draw a route line-map inside a box_w x box_h box anchored at (x0, y0).
+
+    No-ops silently if there aren't enough GPS points (e.g. treadmill runs).
+    """
+    pixel_points = _project_route(points, box_w, box_h)
+    if not pixel_points:
+        return
+    draw.rectangle([x0, y0, x0 + box_w, y0 + box_h], outline=180, width=1)
+    abs_points = [(x0 + px, y0 + py) for px, py in pixel_points]
+    draw.line(abs_points, fill=0, width=line_width, joint="curve")
+    start_x, start_y = abs_points[0]
+    r = max(line_width, 3)
+    draw.ellipse([start_x - r, start_y - r, start_x + r, start_y + r], fill=0)
+
+
 def _draw_back_button(draw: ImageDraw.ImageDraw) -> None:
     """Draw a '← BACK' button in the top-left corner (same style as REFRESH)."""
     text = "← BACK"
@@ -454,7 +542,7 @@ def render_interview_prep_detail(
     rows: list[dict],
     leetcode_today: dict,
 ) -> Image.Image:
-    """Full-page Kindle view: every loggable category/item with +15/+30 tap targets.
+    """Full-page Kindle view: every loggable category/item with +5/+15 tap targets.
 
     `rows` is utils.interview_prep.get_loggable_rows()'s output, passed through
     by the caller — render.py stays pure-Pillow with no utils/integrations imports.
@@ -619,6 +707,7 @@ def render_running_day_detail(
     run: dict | None,
     selected_date: date,
     run_completed: bool,
+    route: list[tuple[float, float]] | None = None,
 ) -> Image.Image:
     """Full-page Kindle view: detailed info for a single day's run."""
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
@@ -654,6 +743,12 @@ def render_running_day_detail(
                 break
             draw.text((PADDING_X, cursor_y), line, font=_font(24), fill=60)
             cursor_y += 34
+
+    if run_completed and route and len(route) >= 2:
+        map_y0 = cursor_y + 24
+        map_h = height - 20 - map_y0
+        if map_h > 100:
+            _draw_route(draw, PADDING_X, map_y0, width - 2 * PADDING_X, map_h, route, line_width=4)
 
     return img
 

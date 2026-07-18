@@ -156,7 +156,7 @@ def get_todays_run_detail() -> dict | None:
             params={
                 "oldest": today_str,
                 "newest": today_str,
-                "fields": "name,start_date_local,type,distance,moving_time,average_speed,laps",
+                "fields": "id,name,start_date_local,type,distance,moving_time,average_speed,laps",
             },
             timeout=10,
         )
@@ -169,6 +169,7 @@ def get_todays_run_detail() -> dict | None:
         distance_m = a.get("distance") or 0
         moving_time_s = a.get("moving_time") or 0
         return {
+            "id": a.get("id"),
             "name": a.get("name", ""),
             "distance_miles": _meters_to_miles(distance_m),
             "moving_time_s": moving_time_s,
@@ -176,6 +177,33 @@ def get_todays_run_detail() -> dict | None:
             "laps": a.get("laps") or [],
         }
     return None
+
+
+def get_route_points(activity_id: str) -> list[tuple[float, float]]:
+    """Return [(lat, lng), ...] GPS points for an activity, or [] if unavailable.
+
+    intervals.icu's "latlng" stream stores latitude in `data` and longitude in
+    a separate `data2` field on the same stream object (not documented clearly —
+    the two are NOT interleaved in a single array).
+    """
+    if not Config.INTERVALS_API_KEY or not activity_id:
+        return []
+    try:
+        r = requests.get(
+            f"{_BASE}/activity/{activity_id}/streams",
+            auth=_auth(),
+            params={"types": "latlng"},
+            timeout=15,
+        )
+        r.raise_for_status()
+    except Exception:
+        return []
+    for s in r.json():
+        if s.get("type") == "latlng":
+            lats = s.get("data") or []
+            lngs = s.get("data2") or []
+            return [(lat, lng) for lat, lng in zip(lats, lngs) if lat is not None and lng is not None]
+    return []
 
 
 def is_run_completed_today() -> bool:

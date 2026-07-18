@@ -23,6 +23,22 @@ def get_selected_date() -> str | None:
     return _read().get("selected_date")
 
 
+def get_pending_minutes() -> int | None:
+    """The minute value 'armed' via the dashboard's shared 5/15 buttons, if any."""
+    return _read().get("pending_minutes")
+
+
+def set_pending_minutes(minutes: int | None) -> None:
+    """Merge-write so this survives independently of set_view()'s full-state reset."""
+    state = _read()
+    if minutes is None:
+        state.pop("pending_minutes", None)
+    else:
+        state["pending_minutes"] = minutes
+    _STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    _STATE_FILE.write_text(json.dumps(state))
+
+
 def set_view(view: str, selected_date: str | None = None) -> None:
     if view not in VALID_VIEWS:
         raise ValueError(f"Unknown view: {view!r}")

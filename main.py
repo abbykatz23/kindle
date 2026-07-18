@@ -13,8 +13,8 @@ from dashboard.render import (
     save_dashboard,
 )
 from integrations.intervals_api import is_run_completed_today
-from utils.interview_prep import get_dashboard_summary, get_loggable_rows
-from utils.kindle_state import get_selected_date, get_view
+from utils.interview_prep import get_loggable_rows
+from utils.kindle_state import get_pending_minutes, get_selected_date, get_view
 from utils.leetcode_history import get_today as get_leetcode_today
 from utils.plan import (
     get_todays_run_plan,
@@ -24,6 +24,7 @@ from utils.plan import (
     load_plan,
 )
 from utils.run_feedback import get_or_generate_feedback
+from utils.run_route import get_or_fetch_route
 
 
 def _format_now(now: datetime) -> str:
@@ -53,7 +54,8 @@ def run(push: bool = True) -> None:
         day_name = selected.strftime("%A").lower()
         run_day = week_plan.get(day_name)
         day_completed = is_run_completed_today() if selected == today else False
-        img = render_running_day_detail(run_day, selected, day_completed)
+        day_route = get_or_fetch_route(selected) if day_completed else []
+        img = render_running_day_detail(run_day, selected, day_completed, route=day_route)
 
     elif view == "interview_prep":
         rows = get_loggable_rows(today)
@@ -64,12 +66,14 @@ def run(push: bool = True) -> None:
 
     else:
         last_refreshed_label = _format_now(datetime.now())
-        interview_summary = get_dashboard_summary(today)
+        interview_prep_rows = get_loggable_rows(today)
+        pending_minutes = get_pending_minutes()
         run_plan = get_todays_run_plan(today)
         run_completed = is_run_completed_today()
         birthdays = get_upcoming_birthdays(today, days_ahead=7)
 
         run_feedback = None
+        run_route = []
         if run_completed and run_plan:
             week_plan = get_week_run_plan(today)
             active = (load_plan().get("running") or {}).get("active") or {}
@@ -79,15 +83,18 @@ def run(push: bool = True) -> None:
                 "start_date": active.get("start_date", ""),
             }
             run_feedback = get_or_generate_feedback(today, run_plan, week_plan, plan_meta)
+            run_route = get_or_fetch_route(today)
 
         img = render_dashboard(
-            interview_summary=interview_summary,
+            interview_prep_rows=interview_prep_rows,
+            pending_minutes=pending_minutes,
             leetcode_today=leetcode_today,
             run=run_plan,
             run_completed=run_completed,
             birthdays=birthdays,
             last_refreshed_label=last_refreshed_label,
             run_feedback=run_feedback,
+            route=run_route,
         )
 
     image_path = save_dashboard(img)

@@ -53,31 +53,3 @@ def get_loggable_rows(on_date: date | None = None) -> list[dict]:
             })
 
     return rows
-
-
-def get_dashboard_summary(on_date: date | None = None) -> dict:
-    """Condensed roll-up for the Kindle dashboard summary section.
-
-    `None` for books/projects/wildcard means "hide this line" — mirrors the
-    existing `if birthdays:` guard used for the birthdays dashboard section.
-    """
-    on_date = on_date or date.today()
-    totals = get_totals_for_date(on_date)
-
-    summary: dict = {}
-    for category in FIXED_CATEGORIES:
-        summary[category] = {"today_minutes": totals.get((category, None), 0)}
-
-    for category in ITEM_CATEGORIES:
-        items = get_active_items(category)
-        if not items:
-            summary[category] = None
-            continue
-        minutes = sum(totals.get((category, item["id"]), 0) for item in items)
-        summary[category] = {
-            "active_count": len(items),
-            "today_minutes": minutes,
-            "titles": [item["title"] for item in items],
-        }
-
-    return summary
