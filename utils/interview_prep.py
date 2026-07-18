@@ -74,6 +74,10 @@ def get_dashboard_summary(on_date: date | None = None) -> dict:
             summary[category] = None
             continue
         minutes = sum(totals.get((category, item["id"]), 0) for item in items)
-        summary[category] = {"active_count": len(items), "today_minutes": minutes}
+        summary[category] = {
+            "active_count": len(items),
+            "today_minutes": minutes,
+            "titles": [item["title"] for item in items],
+        }
 
     return summary

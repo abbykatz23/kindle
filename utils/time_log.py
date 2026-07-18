@@ -9,7 +9,7 @@ from utils.interview_items import ITEM_CATEGORIES
 
 FIXED_CATEGORIES = ("system_design", "behavioral")
 ALL_CATEGORIES = ITEM_CATEGORIES + FIXED_CATEGORIES
-VALID_MINUTES = (15, 30)
+VALID_MINUTES = (5, 15)
 
 
 def load_log() -> list[dict]:

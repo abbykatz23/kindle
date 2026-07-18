@@ -8,7 +8,10 @@ from config import Config
 from dashboard.render import (
     BACK_BUTTON_MAX_X,
     BACK_BUTTON_MAX_Y,
+    DASH_LOG_BTN_H,
     FOOTER_HEIGHT,
+    INTERVIEW_PREP_DASH_LINE_H,
+    INTERVIEW_PREP_DASH_LINES_Y,
     INTERVIEW_PREP_HEADER_Y,
     INTERVIEW_PREP_ROW_H,
     INTERVIEW_SECTION_HEIGHT,
@@ -17,6 +20,7 @@ from dashboard.render import (
     TOP_PADDING,
     WEEKLY_HEADER_Y,
     WEEKLY_ROW_H,
+    get_dashboard_log_button_ranges,
     get_log_button_ranges,
 )
 from utils.kindle_state import get_selected_date, get_view, set_view
@@ -45,7 +49,7 @@ def handle_tap(x: int, y: int) -> str:
             return f"Tap ({x},{y}) -> BACK -> running"
         return f"Tap ({x},{y}) -> running_day tap -- ignored"
 
-    # ── Interview prep detail: back button or +15/+30 log tap ─────────────────
+    # ── Interview prep detail: back button or +5/+15 log tap ──────────────────
     if view == "interview_prep":
         if x <= BACK_BUTTON_MAX_X and y <= BACK_BUTTON_MAX_Y:
             set_view("dashboard")
@@ -61,13 +65,13 @@ def handle_tap(x: int, y: int) -> str:
                 row_y = INTERVIEW_PREP_HEADER_Y + row_idx * INTERVIEW_PREP_ROW_H
                 btn_y = row_y + (INTERVIEW_PREP_ROW_H - LOG_BTN_H) // 2
                 if btn_y <= y <= btn_y + LOG_BTN_H:
-                    (x0_15, x1_15), (x0_30, x1_30) = get_log_button_ranges(Config.DASHBOARD_WIDTH)
+                    (x0_5, x1_5), (x0_15, x1_15) = get_log_button_ranges(Config.DASHBOARD_WIDTH)
                     row = rows[row_idx]
                     minutes = None
-                    if x0_15 <= x <= x1_15:
+                    if x0_5 <= x <= x1_5:
+                        minutes = 5
+                    elif x0_15 <= x <= x1_15:
                         minutes = 15
-                    elif x0_30 <= x <= x1_30:
-                        minutes = 30
                     if minutes:
                         log_time(row["category"], minutes, item_id=row["item_id"])
                         _safe_refresh()
@@ -118,6 +122,23 @@ def handle_tap(x: int, y: int) -> str:
         return f"Tap ({x},{y}) -> RUNNING section -> running detail view"
 
     if interview_top <= y < interview_bottom:
+        # Quick-log buttons on the System Design / Behavioral summary lines —
+        # checked before the "tap anywhere -> drill in" fallback below.
+        (x0_5, x1_5), (x0_15, x1_15) = get_dashboard_log_button_ranges(Config.DASHBOARD_WIDTH)
+        for category, row_idx in (("system_design", 0), ("behavioral", 1)):
+            row_y = interview_top + INTERVIEW_PREP_DASH_LINES_Y + row_idx * INTERVIEW_PREP_DASH_LINE_H
+            if row_y <= y <= row_y + DASH_LOG_BTN_H:
+                minutes = None
+                if x0_5 <= x <= x1_5:
+                    minutes = 5
+                elif x0_15 <= x <= x1_15:
+                    minutes = 15
+                if minutes:
+                    from utils.time_log import log_time
+                    log_time(category, minutes, item_id=None)
+                    _safe_refresh()
+                    return f"Tap ({x},{y}) -> log +{minutes}m on {category}"
+
         set_view("interview_prep")
         _safe_refresh()
         return f"Tap ({x},{y}) -> INTERVIEW section -> interview prep detail view"

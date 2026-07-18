@@ -27,9 +27,17 @@ WEEKLY_ROW_H = 130     # height of each day row
 # Interview prep detail view layout — used by tap_handler to map y → loggable row
 INTERVIEW_PREP_HEADER_Y = 110  # y where the tappable row list begins
 INTERVIEW_PREP_ROW_H = 64      # height of each row
-LOG_BTN_W = 68                 # width of a +15/+30 tap button
-LOG_BTN_H = 40                 # height of a +15/+30 tap button
-LOG_BTN_GAP = 10               # gap between the +15 and +30 buttons
+LOG_BTN_W = 68                 # width of a +5/+15 tap button
+LOG_BTN_H = 40                 # height of a +5/+15 tap button
+LOG_BTN_GAP = 10               # gap between the +5 and +15 buttons
+
+# Interview prep dashboard summary layout — used by tap_handler to map taps on
+# the System Design / Behavioral quick-log buttons shown on the home screen
+INTERVIEW_PREP_DASH_LINES_Y = 72  # y-offset from section top where summary lines begin
+INTERVIEW_PREP_DASH_LINE_H = 42   # height of each summary line
+DASH_LOG_BTN_W = 46               # width of a dashboard-row +5/+15 tap button
+DASH_LOG_BTN_H = 30               # height of a dashboard-row +5/+15 tap button
+DASH_LOG_BTN_GAP = 8              # gap between the +5 and +15 buttons
 
 _FONTS_DIR = Path(__file__).parent / "assets" / "fonts"
 _font_cache: dict[tuple[int, bool], ImageFont.ImageFont] = {}
@@ -103,28 +111,28 @@ def _draw_interview_prep_section(
     draw.text((PADDING_X, y + 14), "INTERVIEW PREP", font=_font(36, bold=True), fill=80)
 
     line_font = _font(24)
-    line_h = 42
-    cursor_y = y + 72
-
-    def _draw_line(text: str) -> None:
-        nonlocal cursor_y
-        draw.text((PADDING_X, cursor_y), text, font=line_font, fill=0)
-        cursor_y += line_h
+    cursor_y = y + INTERVIEW_PREP_DASH_LINES_Y
 
     sd = summary.get("system_design") or {}
-    _draw_line(f"System Design — {sd.get('today_minutes', 0)}m today")
+    _draw_dashboard_log_row(draw, width, cursor_y, f"System Design — {sd.get('today_minutes', 0)}m today")
+    cursor_y += INTERVIEW_PREP_DASH_LINE_H
 
     beh = summary.get("behavioral") or {}
-    _draw_line(f"Behavioral — {beh.get('today_minutes', 0)}m today")
+    _draw_dashboard_log_row(draw, width, cursor_y, f"Behavioral — {beh.get('today_minutes', 0)}m today")
+    cursor_y += INTERVIEW_PREP_DASH_LINE_H
 
-    for category, label in (("books", "Books"), ("projects", "Projects"), ("wildcard", "Wildcard")):
+    for category in ("books", "projects", "wildcard"):
         entry = summary.get(category)
         if entry is None:
             continue
-        _draw_line(f"{label} — {entry.get('active_count', 0)} active · {entry.get('today_minutes', 0)}m today")
+        titles = " · ".join(entry.get("titles", []))
+        text = f"{titles} — {entry.get('today_minutes', 0)}m today"
+        text = _truncate_to_width(text, line_font, width - 2 * PADDING_X)
+        draw.text((PADDING_X, cursor_y), text, font=line_font, fill=0)
+        cursor_y += INTERVIEW_PREP_DASH_LINE_H
 
     lc_count = (leetcode_today or {}).get("count", 0)
-    _draw_line(f"LeetCode — {lc_count} solved today")
+    draw.text((PADDING_X, cursor_y), f"LeetCode — {lc_count} solved today", font=line_font, fill=0)
 
     # Section separator
     draw.line(
@@ -132,6 +140,40 @@ def _draw_interview_prep_section(
          (width - PADDING_X, y + INTERVIEW_SECTION_HEIGHT - 1)],
         fill=80, width=2,
     )
+
+
+def get_dashboard_log_button_ranges(width: int) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Return ((x0,x1) for +5, (x0,x1) for +15), right-aligned within a dashboard row.
+
+    Shared by _draw_dashboard_log_buttons and tap_handler — same geometry-lives-in-
+    one-place convention as get_log_button_ranges.
+    """
+    btn15_x1 = width - PADDING_X
+    btn15_x0 = btn15_x1 - DASH_LOG_BTN_W
+    btn5_x1 = btn15_x0 - DASH_LOG_BTN_GAP
+    btn5_x0 = btn5_x1 - DASH_LOG_BTN_W
+    return (btn5_x0, btn5_x1), (btn15_x0, btn15_x1)
+
+
+def _draw_dashboard_log_row(draw: ImageDraw.ImageDraw, width: int, row_y: int, text: str) -> None:
+    line_font = _font(24)
+    buttons_w = 2 * DASH_LOG_BTN_W + DASH_LOG_BTN_GAP
+    max_text_w = width - 2 * PADDING_X - buttons_w - 16
+    text = _truncate_to_width(text, line_font, max_text_w)
+    draw.text((PADDING_X, row_y), text, font=line_font, fill=0)
+    _draw_dashboard_log_buttons(draw, width, row_y)
+
+
+def _draw_dashboard_log_buttons(draw: ImageDraw.ImageDraw, width: int, row_y: int) -> None:
+    (x0_5, x1_5), (x0_15, x1_15) = get_dashboard_log_button_ranges(width)
+    btn_font = _font(15, bold=True)
+
+    for x0, x1, text in ((x0_5, x1_5, "+5"), (x0_15, x1_15, "+15")):
+        draw.rectangle([x0, row_y, x1, row_y + DASH_LOG_BTN_H], fill=255, outline=100, width=2)
+        tb = draw.textbbox((0, 0), text, font=btn_font)
+        tw, th = tb[2] - tb[0], tb[3] - tb[1]
+        draw.text((x0 + (DASH_LOG_BTN_W - tw) // 2, row_y + (DASH_LOG_BTN_H - th) // 2 - tb[1]),
+                  text, font=btn_font, fill=100)
 
 
 def _draw_running_section(
@@ -396,16 +438,16 @@ def render_running_detail(
 
 
 def get_log_button_ranges(width: int) -> tuple[tuple[int, int], tuple[int, int]]:
-    """Return ((x0,x1) for +15, (x0,x1) for +30), right-aligned within a row.
+    """Return ((x0,x1) for +5, (x0,x1) for +15), right-aligned within a row.
 
     Shared by _draw_log_buttons and tap_handler so button geometry can never
     drift between what's drawn and what's tap-hit-tested.
     """
-    btn30_x1 = width - PADDING_X
-    btn30_x0 = btn30_x1 - LOG_BTN_W
-    btn15_x1 = btn30_x0 - LOG_BTN_GAP
+    btn15_x1 = width - PADDING_X
     btn15_x0 = btn15_x1 - LOG_BTN_W
-    return (btn15_x0, btn15_x1), (btn30_x0, btn30_x1)
+    btn5_x1 = btn15_x0 - LOG_BTN_GAP
+    btn5_x0 = btn5_x1 - LOG_BTN_W
+    return (btn5_x0, btn5_x1), (btn15_x0, btn15_x1)
 
 
 def render_interview_prep_detail(
@@ -483,11 +525,11 @@ def _draw_log_row(draw: ImageDraw.ImageDraw, width: int, row_y: int, row: dict) 
 
 
 def _draw_log_buttons(draw: ImageDraw.ImageDraw, width: int, row_y: int) -> None:
-    (x0_15, x1_15), (x0_30, x1_30) = get_log_button_ranges(width)
+    (x0_5, x1_5), (x0_15, x1_15) = get_log_button_ranges(width)
     btn_y = row_y + (INTERVIEW_PREP_ROW_H - LOG_BTN_H) // 2
     btn_font = _font(20, bold=True)
 
-    for x0, x1, text in ((x0_15, x1_15, "+15"), (x0_30, x1_30, "+30")):
+    for x0, x1, text in ((x0_5, x1_5, "+5"), (x0_15, x1_15, "+15")):
         draw.rectangle([x0, btn_y, x1, btn_y + LOG_BTN_H], fill=255, outline=100, width=2)
         tb = draw.textbbox((0, 0), text, font=btn_font)
         tw, th = tb[2] - tb[0], tb[3] - tb[1]

@@ -38,7 +38,7 @@
                     </div>
                     <div class="prep-card__actions">
                         <button type="button" class="btn log-time-btn" data-category="{{ category }}" data-minutes="15">+15</button>
-                        <button type="button" class="btn log-time-btn" data-category="{{ category }}" data-minutes="30">+30</button>
+                        <button type="button" class="btn log-time-btn" data-category="{{ category }}" data-minutes="5">+5</button>
                     </div>
                 </div>
                 {% endfor %}
@@ -85,7 +85,7 @@
                         <span class="prep-item-today" data-today-total data-item-id="{{ item.id }}">{{ item_totals.get(item.id, 0) }}m today</span>
                         <div class="prep-item-actions">
                             <button type="button" class="btn log-time-btn" data-category="{{ category }}" data-item-id="{{ item.id }}" data-minutes="15">+15</button>
-                            <button type="button" class="btn log-time-btn" data-category="{{ category }}" data-item-id="{{ item.id }}" data-minutes="30">+30</button>
+                            <button type="button" class="btn log-time-btn" data-category="{{ category }}" data-item-id="{{ item.id }}" data-minutes="5">+5</button>
                             <form action="{{ url_for('main.complete_interview_item') }}" method="post">
                                 <input type="hidden" name="item_id" value="{{ item.id }}">
                                 <button type="submit" class="btn btn--ghost" onclick="return confirm('Mark as complete?')">Mark complete</button>
