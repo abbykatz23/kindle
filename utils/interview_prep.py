@@ -18,7 +18,7 @@ CATEGORY_LABELS = {
 }
 
 FIXED_LABELS = {
-    "system_design": "System Design Prep",
+    "system_design": "System Design Learning",
 }
 
 

@@ -11,7 +11,7 @@ def main() -> None:
     last_refreshed_label = f"{date_part} at {time_part}"
 
     interview_prep_rows = [
-        {"category": "system_design", "item_id": None, "label": "System Design Prep", "today_minutes": 30},
+        {"category": "system_design", "item_id": None, "label": "System Design Learning", "today_minutes": 30},
         {"category": "books", "item_id": "b1", "label": "Designing Data-Intensive Applications", "today_minutes": 45},
         {"category": "projects", "item_id": "p1", "label": "Kindle Dashboard", "today_minutes": 15},
     ]
