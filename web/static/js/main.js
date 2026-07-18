@@ -315,6 +315,7 @@ document.addEventListener("DOMContentLoaded", () => {
             race_date:              document.getElementById('np-race-date')?.value.trim()     || '',
             race_miles:             document.getElementById('np-race-distance')?.value.trim() || '',
             race_distance_unit:     document.getElementById('np-race-distance-unit')?.value   || 'miles',
+            goal_time:              document.getElementById('np-goal-time')?.value.trim()     || '',
             days_per_week:          document.getElementById('np-days-per-week')?.value        || '4',
             current_weekly_mileage: document.getElementById('np-current-mileage')?.value.trim() || '',
             recent_race_result:     document.getElementById('np-recent-race')?.value.trim()   || '',

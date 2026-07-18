@@ -87,6 +87,32 @@ SEILER ↔ VDOT MAPPING:
 If no recent race result was provided, estimate conservatively from the athlete's
 stated current weekly mileage and experience. State the assumed VDOT basis in the
 first week's notes so the athlete can verify.
+
+GOAL TIME — THE PRIMARY PACE ANCHOR WHEN PROVIDED:
+If the athlete has stated a goal finish time for the target race, that goal — not just
+current fitness — should drive the paces you assign, especially as the plan progresses:
+
+  1. Compute goal race pace: goal_pace_sec = goal_time_in_seconds / race_miles.
+  2. Compute goal MP the same way as STEP 2 above, using goal_pace_sec instead of the
+     current race_pace_sec.
+  3. Compare goal MP against the current-fitness MP (derived from recent_race_result):
+     - If goal MP is within ~3-5% of current MP: the goal is realistic near-term. Use
+       goal-derived paces for marathon-pace and threshold work from the build phase onward.
+     - If goal MP is more aggressive (faster) than current MP by more than ~5%: treat the
+       goal as the paces to build TOWARD, not the paces to assign immediately. Early
+       weeks (base phase) should use current-fitness paces; build/peak phases should
+       progressively shift threshold and marathon-pace targets toward the goal pace as
+       fitness develops (e.g. split the gap across the build/peak weeks). State this
+       progression explicitly in workout notes so the athlete understands paces are
+       tightening toward the goal over time.
+     - If goal MP is unrealistically aggressive (>10-15% faster than current fitness
+       supports, given the time available), still use it as the aspirational target for
+       peak-phase race-pace segments, but keep the bulk of threshold/interval work at
+       paces the current fitness can actually execute, and note the gap in the first
+       week's notes so the athlete can recalibrate expectations.
+  4. If no recent race result is available but a goal time is, use the goal pace itself
+     as the MP basis for all training paces (with the appropriate conservative easy-pace
+     offset), since it's the only pace anchor available.
 """
 
 _PERIODIZATION_PRINCIPLES = """\
@@ -212,6 +238,9 @@ Check the following and flag any issues:
 6. Starting mileage: is it reasonable given the athlete's stated current mileage?
 7. Peak mileage: does it realistically follow from the starting point?
 8. Long run: does it reach ~70% of race distance at peak? Flag if it falls below 65%.
+9. Goal time (if the athlete stated one): is the implied goal pace realistic given current
+   fitness and the number of weeks available? Flag if the gap between current fitness and
+   goal pace looks too large to close safely in this timeframe.
 
 Be specific. Name the exact week numbers if you flag an issue.
 If the skeleton looks good, say so briefly. Keep your response under 300 words.
@@ -256,6 +285,8 @@ RULES:
 1. Make ONLY the minimum changes needed to address the athlete's message.
 2. Preserve the overall weekly training load and 80/20 intensity split.
 3. Never place two Zone 3 quality sessions on consecutive days.
+3b. If a goal finish time is given, keep any pace/effort targets in your changes
+    consistent with the goal-pace progression already established in the plan.
 4. If the message reveals a lasting signal (injury, constraint, preference), set persistent_note.
 5. You may adjust the current week and the next 1–2 weeks only.
 6. Preserve any notes_actual fields — do not include them in your output.
@@ -313,6 +344,11 @@ def _build_full_plan_system(use_vdot: bool) -> str:
             "without a pace — the athlete is following VDOT and needs numbers.\n"
             "For long runs in peak phase: include optional marathon-pace miles at the end\n"
             "(e.g. 'last 3 miles at M-pace (9:16/mi)') to build race-specific feel.\n"
+            "If a goal finish time is provided, apply the GOAL TIME guidance above: compute\n"
+            "goal pace and let it — not just current fitness — anchor marathon-pace and\n"
+            "threshold targets from the build phase onward, progressing toward it as fitness\n"
+            "develops. Note the goal pace explicitly in week 1 so the athlete can track progress\n"
+            "toward it.\n"
         )
     else:
         pace_section = (
@@ -324,6 +360,13 @@ def _build_full_plan_system(use_vdot: bool) -> str:
             "  Tempo: 'RPE 7-8, comfortably hard — a few words between breaths'\n"
             "  Hill repeats: '6 × 60s uphill hard (RPE 8), walk back down to recover'\n"
             "For long runs prescribe time, not miles. Pace is secondary to effort and time.\n"
+            "\nGOAL TIME (if provided): compute the goal average pace (goal_time / race_miles)\n"
+            "and use it heavily to calibrate effort — a goal that implies race pace much faster\n"
+            "than the athlete's easy/tempo pace suggests race-day intensity will need to run\n"
+            "hotter than typical ultra pacing, which should shape how hard threshold/hill\n"
+            "sessions get pushed in build/peak. Note in peak-phase long-run notes what average\n"
+            "pace/effort would be needed to hit the goal, and flag in week 1 notes if the goal\n"
+            "looks unrealistic given current fitness so the athlete can recalibrate.\n"
         )
     return _FULL_PLAN_SYSTEM_BASE + pace_section
 
@@ -351,6 +394,7 @@ def _parse_intake(intake: dict) -> dict:
     race_distance_unit = intake.get("race_distance_unit", "miles")
     notes = intake.get("notes", "").strip()
     recent_race_result = intake.get("recent_race_result", "").strip()
+    goal_time = intake.get("goal_time", "").strip()
     qa_context = intake.get("qa_context", "").strip()
     training_history = intake.get("training_history", "").strip()
     race_results_context = intake.get("race_results_context", "").strip()
@@ -393,6 +437,7 @@ def _parse_intake(intake: dict) -> dict:
         "current_mileage": current_mileage,
         "notes": notes,
         "recent_race_result": recent_race_result,
+        "goal_time": goal_time,
         "qa_context": qa_context,
         "num_weeks": num_weeks,
         "race_week_num": race_week_num,
@@ -418,6 +463,8 @@ def _athlete_profile_text(p: dict) -> str:
         lines.append("- Current mileage: not specified (assume conservative start)")
     if p["recent_race_result"]:
         lines.append(f"- Recent race result: {p['recent_race_result']}")
+    if p.get("goal_time"):
+        lines.append(f"- GOAL FINISH TIME: {p['goal_time']} — use this heavily to set target paces/effort; see goal-pace guidance above")
     if p["notes"]:
         lines.append(f"- Additional context: {p['notes']}")
     if p.get("race_results_context"):
@@ -649,6 +696,7 @@ def edit_weekly_running_plan(
     race_date_str = active_plan.get("race_date", "")
     race_miles = active_plan.get("race_miles", 0)
     race_name = active_plan.get("race_name", "")
+    goal_time = active_plan.get("goal_time", "")
     start_date = active_plan.get("start_date", date.today().isoformat())
 
     existing_week = active_plan.get("weeks", {}).get(str(week_num), {})
@@ -676,6 +724,8 @@ def edit_weekly_running_plan(
         race_ctx = f"Goal event on {race_date_str} ({weeks_to_race} weeks away)"
     else:
         race_ctx = "General fitness training (no specific race)"
+    if goal_time:
+        race_ctx += f"\nGoal finish time: {goal_time} — keep target paces anchored to this goal."
 
     user_message = (
         f"Modify training plan Week {week_num} (week of {monday.strftime('%b %d, %Y')}).\n\n"
@@ -732,9 +782,12 @@ def coach_running_plan(
                     line += f" [actual: {d['notes_actual']}]"
                 weeks_ctx.append(line)
 
+    goal_time = active_plan.get("goal_time", "")
+    goal_line = f"\nGoal finish time: {goal_time} — keep target paces anchored to this goal.\n" if goal_time else ""
+
     user_msg = (
         f"Current plan week: {current_week_num}\n\n"
-        f"PLAN:\n" + "\n".join(weeks_ctx) + "\n\n"
+        f"PLAN:\n" + "\n".join(weeks_ctx) + goal_line + "\n\n"
         f"RACE RESULTS (all max effort, use for VDOT pacing):\n{race_results_ctx or 'None'}\n\n"
         f"PERSISTENT COACHING NOTES:\n{coaching_notes_ctx or 'None'}\n\n"
         f"ATHLETE MESSAGE:\n{user_message}"

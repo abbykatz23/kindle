@@ -146,6 +146,7 @@
             <div style="font-weight:600;font-size:.95rem;">
                 {{ active_plan.race_name or 'Training Plan' }}
                 {% if active_plan.race_date %}<span class="muted" style="font-weight:400;font-size:.85rem;"> · {{ active_plan.race_date }}</span>{% endif %}
+                {% if active_plan.goal_time %}<span class="muted" style="font-weight:400;font-size:.85rem;"> · goal {{ active_plan.goal_time }}</span>{% endif %}
             </div>
         </div>
         {% else %}
