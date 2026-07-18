@@ -443,11 +443,6 @@
         {# ── Kindle tab: live mirror of the physical device ── #}
         <section id="kindle" class="tab-content" aria-hidden="{% if default_tab == 'kindle' %}false{% else %}true{% endif %}">
             <div class="tab-section-card" style="display:flex;flex-direction:column;align-items:center;">
-                <h2 style="margin-bottom:.35rem;">Kindle Preview</h2>
-                <p class="muted" style="margin-bottom:1.25rem;text-align:center;max-width:420px;">
-                    Live mirror of what's currently on the physical Kindle. Click anywhere on the screen to tap it, just like the real device.
-                </p>
-
                 <div class="kindle-device">
                     <div class="kindle-device__screen" id="kindle-screen"
                          data-tap-url="{{ url_for('main.tap') }}"
@@ -460,11 +455,11 @@
                         </div>
                     </div>
                     <div class="kindle-device__bezel-bottom">
-                        <span class="kindle-device__wordmark">kindle</span>
+                        <span class="kindle-device__wordmark">Kindle</span>
                     </div>
                 </div>
 
-                <div style="display:flex;gap:.75rem;align-items:center;margin-top:1.1rem;">
+                <div style="display:flex;gap:.75rem;align-items:center;margin-top:1.25rem;">
                     <button type="button" class="btn btn--ghost" id="kindle-preview-refresh">Refresh</button>
                     <span class="muted" style="font-size:.8rem;" id="kindle-preview-status"></span>
                 </div>
