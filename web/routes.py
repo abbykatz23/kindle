@@ -2,7 +2,7 @@ import json
 import threading
 from datetime import date, timedelta
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, url_for
 
 from config import Config
 from utils import jobs as job_store
@@ -319,6 +319,8 @@ def index():
         fixed_totals=fixed_totals,
         item_totals=item_totals,
         leetcode_today=leetcode_today,
+        dashboard_width=Config.DASHBOARD_WIDTH,
+        dashboard_height=Config.DASHBOARD_HEIGHT,
     )
 
 
@@ -390,6 +392,13 @@ def running_week(week_num: int):
         today=today,
         is_current_week=(week_num == current_plan_week),
     )
+
+
+@bp.route("/kindle/image")
+def kindle_image():
+    response = send_file(Config.OUTPUT_IMAGE_PATH, mimetype="image/png")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+    return response
 
 
 @bp.route("/tap")

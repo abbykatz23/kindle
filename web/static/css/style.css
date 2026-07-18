@@ -217,6 +217,74 @@ input:focus, select:focus, textarea:focus {
 .birthday-edit-form { display: flex; gap: .5rem; align-items: center; flex: 1; min-width: 0 }
 .birthday-edit-form .field__input { flex: 1; min-width: 0 }
 
+/* Kindle preview: physical-device frame around the live dashboard PNG */
+.kindle-device {
+  width: 100%;
+  max-width: 340px;
+  background: linear-gradient(160deg, #eae8e3, #cac7c0);
+  border-radius: 20px;
+  padding: 20px 16px 0;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.kindle-device__screen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 758 / 1024;
+  background: #000;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 5px #101010;
+  cursor: pointer;
+}
+.kindle-device__screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #e9e7e2;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: opacity .12s ease;
+}
+.kindle-device__screen.is-tapping img { opacity: .55 }
+.kindle-device__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .12s ease;
+}
+.kindle-device__screen.is-tapping .kindle-device__loading { opacity: 1 }
+.kindle-device__spinner {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 3px solid rgba(0,0,0,0.15);
+  border-top-color: rgba(0,0,0,0.55);
+  animation: kindle-spin .7s linear infinite;
+}
+@keyframes kindle-spin { to { transform: rotate(360deg) } }
+.kindle-device__bezel-bottom {
+  width: 100%;
+  padding: 16px 0 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kindle-device__wordmark {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: .01em;
+  color: #6b6b68;
+}
+
 /* Birthday card month colors (seasonal palette, dark-theme tuned) */
 .birthday-item--01 { background: rgba(186,230,253,0.08); border-color: rgba(186,230,253,0.22) }  /* Jan — ice blue */
 .birthday-item--02 { background: rgba(249,168,212,0.09); border-color: rgba(249,168,212,0.25) }  /* Feb — rose */

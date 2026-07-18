@@ -806,4 +806,71 @@ document.addEventListener("DOMContentLoaded", () => {
         initAnalytics();
     }
 
+    // ── Kindle preview: click-to-tap + live mirror of the physical device ──
+    const kindleScreen = document.getElementById('kindle-screen');
+    if (kindleScreen) {
+        const kindleImg = document.getElementById('kindle-preview-img');
+        const kindleStatus = document.getElementById('kindle-preview-status');
+        const kindleRefreshBtn = document.getElementById('kindle-preview-refresh');
+        const tapUrl = kindleScreen.dataset.tapUrl;
+        const imageUrl = kindleScreen.dataset.imageUrl;
+        const nativeWidth = parseInt(kindleScreen.dataset.width, 10) || 758;
+        const nativeHeight = parseInt(kindleScreen.dataset.height, 10) || 1024;
+        let kindleBusy = false;
+
+        function setKindleStatus(msg) {
+            if (kindleStatus) kindleStatus.textContent = msg || '';
+        }
+
+        function reloadKindleImage() {
+            kindleImg.src = `${imageUrl}?t=${Date.now()}`;
+        }
+
+        async function sendKindleTap(x, y) {
+            if (kindleBusy) return;
+            kindleBusy = true;
+            kindleScreen.classList.add('is-tapping');
+            setKindleStatus('Tapping…');
+            try {
+                const res = await fetch(`${tapUrl}?x=${x}&y=${y}`);
+                const text = (await res.text()).trim();
+                setKindleStatus(text);
+            } catch (err) {
+                setKindleStatus('Tap failed — is the app running?');
+            } finally {
+                reloadKindleImage();
+                kindleScreen.classList.remove('is-tapping');
+                kindleBusy = false;
+            }
+        }
+
+        kindleScreen.addEventListener('click', (e) => {
+            const rect = kindleImg.getBoundingClientRect();
+            const relX = (e.clientX - rect.left) / rect.width;
+            const relY = (e.clientY - rect.top) / rect.height;
+            if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return;
+            const x = Math.round(relX * nativeWidth);
+            const y = Math.round(relY * nativeHeight);
+            sendKindleTap(x, y);
+        });
+
+        if (kindleRefreshBtn) {
+            kindleRefreshBtn.addEventListener('click', () => {
+                setKindleStatus('Refreshing…');
+                reloadKindleImage();
+                setTimeout(() => setKindleStatus(''), 800);
+            });
+        }
+
+        // The physical Kindle re-renders on its own (30-min scheduler, taps,
+        // Strava webhooks); poll gently so the preview stays roughly in sync
+        // without forcing a re-render itself.
+        setInterval(() => {
+            const kindleTab = document.getElementById('kindle');
+            if (!kindleBusy && kindleTab && kindleTab.getAttribute('aria-hidden') === 'false') {
+                reloadKindleImage();
+            }
+        }, 20000);
+    }
+
 });

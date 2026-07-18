@@ -7,6 +7,7 @@
         <button type="button" class="tab-button btn {% if default_tab == 'interview' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'interview' %}true{% else %}false{% endif %}" data-target="#interview">Projects</button>
         <button type="button" class="tab-button btn {% if default_tab == 'running' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'running' %}true{% else %}false{% endif %}" data-target="#running">Running Plan</button>
         <button type="button" class="tab-button btn {% if default_tab == 'birthdays' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'birthdays' %}true{% else %}false{% endif %}" data-target="#birthdays">Birthdays</button>
+        <button type="button" class="tab-button btn {% if default_tab == 'kindle' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'kindle' %}true{% else %}false{% endif %}" data-target="#kindle">Kindle</button>
         <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center;">
             {% if active_plan and race_date_str %}
             <div class="countdown-badge{% if default_tab != 'running' %} countdown-badge--hidden{% endif %}" id="race-countdown-badge" style="margin-left:0">
@@ -435,6 +436,37 @@
                 {% else %}
                 <p class="muted">No birthdays saved yet.</p>
                 {% endif %}
+            </div>
+        </section>
+
+        {# ── Kindle tab: live mirror of the physical device ── #}
+        <section id="kindle" class="tab-content" aria-hidden="{% if default_tab == 'kindle' %}false{% else %}true{% endif %}">
+            <div class="tab-section-card" style="display:flex;flex-direction:column;align-items:center;">
+                <h2 style="margin-bottom:.35rem;">Kindle Preview</h2>
+                <p class="muted" style="margin-bottom:1.25rem;text-align:center;max-width:420px;">
+                    Live mirror of what's currently on the physical Kindle. Click anywhere on the screen to tap it, just like the real device.
+                </p>
+
+                <div class="kindle-device">
+                    <div class="kindle-device__screen" id="kindle-screen"
+                         data-tap-url="{{ url_for('main.tap') }}"
+                         data-image-url="{{ url_for('main.kindle_image') }}"
+                         data-width="{{ dashboard_width }}"
+                         data-height="{{ dashboard_height }}">
+                        <img id="kindle-preview-img" src="{{ url_for('main.kindle_image') }}" alt="Kindle dashboard preview" draggable="false">
+                        <div class="kindle-device__loading" id="kindle-preview-loading" aria-hidden="true">
+                            <span class="kindle-device__spinner"></span>
+                        </div>
+                    </div>
+                    <div class="kindle-device__bezel-bottom">
+                        <span class="kindle-device__wordmark">kindle</span>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:.75rem;align-items:center;margin-top:1.1rem;">
+                    <button type="button" class="btn btn--ghost" id="kindle-preview-refresh">Refresh</button>
+                    <span class="muted" style="font-size:.8rem;" id="kindle-preview-status"></span>
+                </div>
             </div>
         </section>
 
