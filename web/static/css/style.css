@@ -426,14 +426,10 @@ button, input[type=text] { font-size: 16px }
   --iprep-series-4: #008300; /* System Design */
 }
 
-.prep-fixed-row { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: .75rem }
-.prep-fixed-row .prep-card { flex: 1 1 240px }
-
 .prep-card {
   background: var(--card-sunken); border: 1px solid var(--border); border-radius: 12px;
   padding: .85rem 1rem; display: flex; flex-direction: column; gap: .6rem; margin-bottom: .75rem;
 }
-.prep-fixed-row .prep-card { margin-bottom: 0 }
 .prep-card__header { display: flex; align-items: center; justify-content: space-between; gap: .5rem }
 .prep-card__title { font-weight: 700; font-size: .95rem }
 .prep-card__today { font-size: .8rem; color: var(--muted); font-weight: 600 }

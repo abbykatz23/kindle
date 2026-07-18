@@ -10,10 +10,14 @@ from config import Config
 # --- Layout constants ---
 PADDING_X = 40
 TOP_PADDING = 30
-INTERVIEW_SECTION_HEIGHT = 460
-RUNNING_SECTION_HEIGHT = 300
-BIRTHDAYS_SECTION_HEIGHT = 184  # 1024 - 30 - 460 - 300 - 50 footer
+INTERVIEW_SECTION_HEIGHT = 360
+RUNNING_SECTION_HEIGHT = 400
+BIRTHDAYS_SECTION_HEIGHT = 184  # 1024 - 30 - 360 - 400 - 50 footer
 FOOTER_HEIGHT = 50
+
+# Max wrapped lines for the RUNNING section's coaching feedback / plan notes text.
+FB_MAX_LINES = 7
+NOTES_MAX_LINES = 6
 
 # Route map thumbnail — shown top-right of the home-screen RUNNING section
 # when today's run is completed and has GPS data.
@@ -228,15 +232,15 @@ def _draw_running_section(
 
         if feedback:
             # Replace the plan details with the coaching note.
-            # Try font sizes largest-first; shrink until the whole message fits in 3 lines.
+            # Try font sizes largest-first; shrink until the whole message fits in FB_MAX_LINES lines.
             fb_font_size, fb_line_h = 24, 34
             for fs, lh in ((24, 34), (22, 31), (20, 28)):
-                if len(_wrap_text(feedback, _font(fs), text_width)) <= 3:
+                if len(_wrap_text(feedback, _font(fs), text_width)) <= FB_MAX_LINES:
                     fb_font_size, fb_line_h = fs, lh
                     break
             wrapped = _wrap_text(feedback, _font(fb_font_size), text_width)
             cursor_y = y + 82
-            for line in wrapped[:3]:
+            for line in wrapped[:FB_MAX_LINES]:
                 draw.text((PADDING_X, cursor_y), line, font=_font(fb_font_size), fill=50)
                 cursor_y += fb_line_h
         else:
@@ -249,7 +253,7 @@ def _draw_running_section(
                 cursor_y += 44
             if formatted.get("notes"):
                 wrapped = _wrap_text(formatted["notes"], _font(22), text_width)
-                for line in wrapped[:3]:
+                for line in wrapped[:NOTES_MAX_LINES]:
                     draw.text((PADDING_X, cursor_y), line, font=_font(22), fill=80)
                     cursor_y += 30
     elif not run:
@@ -265,7 +269,7 @@ def _draw_running_section(
             cursor_y += 44
         if formatted.get("notes"):
             wrapped = _wrap_text(formatted["notes"], _font(22), width - 2 * PADDING_X)
-            for line in wrapped[:3]:
+            for line in wrapped[:NOTES_MAX_LINES]:
                 draw.text((PADDING_X, cursor_y), line, font=_font(22), fill=80)
                 cursor_y += 30
 
