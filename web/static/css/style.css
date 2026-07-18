@@ -223,7 +223,7 @@ input:focus, select:focus, textarea:focus {
   max-width: 340px;
   background: linear-gradient(155deg, #2b2b2e, #0c0c0d 60%);
   border-radius: 26px;
-  padding: 26px 22px 0;
+  padding: 26px 22px 34px;
   box-shadow: 0 18px 40px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 2px rgba(255,255,255,0.08);
   display: flex;
   flex-direction: column;
@@ -269,20 +269,6 @@ input:focus, select:focus, textarea:focus {
   animation: kindle-spin .7s linear infinite;
 }
 @keyframes kindle-spin { to { transform: rotate(360deg) } }
-.kindle-device__bezel-bottom {
-  width: 100%;
-  padding: 18px 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.kindle-device__wordmark {
-  font-family: Georgia, 'Times New Roman', serif;
-  font-weight: 500;
-  font-size: 1rem;
-  letter-spacing: .02em;
-  color: #8a8a8d;
-}
 
 /* Birthday card month colors (seasonal palette, dark-theme tuned) */
 .birthday-item--01 { background: rgba(186,230,253,0.08); border-color: rgba(186,230,253,0.22) }  /* Jan — ice blue */

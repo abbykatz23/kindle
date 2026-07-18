@@ -30,12 +30,28 @@ _PROJECT_ROOT = Path(__file__).parent.parent
 
 
 def trigger_refresh() -> None:
-    """Re-render the dashboard (or current detail view) and push it to the Kindle."""
+    """Re-render the dashboard (or current detail view) locally, then push to the Kindle.
+
+    Rendering happens synchronously (fast, no network) so callers — including the
+    web preview's /tap endpoint — see the updated dashboard.png right away. The
+    actual SSH push is slow (can take 10s of seconds) and is fired as a detached
+    background process so it doesn't block the caller (e.g. the whole Flask dev
+    server, which is single-threaded).
+    """
     subprocess.run(
-        [sys.executable, str(_PROJECT_ROOT / "main.py")],
+        [sys.executable, str(_PROJECT_ROOT / "main.py"), "--no-push"],
         check=True,
         cwd=str(_PROJECT_ROOT),
     )
+    log_path = _PROJECT_ROOT / "logs" / "push.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(log_path, "a") as log_file:
+        subprocess.Popen(
+            [sys.executable, str(_PROJECT_ROOT / "main.py"), "--push-only"],
+            cwd=str(_PROJECT_ROOT),
+            stdout=log_file,
+            stderr=log_file,
+        )
 
 
 def handle_tap(x: int, y: int) -> str:

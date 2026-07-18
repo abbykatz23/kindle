@@ -812,7 +812,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (kindleScreen) {
         const kindleImg = document.getElementById('kindle-preview-img');
         const kindleStatus = document.getElementById('kindle-preview-status');
-        const kindleRefreshBtn = document.getElementById('kindle-preview-refresh');
         const tapUrl = kindleScreen.dataset.tapUrl;
         const imageUrl = kindleScreen.dataset.imageUrl;
         const nativeWidth = parseInt(kindleScreen.dataset.width, 10) || 758;
@@ -854,14 +853,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const y = Math.round(relY * nativeHeight);
             sendKindleTap(x, y);
         });
-
-        if (kindleRefreshBtn) {
-            kindleRefreshBtn.addEventListener('click', () => {
-                setKindleStatus('Refreshing…');
-                reloadKindleImage();
-                setTimeout(() => setKindleStatus(''), 800);
-            });
-        }
 
         // The physical Kindle re-renders on its own (30-min scheduler, taps,
         // Strava webhooks); poll gently so the preview stays roughly in sync

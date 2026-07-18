@@ -7,7 +7,7 @@
         <button type="button" class="tab-button btn {% if default_tab == 'interview' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'interview' %}true{% else %}false{% endif %}" data-target="#interview">Projects</button>
         <button type="button" class="tab-button btn {% if default_tab == 'running' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'running' %}true{% else %}false{% endif %}" data-target="#running">Running Plan</button>
         <button type="button" class="tab-button btn {% if default_tab == 'birthdays' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'birthdays' %}true{% else %}false{% endif %}" data-target="#birthdays">Birthdays</button>
-        <button type="button" class="tab-button btn {% if default_tab == 'kindle' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'kindle' %}true{% else %}false{% endif %}" data-target="#kindle">Kindle</button>
+        <button type="button" class="tab-button btn {% if default_tab == 'kindle' %}btn--primary{% else %}btn--ghost{% endif %}" role="tab" aria-selected="{% if default_tab == 'kindle' %}true{% else %}false{% endif %}" data-target="#kindle">Kindle Preview</button>
         <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center;">
             {% if active_plan and race_date_str %}
             <div class="countdown-badge{% if default_tab != 'running' %} countdown-badge--hidden{% endif %}" id="race-countdown-badge" style="margin-left:0">
@@ -454,13 +454,9 @@
                             <span class="kindle-device__spinner"></span>
                         </div>
                     </div>
-                    <div class="kindle-device__bezel-bottom">
-                        <span class="kindle-device__wordmark">Kindle</span>
-                    </div>
                 </div>
 
-                <div style="display:flex;gap:.75rem;align-items:center;margin-top:1.25rem;">
-                    <button type="button" class="btn btn--ghost" id="kindle-preview-refresh">Refresh</button>
+                <div style="margin-top:1.25rem;">
                     <span class="muted" style="font-size:.8rem;" id="kindle-preview-status"></span>
                 </div>
             </div>

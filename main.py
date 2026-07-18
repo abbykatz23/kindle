@@ -105,5 +105,14 @@ def run(push: bool = True) -> None:
         print("Pushed to Kindle.")
 
 
+def push_only() -> None:
+    """Push the already-rendered dashboard.png without re-rendering (used to push in the background)."""
+    push_to_kindle(Config.OUTPUT_IMAGE_PATH)
+    print("Pushed to Kindle.")
+
+
 if __name__ == "__main__":
-    run(push="--no-push" not in sys.argv)
+    if "--push-only" in sys.argv:
+        push_only()
+    else:
+        run(push="--no-push" not in sys.argv)
