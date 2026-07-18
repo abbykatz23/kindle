@@ -127,7 +127,7 @@ def _draw_interview_prep_section(
     """Shared arm-then-tap flow: tap 5/15 to arm an amount, then tap a row to log
     it against that category/item. `rows` is the same list the detail view uses,
     so every book/project/wildcard item gets its own unambiguous tap target."""
-    draw.text((PADDING_X, y + 14), "INTERVIEW PREP", font=_font(36, bold=True), fill=80)
+    draw.text((PADDING_X, y + 14), "PROJECTS", font=_font(36, bold=True), fill=80)
     _draw_arm_buttons(draw, width, y + INTERVIEW_PREP_DASH_ARM_Y, pending_minutes)
 
     lc_count = (leetcode_today or {}).get("count", 0)
@@ -553,7 +553,7 @@ def render_interview_prep_detail(
 
     # ── Header ───────────────────────────────────────────────────────────────
     _draw_back_button(draw)
-    title = "PREP TIME LOG"
+    title = "PROJECTS TIME LOG"
     title_font = _font(28, bold=True)
     tb = draw.textbbox((0, 0), title, font=title_font)
     draw.text(((width - (tb[2] - tb[0])) // 2, 18), title, font=title_font, fill=80)

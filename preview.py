@@ -12,7 +12,6 @@ def main() -> None:
 
     interview_prep_rows = [
         {"category": "system_design", "item_id": None, "label": "System Design Prep", "today_minutes": 30},
-        {"category": "behavioral", "item_id": None, "label": "Behavioral Interview Prep", "today_minutes": 0},
         {"category": "books", "item_id": "b1", "label": "Designing Data-Intensive Applications", "today_minutes": 45},
         {"category": "projects", "item_id": "p1", "label": "Kindle Dashboard", "today_minutes": 15},
     ]

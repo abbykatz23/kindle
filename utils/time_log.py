@@ -7,7 +7,7 @@ from datetime import date, datetime, timedelta
 from config import Config
 from utils.interview_items import ITEM_CATEGORIES
 
-FIXED_CATEGORIES = ("system_design", "behavioral")
+FIXED_CATEGORIES = ("system_design",)
 ALL_CATEGORIES = ITEM_CATEGORIES + FIXED_CATEGORIES
 VALID_MINUTES = (5, 15)
 

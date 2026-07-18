@@ -371,11 +371,10 @@ button, input[type=text] { font-size: 16px }
   --iprep-series-2: #199e70; /* Projects */
   --iprep-series-3: #c98500; /* Wildcard */
   --iprep-series-4: #008300; /* System Design */
-  --iprep-series-5: #9085e9; /* Behavioral */
 }
 
-.prep-fixed-row { display: grid; grid-template-columns: repeat(2,1fr); gap: .75rem; margin-bottom: .75rem }
-@media(max-width:600px) { .prep-fixed-row { grid-template-columns: 1fr } }
+.prep-fixed-row { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: .75rem }
+.prep-fixed-row .prep-card { flex: 1 1 240px }
 
 .prep-card {
   background: var(--card-sunken); border: 1px solid var(--border); border-radius: 12px;

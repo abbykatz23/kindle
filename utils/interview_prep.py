@@ -12,7 +12,6 @@ from utils.time_log import FIXED_CATEGORIES, get_totals_for_date
 
 CATEGORY_LABELS = {
     "system_design": "System Design",
-    "behavioral": "Behavioral",
     "books": "Books",
     "projects": "Projects",
     "wildcard": "Wildcard",
@@ -20,14 +19,13 @@ CATEGORY_LABELS = {
 
 FIXED_LABELS = {
     "system_design": "System Design Prep",
-    "behavioral": "Behavioral Interview Prep",
 }
 
 
 def get_loggable_rows(on_date: date | None = None) -> list[dict]:
     """Ordered rows for the Kindle detail view / frontend log-time UI.
 
-    Order: system_design, behavioral, then active books, projects, wildcard
+    Order: system_design, then active books, projects, wildcard
     (oldest-created first within each category).
     """
     on_date = on_date or date.today()

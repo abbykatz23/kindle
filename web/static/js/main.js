@@ -610,7 +610,6 @@ document.addEventListener("DOMContentLoaded", () => {
         { key: 'projects', label: 'Projects', color: 'var(--iprep-series-2)' },
         { key: 'wildcard', label: 'Wildcard', color: 'var(--iprep-series-3)' },
         { key: 'system_design', label: 'System Design', color: 'var(--iprep-series-4)' },
-        { key: 'behavioral', label: 'Behavioral', color: 'var(--iprep-series-5)' },
     ];
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
