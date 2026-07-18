@@ -9,13 +9,15 @@ from dashboard.render import (
     BACK_BUTTON_MAX_X,
     BACK_BUTTON_MAX_Y,
     FOOTER_HEIGHT,
+    INTERVIEW_PREP_HEADER_Y,
+    INTERVIEW_PREP_ROW_H,
     INTERVIEW_SECTION_HEIGHT,
+    LOG_BTN_H,
     RUNNING_SECTION_HEIGHT,
-    TASK_LIST_START_Y,
-    TASK_ROW_H,
     TOP_PADDING,
     WEEKLY_HEADER_Y,
     WEEKLY_ROW_H,
+    get_log_button_ranges,
 )
 from utils.kindle_state import get_selected_date, get_view, set_view
 
@@ -43,29 +45,37 @@ def handle_tap(x: int, y: int) -> str:
             return f"Tap ({x},{y}) -> BACK -> running"
         return f"Tap ({x},{y}) -> running_day tap -- ignored"
 
-    # ── Interview day detail: back button or task toggle ──────────────────────
-    if view == "interview_day":
+    # ── Interview prep detail: back button or +15/+30 log tap ─────────────────
+    if view == "interview_prep":
         if x <= BACK_BUTTON_MAX_X and y <= BACK_BUTTON_MAX_Y:
-            set_view("interview")
+            set_view("dashboard")
             _safe_refresh()
-            return f"Tap ({x},{y}) -> BACK -> interview"
-        if y >= TASK_LIST_START_Y:
-            selected_iso = get_selected_date()
-            if selected_iso:
-                from utils.completions import toggle_manual_completion
-                from utils.plan import get_tasks_for_date
-                selected = date.fromisoformat(selected_iso)
-                tasks = list(get_tasks_for_date(selected))
-                task_idx = (y - TASK_LIST_START_Y) // TASK_ROW_H
-                if 0 <= task_idx < len(tasks):
-                    task_name = tasks[task_idx].get("task", "")
-                    new_state = toggle_manual_completion(selected, task_name)
-                    _safe_refresh()
-                    return f"Tap ({x},{y}) -> toggle task[{task_idx}] -> {'done' if new_state else 'undone'}"
-        return f"Tap ({x},{y}) -> interview_day tap -- ignored"
+            return f"Tap ({x},{y}) -> BACK -> dashboard"
+        if y >= INTERVIEW_PREP_HEADER_Y:
+            from utils.interview_prep import get_loggable_rows
+            from utils.time_log import log_time
 
-    # ── Weekly detail views: back goes to dashboard, row tap opens day detail ─
-    if view in ("running", "interview"):
+            rows = get_loggable_rows(date.today())
+            row_idx = (y - INTERVIEW_PREP_HEADER_Y) // INTERVIEW_PREP_ROW_H
+            if 0 <= row_idx < len(rows):
+                row_y = INTERVIEW_PREP_HEADER_Y + row_idx * INTERVIEW_PREP_ROW_H
+                btn_y = row_y + (INTERVIEW_PREP_ROW_H - LOG_BTN_H) // 2
+                if btn_y <= y <= btn_y + LOG_BTN_H:
+                    (x0_15, x1_15), (x0_30, x1_30) = get_log_button_ranges(Config.DASHBOARD_WIDTH)
+                    row = rows[row_idx]
+                    minutes = None
+                    if x0_15 <= x <= x1_15:
+                        minutes = 15
+                    elif x0_30 <= x <= x1_30:
+                        minutes = 30
+                    if minutes:
+                        log_time(row["category"], minutes, item_id=row["item_id"])
+                        _safe_refresh()
+                        return f"Tap ({x},{y}) -> log +{minutes}m on {row['label']}"
+        return f"Tap ({x},{y}) -> interview_prep tap -- ignored"
+
+    # ── Weekly detail view (running only): back goes to dashboard, row tap opens day detail ─
+    if view == "running":
         if x <= BACK_BUTTON_MAX_X and y <= BACK_BUTTON_MAX_Y:
             set_view("dashboard")
             _safe_refresh()
@@ -76,10 +86,9 @@ def handle_tap(x: int, y: int) -> str:
                 today = date.today()
                 monday = today - timedelta(days=today.weekday())
                 selected = monday + timedelta(days=row_idx)
-                day_view = "running_day" if view == "running" else "interview_day"
-                set_view(day_view, selected.isoformat())
+                set_view("running_day", selected.isoformat())
                 _safe_refresh()
-                return f"Tap ({x},{y}) -> {view} day {selected.isoformat()}"
+                return f"Tap ({x},{y}) -> running day {selected.isoformat()}"
         return f"Tap ({x},{y}) -> weekly tap -- ignored"
 
     # ── Birthdays detail: only back ───────────────────────────────────────────
@@ -109,9 +118,9 @@ def handle_tap(x: int, y: int) -> str:
         return f"Tap ({x},{y}) -> RUNNING section -> running detail view"
 
     if interview_top <= y < interview_bottom:
-        set_view("interview")
+        set_view("interview_prep")
         _safe_refresh()
-        return f"Tap ({x},{y}) -> INTERVIEW section -> interview detail view"
+        return f"Tap ({x},{y}) -> INTERVIEW section -> interview prep detail view"
 
     if birthdays_top <= y < birthdays_bottom:
         set_view("birthdays")

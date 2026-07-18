@@ -1,71 +1,13 @@
-"""Scheduled jobs: Sunday-night interview prep generation + daily running compliance."""
-import json
+"""Scheduled job: daily running compliance check."""
 import logging
 from datetime import date, timedelta
 
 from config import Config
-from utils.plan import get_week_label, load_plan, save_plan
+from utils.plan import load_plan, save_plan
 
 log = logging.getLogger(__name__)
 
 _PLAN_DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-
-
-def run_weekly_generation() -> None:
-    """Generate next week's interview prep plan if not already present."""
-    if not Config.ANTHROPIC_API_KEY:
-        log.warning("ANTHROPIC_API_KEY not set — skipping weekly generation")
-        return
-
-    curriculum_path = Config.DATA_DIR / "curriculum.json"
-    if not curriculum_path.exists():
-        log.info("No curriculum.json — skipping weekly generation")
-        return
-
-    today = date.today()
-    next_monday = today - timedelta(days=today.weekday()) + timedelta(weeks=1)
-    next_week_label = get_week_label(next_monday)
-
-    plan = load_plan()
-    if plan.get("interview_prep", {}).get(next_week_label):
-        log.info("Next week %s already has a plan — skipping auto-generation", next_week_label)
-        return
-
-    try:
-        curriculum = json.loads(curriculum_path.read_text())
-        from integrations.claude_api import generate_weekly_interview_prep
-        result = generate_weekly_interview_prep(
-            week_label=next_week_label,
-            plan=plan,
-            curriculum=curriculum,
-        )
-        fresh_plan = load_plan()
-        fresh_plan.setdefault("interview_prep", {})[next_week_label] = result
-        save_plan(fresh_plan)
-        log.info("Auto-generated interview prep for %s", next_week_label)
-    except Exception as exc:
-        log.error("Weekly generation failed for %s: %s", next_week_label, exc)
-
-
-def run_summary_generation() -> None:
-    """Daily 1:30am job: generate the coaching summary panel."""
-    if not Config.ANTHROPIC_API_KEY:
-        return
-
-    curriculum_path = Config.DATA_DIR / "curriculum.json"
-    if not curriculum_path.exists():
-        return
-
-    try:
-        curriculum = json.loads(curriculum_path.read_text())
-        plan = load_plan()
-        from integrations.claude_api import generate_interview_summary
-        from utils.interview_summary import save_interview_summary
-        summary = generate_interview_summary(plan, curriculum)
-        save_interview_summary(summary)
-        log.info("Interview summary generated at %s", summary.get("generated_at"))
-    except Exception as exc:
-        log.error("Summary generation failed: %s", exc)
 
 
 def apply_actuals_to_week(active_plan: dict, week_num: int, week_data: dict, week_monday: date) -> bool:

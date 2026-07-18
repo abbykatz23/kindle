@@ -10,23 +10,18 @@ def main() -> None:
     time_part = now.strftime("%I:%M %p").lstrip("0")
     last_refreshed_label = f"{date_part} at {time_part}"
 
-    leetcode_tasks = [
-        {"task": "Two Sum", "completed": True},
-        {"task": "Three Sum", "completed": True},
-        {"task": "Reverse Linked List", "completed": False},
-        {"task": "Valid Anagram", "completed": False},
-        {"task": "Binary Search", "completed": False},
-    ]
-    other_tasks = [
-        {"task": "DDIA Chapter 1", "completed": True},
-        {"task": "STAR practice", "completed": False},
-        {"task": "DDIA Chapter 2", "completed": False},
-        {"task": "Mock interview", "completed": False},
-    ]
+    interview_summary = {
+        "system_design": {"today_minutes": 30},
+        "behavioral": {"today_minutes": 0},
+        "books": {"active_count": 2, "today_minutes": 45},
+        "projects": {"active_count": 1, "today_minutes": 15},
+        "wildcard": None,
+    }
+    leetcode_today = {"count": 2, "problems": [{"title": "Two Sum"}, {"title": "Three Sum"}]}
 
     img = render_dashboard(
-        leetcode_tasks=leetcode_tasks,
-        other_tasks=other_tasks,
+        interview_summary=interview_summary,
+        leetcode_today=leetcode_today,
         run={"type": "easy", "distance_miles": 5.0, "notes": "Recovery pace — keep HR under 140."},
         run_completed=False,
         birthdays=[

@@ -14,12 +14,6 @@ RUNNING_SECTION_HEIGHT = 300
 BIRTHDAYS_SECTION_HEIGHT = 184  # 1024 - 30 - 460 - 300 - 50 footer
 FOOTER_HEIGHT = 50
 
-RIGHT_COL_X_START = Config.DASHBOARD_WIDTH // 2 + 10
-INTERVIEW_TASKS_Y = TOP_PADDING + 70
-TASK_LINE_HEIGHT = 55
-CHECKBOX_SIZE = 28
-MAX_TASKS_PER_SIDE = 7
-
 MAX_BIRTHDAYS = 3
 
 # Back button tap zone — used by tap_handler to detect "back" taps in detail views
@@ -30,9 +24,12 @@ BACK_BUTTON_MAX_Y = 80
 WEEKLY_HEADER_Y = 78   # y where day rows begin
 WEEKLY_ROW_H = 130     # height of each day row
 
-# Interview day detail task list layout — used by tap_handler to map y → task row
-TASK_LIST_START_Y = 168  # y where task rows begin in render_interview_day_detail
-TASK_ROW_H = 55           # height of each task row
+# Interview prep detail view layout — used by tap_handler to map y → loggable row
+INTERVIEW_PREP_HEADER_Y = 110  # y where the tappable row list begins
+INTERVIEW_PREP_ROW_H = 64      # height of each row
+LOG_BTN_W = 68                 # width of a +15/+30 tap button
+LOG_BTN_H = 40                 # height of a +15/+30 tap button
+LOG_BTN_GAP = 10               # gap between the +15 and +30 buttons
 
 _FONTS_DIR = Path(__file__).parent / "assets" / "fonts"
 _font_cache: dict[tuple[int, bool], ImageFont.ImageFont] = {}
@@ -65,20 +62,22 @@ def _font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 def render_dashboard(
-    interview_tasks: list[dict],
+    interview_summary: dict,
+    leetcode_today: dict,
     run: dict | None,
     run_completed: bool,
     birthdays: list[dict],
     last_refreshed_label: str,
     run_feedback: str | None = None,
 ) -> Image.Image:
-    """Each task dict needs `task` (name) and `completed` (bool)."""
+    """interview_summary is utils.interview_prep.get_dashboard_summary()'s output;
+    leetcode_today is utils.leetcode_history.get_today()'s output."""
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
     img = Image.new("L", (width, height), color=255)
     draw = ImageDraw.Draw(img)
 
     y = TOP_PADDING
-    _draw_interview_section(draw, y, width, interview_tasks)
+    _draw_interview_prep_section(draw, y, width, interview_summary, leetcode_today)
     y += INTERVIEW_SECTION_HEIGHT
 
     _draw_running_section(draw, y, width, run, run_completed,
@@ -94,16 +93,38 @@ def render_dashboard(
     return img
 
 
-def _draw_interview_section(
+def _draw_interview_prep_section(
     draw: ImageDraw.ImageDraw,
     y: int,
     width: int,
-    interview_tasks: list[dict],
+    summary: dict,
+    leetcode_today: dict,
 ) -> None:
     draw.text((PADDING_X, y + 14), "INTERVIEW PREP", font=_font(36, bold=True), fill=80)
 
-    tasks_top = y + 70
-    _draw_task_column(draw, PADDING_X, tasks_top, width - 2 * PADDING_X, interview_tasks)
+    line_font = _font(24)
+    line_h = 42
+    cursor_y = y + 72
+
+    def _draw_line(text: str) -> None:
+        nonlocal cursor_y
+        draw.text((PADDING_X, cursor_y), text, font=line_font, fill=0)
+        cursor_y += line_h
+
+    sd = summary.get("system_design") or {}
+    _draw_line(f"System Design — {sd.get('today_minutes', 0)}m today")
+
+    beh = summary.get("behavioral") or {}
+    _draw_line(f"Behavioral — {beh.get('today_minutes', 0)}m today")
+
+    for category, label in (("books", "Books"), ("projects", "Projects"), ("wildcard", "Wildcard")):
+        entry = summary.get(category)
+        if entry is None:
+            continue
+        _draw_line(f"{label} — {entry.get('active_count', 0)} active · {entry.get('today_minutes', 0)}m today")
+
+    lc_count = (leetcode_today or {}).get("count", 0)
+    _draw_line(f"LeetCode — {lc_count} solved today")
 
     # Section separator
     draw.line(
@@ -111,48 +132,6 @@ def _draw_interview_section(
          (width - PADDING_X, y + INTERVIEW_SECTION_HEIGHT - 1)],
         fill=80, width=2,
     )
-
-
-def _draw_task_column(
-    draw: ImageDraw.ImageDraw,
-    x: int,
-    y: int,
-    max_width: int,
-    tasks: list[dict],
-) -> None:
-    if not tasks:
-        draw.text((x, y), "—", font=_font(24), fill=160)
-        return
-
-    visible = tasks[:MAX_TASKS_PER_SIDE]
-    overflow = len(tasks) - len(visible)
-    title_font = _font(22)
-
-    for i, task in enumerate(visible):
-        line_y = y + i * TASK_LINE_HEIGHT
-        _draw_checkbox(draw, x, line_y + 4, task.get("completed", False))
-
-        text_x = x + CHECKBOX_SIZE + 12
-        name = task.get("task", "")
-        name = _truncate_to_width(name, title_font, max_width - (CHECKBOX_SIZE + 12))
-        fill = 120 if task.get("completed") else 0
-        draw.text((text_x, line_y + 4), name, font=title_font, fill=fill)
-
-    if overflow > 0:
-        line_y = y + len(visible) * TASK_LINE_HEIGHT
-        draw.text((x, line_y + 4), f"+{overflow} more",
-                  font=_font(18), fill=140)
-
-
-def _draw_checkbox(draw: ImageDraw.ImageDraw, x: int, y: int, checked: bool) -> None:
-    box = [x, y, x + CHECKBOX_SIZE, y + CHECKBOX_SIZE]
-    if checked:
-        draw.rectangle(box, fill=0)
-        draw.line([(x + 6, y + CHECKBOX_SIZE // 2),
-                   (x + CHECKBOX_SIZE // 2 - 1, y + CHECKBOX_SIZE - 7),
-                   (x + CHECKBOX_SIZE - 5, y + 6)], fill=255, width=3)
-    else:
-        draw.rectangle(box, outline=0, width=2)
 
 
 def _draw_running_section(
@@ -416,65 +395,104 @@ def render_running_detail(
     return img
 
 
-def render_interview_detail(
-    interview_tasks: list[dict],
-    today: date,
+def get_log_button_ranges(width: int) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Return ((x0,x1) for +15, (x0,x1) for +30), right-aligned within a row.
+
+    Shared by _draw_log_buttons and tap_handler so button geometry can never
+    drift between what's drawn and what's tap-hit-tested.
+    """
+    btn30_x1 = width - PADDING_X
+    btn30_x0 = btn30_x1 - LOG_BTN_W
+    btn15_x1 = btn30_x0 - LOG_BTN_GAP
+    btn15_x0 = btn15_x1 - LOG_BTN_W
+    return (btn15_x0, btn15_x1), (btn30_x0, btn30_x1)
+
+
+def render_interview_prep_detail(
+    rows: list[dict],
+    leetcode_today: dict,
 ) -> Image.Image:
-    """Full-page Kindle view: this week's tasks, condensed one-line summary per day."""
+    """Full-page Kindle view: every loggable category/item with +15/+30 tap targets.
+
+    `rows` is utils.interview_prep.get_loggable_rows()'s output, passed through
+    by the caller — render.py stays pure-Pillow with no utils/integrations imports.
+    """
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
     img = Image.new("L", (width, height), color=255)
     draw = ImageDraw.Draw(img)
 
     # ── Header ───────────────────────────────────────────────────────────────
     _draw_back_button(draw)
-    title = "THIS WEEK'S TASKS"
+    title = "PREP TIME LOG"
     title_font = _font(28, bold=True)
     tb = draw.textbbox((0, 0), title, font=title_font)
     draw.text(((width - (tb[2] - tb[0])) // 2, 18), title, font=title_font, fill=80)
-    draw.line([(PADDING_X, WEEKLY_HEADER_Y - 10), (width - PADDING_X, WEEKLY_HEADER_Y - 10)],
+
+    lc_count = (leetcode_today or {}).get("count", 0)
+    lc_text = f"LeetCode: {lc_count} solved today"
+    lc_font = _font(19)
+    lb = draw.textbbox((0, 0), lc_text, font=lc_font)
+    draw.text((width - PADDING_X - (lb[2] - lb[0]), 24), lc_text, font=lc_font, fill=130)
+
+    draw.line([(PADDING_X, INTERVIEW_PREP_HEADER_Y - 10), (width - PADDING_X, INTERVIEW_PREP_HEADER_Y - 10)],
               fill=80, width=2)
 
-    # ── Group tasks by date ───────────────────────────────────────────────────
-    monday = today - timedelta(days=today.weekday())
-    day_buckets: dict[str, list[dict]] = {}
-    for i in range(7):
-        day_buckets[(monday + timedelta(days=i)).isoformat()] = []
-    for task in interview_tasks:
-        key = task.get("date", "")
-        if key in day_buckets:
-            day_buckets[key].append(task)
+    if not rows:
+        draw.text((PADDING_X, 130), "Nothing to log yet.", font=_font(28), fill=130)
+        return img
 
-    DAY_ABBREVS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+    max_visible = max(0, (height - INTERVIEW_PREP_HEADER_Y - 30) // INTERVIEW_PREP_ROW_H)
+    visible = rows[:max_visible]
+    overflow = len(rows) - len(visible)
 
-    for i, abbrev in enumerate(DAY_ABBREVS):
-        row_date = monday + timedelta(days=i)
-        row_y = WEEKLY_HEADER_Y + i * WEEKLY_ROW_H
-        is_today = row_date == today
-        tasks = day_buckets.get(row_date.isoformat(), [])
-
-        if is_today:
-            draw.rectangle(
-                [PADDING_X - 8, row_y + 2, width - PADDING_X + 8, row_y + WEEKLY_ROW_H - 3],
-                outline=60, width=2,
-            )
-
-        label = f"{abbrev}  {row_date.strftime('%b')} {row_date.day}"
-        if is_today:
-            label += "  ·  TODAY"
-        draw.text((PADDING_X, row_y + 10), label, font=_font(24, bold=True), fill=0)
-
-        summary = _interview_day_summary(tasks, width - 2 * PADDING_X)
-        draw.text((PADDING_X, row_y + 52), summary, font=_font(22),
-                  fill=40 if tasks else 130)
-
-        if i < 6:
+    for i, row in enumerate(visible):
+        row_y = INTERVIEW_PREP_HEADER_Y + i * INTERVIEW_PREP_ROW_H
+        _draw_log_row(draw, width, row_y, row)
+        if i < len(visible) - 1:
             draw.line(
-                [(PADDING_X, row_y + WEEKLY_ROW_H - 1),
-                 (width - PADDING_X, row_y + WEEKLY_ROW_H - 1)],
+                [(PADDING_X, row_y + INTERVIEW_PREP_ROW_H - 1),
+                 (width - PADDING_X, row_y + INTERVIEW_PREP_ROW_H - 1)],
                 fill=140, width=1,
             )
 
+    if overflow > 0:
+        overflow_y = INTERVIEW_PREP_HEADER_Y + len(visible) * INTERVIEW_PREP_ROW_H + 10
+        draw.text((PADDING_X, overflow_y), f"+{overflow} more — manage from the web dashboard",
+                  font=_font(18), fill=140)
+
     return img
+
+
+_ROW_CATEGORY_TAGS = {"books": "BOOK", "projects": "PROJECT", "wildcard": "OTHER"}
+
+
+def _draw_log_row(draw: ImageDraw.ImageDraw, width: int, row_y: int, row: dict) -> None:
+    tag = _ROW_CATEGORY_TAGS.get(row["category"])
+    label = f"{tag} · {row['label']}" if tag else row["label"]
+
+    label_font = _font(22)
+    buttons_w = 2 * LOG_BTN_W + LOG_BTN_GAP
+    max_label_w = width - 2 * PADDING_X - buttons_w - 20
+    label = _truncate_to_width(label, label_font, max_label_w)
+    draw.text((PADDING_X, row_y + 8), label, font=label_font, fill=0)
+
+    today_text = f"{row.get('today_minutes', 0)}m today"
+    draw.text((PADDING_X, row_y + 36), today_text, font=_font(17), fill=130)
+
+    _draw_log_buttons(draw, width, row_y)
+
+
+def _draw_log_buttons(draw: ImageDraw.ImageDraw, width: int, row_y: int) -> None:
+    (x0_15, x1_15), (x0_30, x1_30) = get_log_button_ranges(width)
+    btn_y = row_y + (INTERVIEW_PREP_ROW_H - LOG_BTN_H) // 2
+    btn_font = _font(20, bold=True)
+
+    for x0, x1, text in ((x0_15, x1_15, "+15"), (x0_30, x1_30, "+30")):
+        draw.rectangle([x0, btn_y, x1, btn_y + LOG_BTN_H], fill=255, outline=100, width=2)
+        tb = draw.textbbox((0, 0), text, font=btn_font)
+        tw, th = tb[2] - tb[0], tb[3] - tb[1]
+        draw.text((x0 + (LOG_BTN_W - tw) // 2, btn_y + (LOG_BTN_H - th) // 2 - tb[1]),
+                  text, font=btn_font, fill=100)
 
 
 def render_birthdays_detail(
@@ -555,14 +573,6 @@ def render_birthdays_detail(
     return img
 
 
-def _interview_day_summary(tasks: list[dict], max_width: int) -> str:
-    if not tasks:
-        return "—"
-    names = [t.get("task", "task") for t in tasks]
-    line = " · ".join(names)
-    return _truncate_to_width(line, _font(22), max_width)
-
-
 def render_running_day_detail(
     run: dict | None,
     selected_date: date,
@@ -606,40 +616,6 @@ def render_running_day_detail(
     return img
 
 
-def render_interview_day_detail(
-    tasks: list[dict],
-    selected_date: date,
-) -> Image.Image:
-    """Full-page Kindle view: all tasks for a single day with checkboxes."""
-    width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
-    img = Image.new("L", (width, height), color=255)
-    draw = ImageDraw.Draw(img)
-
-    _draw_back_button(draw)
-
-    day_label = f"{selected_date.strftime('%A')}, {selected_date.strftime('%B')} {selected_date.day}"
-    draw.text((PADDING_X, 100), day_label, font=_font(30, bold=True), fill=0)
-    draw.line([(PADDING_X, 148), (width - PADDING_X, 148)], fill=80, width=2)
-
-    if not tasks:
-        draw.text((PADDING_X, 180), "No tasks planned.", font=_font(28), fill=130)
-        return img
-
-    task_font = _font(24)
-    max_task_w = width - 2 * PADDING_X - CHECKBOX_SIZE - 14
-    cursor_y = 168
-
-    for task in tasks:
-        if cursor_y + 55 > height - 20:
-            break
-        completed = task.get("completed", False)
-        _draw_checkbox(draw, PADDING_X, cursor_y + 4, completed)
-        name = _truncate_to_width(task.get("task", ""), task_font, max_task_w)
-        draw.text((PADDING_X + CHECKBOX_SIZE + 14, cursor_y + 4), name,
-                  font=task_font, fill=120 if completed else 0)
-        cursor_y += 55
-
-    return img
 
 
 def save_dashboard(img: Image.Image) -> Path:

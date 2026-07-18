@@ -9,7 +9,7 @@ from config import Config
 def load_plan() -> dict:
     if Config.PLAN_FILE.exists():
         return json.loads(Config.PLAN_FILE.read_text())
-    return {"running": {}, "interview_prep": {}}
+    return {"running": {}}
 
 
 def save_plan(plan: dict) -> None:
@@ -27,16 +27,6 @@ def save_birthdays(birthdays: list[dict]) -> None:
     """Persist the birthdays list to disk (overwrites file)."""
     Config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     Config.BIRTHDAYS_FILE.write_text(json.dumps(birthdays, indent=2))
-
-
-def get_week_label(d: date) -> str:
-    """ISO week string, e.g. '2026-W19'."""
-    return d.strftime("%G-W%V")
-
-
-def get_week_monday(week_label: str) -> date:
-    year, week = week_label.split("-W")
-    return date.fromisocalendar(int(year), int(week), 1)
 
 
 def get_todays_run_plan(today: date) -> dict | None:
@@ -80,43 +70,6 @@ def update_run_plan_day(d: date, updates: dict) -> bool:
     day_entry.update(updates)
     save_plan(plan)
     return True
-
-
-def get_tasks_for_date(d: date) -> list[dict]:
-    """Return interview prep tasks for the given date (may be empty list)."""
-    plan = load_plan()
-    day_name = d.strftime("%A").lower()
-    raw = plan.get("interview_prep", {}).get(get_week_label(d), {}).get(day_name, [])
-    return raw if isinstance(raw, list) else []
-
-
-def get_todays_interview_tasks(today: date) -> list[dict]:
-    """Backward-compatible alias used by the tap handler."""
-    return get_tasks_for_date(today)
-
-
-def get_week_task_lists(today: date) -> tuple[list[dict], list[dict]]:
-    """Return (leetcode_tasks, other_tasks) for the current ISO week.
-
-    Tasks are returned in chronological order (Monday → Sunday). Each task dict
-    is annotated with a `date` field (ISO date string) so callers can map a
-    list position back to the underlying day. Completion status is NOT computed
-    here — that's the caller's responsibility.
-    """
-    monday = today - timedelta(days=today.weekday())
-    leetcode_tasks: list[dict] = []
-    other_tasks: list[dict] = []
-    for i in range(7):
-        day = monday + timedelta(days=i)
-        iso = day.isoformat()
-        for task in get_tasks_for_date(day):
-            t = dict(task)
-            t["date"] = iso
-            if t.get("type") == "leetcode":
-                leetcode_tasks.append(t)
-            else:
-                other_tasks.append(t)
-    return leetcode_tasks, other_tasks
 
 
 def get_week_run_plan(today: date) -> dict:

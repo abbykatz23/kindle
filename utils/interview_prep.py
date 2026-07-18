@@ -1,0 +1,79 @@
+"""Composition/query layer for interview prep time-tracking.
+
+This is the single source of truth for row order and identity, imported by both
+the render pipeline (via main.py) and the tap handler, so rendering and
+tap-hit-testing can never drift apart — mirrors the existing convention where
+weekly-row layout constants live in one place and get imported everywhere needed.
+"""
+from datetime import date
+
+from utils.interview_items import ITEM_CATEGORIES, get_active_items
+from utils.time_log import FIXED_CATEGORIES, get_totals_for_date
+
+CATEGORY_LABELS = {
+    "system_design": "System Design",
+    "behavioral": "Behavioral",
+    "books": "Books",
+    "projects": "Projects",
+    "wildcard": "Wildcard",
+}
+
+FIXED_LABELS = {
+    "system_design": "System Design Prep",
+    "behavioral": "Behavioral Interview Prep",
+}
+
+
+def get_loggable_rows(on_date: date | None = None) -> list[dict]:
+    """Ordered rows for the Kindle detail view / frontend log-time UI.
+
+    Order: system_design, behavioral, then active books, projects, wildcard
+    (oldest-created first within each category).
+    """
+    on_date = on_date or date.today()
+    totals = get_totals_for_date(on_date)
+    rows: list[dict] = []
+
+    for category in FIXED_CATEGORIES:
+        rows.append({
+            "category": category,
+            "item_id": None,
+            "label": FIXED_LABELS[category],
+            "today_minutes": totals.get((category, None), 0),
+        })
+
+    for category in ITEM_CATEGORIES:
+        items = sorted(get_active_items(category), key=lambda i: i.get("created_at", ""))
+        for item in items:
+            rows.append({
+                "category": category,
+                "item_id": item["id"],
+                "label": item["title"],
+                "today_minutes": totals.get((category, item["id"]), 0),
+            })
+
+    return rows
+
+
+def get_dashboard_summary(on_date: date | None = None) -> dict:
+    """Condensed roll-up for the Kindle dashboard summary section.
+
+    `None` for books/projects/wildcard means "hide this line" — mirrors the
+    existing `if birthdays:` guard used for the birthdays dashboard section.
+    """
+    on_date = on_date or date.today()
+    totals = get_totals_for_date(on_date)
+
+    summary: dict = {}
+    for category in FIXED_CATEGORIES:
+        summary[category] = {"today_minutes": totals.get((category, None), 0)}
+
+    for category in ITEM_CATEGORIES:
+        items = get_active_items(category)
+        if not items:
+            summary[category] = None
+            continue
+        minutes = sum(totals.get((category, item["id"]), 0) for item in items)
+        summary[category] = {"active_count": len(items), "today_minutes": minutes}
+
+    return summary

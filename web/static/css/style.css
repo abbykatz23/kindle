@@ -231,8 +231,7 @@ input:focus, select:focus, textarea:focus {
 .birthday-item--11 { background: rgba(180,83,9,0.12);    border-color: rgba(217,119,6,0.28)   }  /* Nov — oak */
 .birthday-item--12 { background: rgba(99,102,241,0.1);   border-color: rgba(99,102,241,0.28)  }  /* Dec — indigo */
 
-/* Interview tab header + countdown */
-.interview-tab-header { display: flex; justify-content: flex-end; margin-bottom: .75rem }
+/* Countdown badges (race + birthday) */
 .countdown-badge--hidden { display: none !important }
 .countdown-badge {
   margin-left: auto;
@@ -247,52 +246,10 @@ input:focus, select:focus, textarea:focus {
 }
 .countdown-badge__label { font-size: .72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-top: .15rem }
 
-/* Interview prep — week overview cards */
-.iweek-pills { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .4rem }
-.itask-pill { padding: .25rem .55rem; border-radius: 8px; font-size: .78rem; font-weight: 600; display: inline-flex; align-items: center; gap: .25rem }
-.itask-pill--leetcode { background: rgba(79,142,247,.12); color: var(--accent) }
-.itask-pill--system_design { background: var(--accent-dim); color: var(--accent) }
-.itask-pill--behavioral { background: rgba(168,85,247,0.12); color: #c084fc }
-.itask-pill--reading { background: var(--success-dim); color: var(--success) }
-.itask-pill--other { background: var(--glass); color: var(--muted) }
-
 /* Progress bar */
 .prog-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: .65rem; overflow: hidden }
 .prog-bar__fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .3s }
 .prog-bar__fill--done { background: var(--success) }
-
-/* Interview week detail page */
-.interview-week { display: grid; gap: 1rem }
-
-.iday {
-  padding: 1rem; border: 1px solid var(--border); border-radius: 12px; background: var(--card-sunken);
-}
-.iday--today {
-  border: 2px solid var(--success); background: rgba(74,222,128,0.05); position: relative;
-}
-.iday--today::before {
-  content: 'Today'; position: absolute; top: -.55rem; right: .75rem;
-  padding: .2rem .5rem; border-radius: 999px;
-  background: var(--success); color: #0f1117; font-size: .7rem; font-weight: 700;
-}
-.iday__title { font-size: 1rem; font-weight: 700; margin-bottom: .75rem }
-.iday--today .iday__title { color: var(--success) }
-
-.task-list { list-style: none; margin: 0 0 .75rem 0; padding: 0; display: flex; flex-direction: column; gap: .5rem }
-
-/* Interview task rows */
-.interview-task { display: flex; gap: .5rem; align-items: flex-start; padding: .65rem; border: 1px solid var(--border); border-radius: 10px; background: var(--card) }
-.interview-task--done { background: rgba(74,222,128,0.05); border-color: rgba(74,222,128,0.2) }
-.interview-task--done .interview-task-input { text-decoration: line-through; color: var(--muted) !important }
-
-.task-toggle-btn { flex-shrink: 0; padding: .4rem .55rem; font-size: 1rem; min-width: 2.2rem; text-align: center; line-height: 1 }
-.task-toggle-form { flex-shrink: 0 }
-
-/* Add task */
-.add-task-details { margin-top: .5rem }
-.add-task-details summary { cursor: pointer; color: var(--accent); font-size: .875rem; font-weight: 600; user-select: none; list-style: none; padding: .35rem 0 }
-.add-task-details summary::-webkit-details-marker { display: none }
-.add-task-form { margin-top: .75rem; display: flex; gap: .5rem; align-items: flex-start; flex-wrap: wrap }
 
 /* Skeleton loading */
 @keyframes skel-pulse {
@@ -366,24 +323,7 @@ input:focus, select:focus, textarea:focus {
 button:focus { outline: 3px solid var(--accent-dim); outline-offset: 2px }
 button, input[type=text] { font-size: 16px }
 
-/* Daily coaching summary panel */
-.summary-panel {
-  border-radius: 12px; border: 1px solid var(--border);
-  background: var(--card-sunken); padding: .85rem 1rem; margin-bottom: .75rem;
-}
-.summary-panel__body { display: flex; flex-direction: column; gap: .55rem; }
-.summary-panel__summary { font-size: .9rem; line-height: 1.55; }
-.summary-panel__encourage { font-size: .875rem; color: var(--success); line-height: 1.5; }
-.summary-panel__motivation { font-size: .85rem; color: var(--accent); line-height: 1.5; font-style: italic; }
-.summary-panel__pointers { padding-left: 1.1rem; display: flex; flex-direction: column; gap: .3rem; }
-.summary-panel__pointers li { font-size: .85rem; line-height: 1.5; color: var(--muted); }
-.summary-panel__suggestions { display: flex; flex-direction: column; gap: .35rem; margin-top: .4rem; }
-.summary-panel__suggestions-label { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: .1rem; }
-.summary-suggestion { display: flex; align-items: flex-start; gap: .5rem; cursor: pointer; font-size: .875rem; line-height: 1.45; }
-.summary-suggestion input[type="checkbox"] { margin-top: .2rem; accent-color: var(--accent); flex-shrink: 0; }
-.summary-panel__meta { font-size: .72rem; color: var(--muted); margin-top: .65rem; }
-
-/* Interview outcomes */
+/* Race results / interview outcomes (shared list styling) */
 .outcome-form { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-bottom: .75rem; }
 .outcomes-list { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
 .outcome-item {
@@ -401,24 +341,6 @@ button, input[type=text] { font-size: 16px }
 .outcome-result--pending { background: var(--glass); color: var(--muted); }
 .outcome-topics, .outcome-notes { font-size: .8rem; }
 
-/* Day task panel */
-.day-task-panel { padding: .6rem 0 .25rem; border-top: 1px solid var(--border); margin-top: .5rem; }
-.day-task-list { list-style: none; display: flex; flex-direction: column; gap: .35rem; }
-.day-task-item { display: flex; align-items: baseline; gap: .5rem; font-size: .875rem; line-height: 1.45; padding: .2rem 0; cursor: pointer; border-radius: 6px; padding-left: .25rem; padding-right: .25rem; }
-.day-task-item:hover { background: var(--glass); }
-.day-task-item--done .day-task-text { text-decoration: line-through; color: var(--muted); }
-.day-task-item--done .day-task-badge { opacity: .5; }
-.day-task-badge {
-  font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
-  padding: .15rem .4rem; border-radius: 4px; white-space: nowrap; flex-shrink: 0;
-  background: var(--glass); color: var(--muted);
-}
-.day-task-badge--leetcode { background: rgba(79,142,247,.15); color: var(--accent); }
-.day-task-badge--system_design { background: rgba(167,139,250,.15); color: #a78bfa; }
-.day-task-badge--behavioral { background: rgba(168,85,247,0.15); color: #c084fc; }
-.day-task-badge--reading { background: rgba(74,222,128,.1); color: var(--success); }
-.day-pill-hero--active { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--accent-dim); }
-
 /* Live coach */
 .coach-panel { margin-top: .75rem; display: flex; flex-direction: column; gap: .5rem; }
 .coach-input-row { display: flex; gap: .5rem; align-items: stretch; }
@@ -435,13 +357,6 @@ button, input[type=text] { font-size: 16px }
   color: var(--text); font-size: .875rem; line-height: 1.5;
 }
 
-/* Curriculum header */
-.curriculum-header {
-  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-  padding: .85rem 1rem; border-radius: 12px;
-  background: var(--card-sunken); border: 1px solid var(--border);
-  margin-bottom: .75rem;
-}
 .curriculum-empty {
   display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
   padding: 1.25rem 1rem; border-radius: 12px; text-align: center;
@@ -450,31 +365,63 @@ button, input[type=text] { font-size: 16px }
   margin-bottom: .75rem;
 }
 
-/* Carryover / behind indicators */
-.behind-banner {
-  display: flex; align-items: center; gap: .5rem;
-  padding: .55rem .85rem; border-radius: 10px; font-size: .875rem; font-weight: 600;
-  background: rgba(251,146,60,0.12); color: #fb923c;
-  border: 1px solid rgba(251,146,60,0.3);
-  margin-bottom: .5rem;
-}
-.behind-banner--red {
-  background: rgba(248,113,113,0.12); color: var(--danger);
-  border-color: rgba(248,113,113,0.3);
+/* ── Interview prep: time-tracking ── */
+:root {
+  --iprep-series-1: #3987e5; /* Books */
+  --iprep-series-2: #199e70; /* Projects */
+  --iprep-series-3: #c98500; /* Wildcard */
+  --iprep-series-4: #008300; /* System Design */
+  --iprep-series-5: #9085e9; /* Behavioral */
 }
 
-.day-pill-hero--behind {
-  border-color: rgba(251,146,60,0.4);
-  background: rgba(251,146,60,0.08);
-}
-.day-pill-hero__carryover {
-  font-size: .68rem; color: #fb923c; font-weight: 700; line-height: 1;
-}
+.prep-fixed-row { display: grid; grid-template-columns: repeat(2,1fr); gap: .75rem; margin-bottom: .75rem }
+@media(max-width:600px) { .prep-fixed-row { grid-template-columns: 1fr } }
 
-.interview-task--carryover { border-left: 3px solid #fb923c }
-
-.carryover-badge {
-  display: inline-block; font-size: .72rem; font-weight: 600; color: #fb923c;
-  background: rgba(251,146,60,0.1); border-radius: 6px;
-  padding: .15rem .4rem; margin-top: 2px;
+.prep-card {
+  background: var(--card-sunken); border: 1px solid var(--border); border-radius: 12px;
+  padding: .85rem 1rem; display: flex; flex-direction: column; gap: .6rem; margin-bottom: .75rem;
 }
+.prep-fixed-row .prep-card { margin-bottom: 0 }
+.prep-card__header { display: flex; align-items: center; justify-content: space-between; gap: .5rem }
+.prep-card__title { font-weight: 700; font-size: .95rem }
+.prep-card__today { font-size: .8rem; color: var(--muted); font-weight: 600 }
+.prep-card__actions { display: flex; gap: .5rem }
+
+.leetcode-list { list-style: none; display: flex; flex-direction: column; gap: .3rem; font-size: .875rem }
+
+.prep-section { margin-bottom: 1rem }
+.prep-section__header { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; margin-bottom: .6rem }
+.prep-section__header h3 { font-size: 1rem }
+.prep-add-form { display: flex; gap: .5rem; align-items: center }
+.prep-add-form .field__input { min-width: 160px }
+
+.prep-item-list { list-style: none; display: flex; flex-direction: column; gap: .5rem }
+.prep-item-row {
+  display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+  padding: .6rem .75rem; border-radius: 10px; background: var(--card); border: 1px solid var(--border);
+}
+.prep-item-row--complete { opacity: .7 }
+.prep-item-title { font-weight: 600; flex: 1; min-width: 120px }
+.prep-item-today { font-size: .78rem; color: var(--muted); font-weight: 600 }
+.prep-item-actions { display: flex; gap: .4rem; align-items: center }
+
+.log-time-btn { padding: .4rem .6rem; font-size: .85rem }
+
+/* Analytics */
+.analytics-range-buttons { display: flex; gap: .4rem }
+.analytics-range-btn--active { background: var(--accent); border-color: var(--accent); color: #fff }
+.analytics-svg { display: block; width: 100%; height: auto }
+.analytics-gridline { stroke: var(--border); stroke-width: 1 }
+.analytics-legend { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: .5rem }
+.analytics-legend__item { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; color: var(--muted) }
+.analytics-legend__swatch { width: .7rem; height: .7rem; border-radius: 3px; display: inline-block }
+.analytics-tooltip {
+  position: fixed; z-index: 2000; pointer-events: none;
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: .35rem .6rem; font-size: .78rem; color: var(--text);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.analytics-table-container { overflow-x: auto; margin-top: .75rem }
+.analytics-table { border-collapse: collapse; width: 100%; font-size: .8rem }
+.analytics-table th, .analytics-table td { padding: .35rem .6rem; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap }
+.analytics-table th { color: var(--muted); font-weight: 600 }

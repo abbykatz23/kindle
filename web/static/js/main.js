@@ -58,7 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // ── Tab switching ─────────────────────────────────────────────────────
     const tabButtons = document.querySelectorAll('.tab-button');
     if (tabButtons.length) {
-        const countdownBadge = document.getElementById('days-countdown-badge');
         const raceBadge = document.getElementById('race-countdown-badge');
         const birthdayBadge = document.getElementById('birthday-countdown-badge');
 
@@ -79,7 +78,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 const target = document.querySelector(btn.getAttribute('data-target'));
                 if (target) { target.style.display = 'block'; target.setAttribute('aria-hidden', 'false'); }
                 const selectedTab = btn.getAttribute('data-target').replace('#', '');
-                if (countdownBadge) countdownBadge.classList.toggle('countdown-badge--hidden', selectedTab !== 'interview');
                 if (raceBadge) raceBadge.classList.toggle('countdown-badge--hidden', selectedTab !== 'running');
                 if (birthdayBadge) birthdayBadge.classList.toggle('countdown-badge--hidden', selectedTab !== 'birthdays');
                 const newUrl = new URL(window.location.href);
@@ -101,111 +99,6 @@ document.addEventListener("DOMContentLoaded", () => {
             document.querySelectorAll('.tab-content').forEach(c => { c.style.display = 'none'; c.setAttribute('aria-hidden', 'true'); });
             activeTarget.style.display = 'block';
             activeTarget.setAttribute('aria-hidden', 'false');
-        }
-    }
-
-    // ── Interview prep: type toggle (text vs LC number) ───────────────────
-    function updateInterviewTaskField(typeSelect) {
-        const form = typeSelect.closest('form');
-        if (!form) return;
-        const taskInput = form.querySelector('.interview-task-input');
-        const lcRow = form.querySelector('.lc-input-row');
-        if (!taskInput) return;
-
-        if (typeSelect.value === 'leetcode') {
-            taskInput.style.display = 'none';
-            taskInput.removeAttribute('required');
-            if (lcRow) {
-                lcRow.style.display = 'flex';
-                const lcNum = lcRow.querySelector('.lc-number-input');
-                const lcName = lcRow.querySelector('.lc-name-display');
-                const match = taskInput.value.match(/^#(\d+)\s+(.+)$/);
-                if (lcNum) lcNum.value = match ? match[1] : '';
-                if (lcName) lcName.textContent = match ? match[2] : '';
-            }
-        } else {
-            taskInput.style.display = '';
-            taskInput.setAttribute('required', '');
-            taskInput.placeholder = 'Description';
-            if (lcRow) lcRow.style.display = 'none';
-        }
-    }
-
-    async function resolveLeetcodeNumber(lcNumberInput) {
-        const number = parseInt(lcNumberInput.value, 10);
-        const form = lcNumberInput.closest('form');
-        const lcRow = lcNumberInput.closest('.lc-input-row');
-        if (!form) return;
-
-        const lcName = lcRow && lcRow.querySelector('.lc-name-display');
-        const taskInput = form.querySelector('.interview-task-input');
-        const slugInput = form.querySelector('input[name="leetcode_slug"]');
-        const statusEl = form.querySelector('.lc-status');
-
-        if (!number || number < 1) {
-            if (lcName) lcName.textContent = '';
-            if (taskInput) taskInput.value = '';
-            if (slugInput) slugInput.value = '';
-            return;
-        }
-
-        if (statusEl) statusEl.textContent = 'Looking up...';
-        if (lcName) lcName.textContent = '';
-
-        try {
-            const res = await fetch(`/leetcode/lookup?number=${number}`);
-            const data = await res.json();
-            if (res.ok) {
-                if (lcName) lcName.textContent = data.title;
-                if (taskInput) taskInput.value = data.task;
-                if (slugInput) slugInput.value = data.slug;
-                if (statusEl) statusEl.textContent = '';
-            } else {
-                if (lcName) lcName.textContent = '';
-                if (taskInput) taskInput.value = '';
-                if (slugInput) slugInput.value = '';
-                if (statusEl) statusEl.textContent = data.error || 'Not found';
-            }
-        } catch {
-            if (statusEl) statusEl.textContent = 'Lookup failed';
-        }
-    }
-
-    function wireInterviewLookup(typeSelect) {
-        const form = typeSelect.closest('form');
-        if (!form) return;
-        const lcRow = form.querySelector('.lc-input-row');
-        if (!lcRow) return;
-        const lcNum = lcRow.querySelector('.lc-number-input');
-        if (!lcNum || lcNum.dataset.wired) return;
-        lcNum.dataset.wired = '1';
-
-        let timer;
-        lcNum.addEventListener('input', () => {
-            clearTimeout(timer);
-            timer = setTimeout(() => resolveLeetcodeNumber(lcNum), 600);
-        });
-    }
-
-    document.querySelectorAll('.interview-type-select').forEach((typeSelect) => {
-        typeSelect.addEventListener('change', () => updateInterviewTaskField(typeSelect));
-        updateInterviewTaskField(typeSelect);
-        wireInterviewLookup(typeSelect);
-    });
-
-    // ── Interview countdown (curriculum target date or fallback 2027) ────
-    const countdownEl = document.getElementById('countdown-days');
-    const countdownLabel = document.querySelector('#days-countdown-badge .countdown-badge__label');
-    if (countdownEl) {
-        const targetDateStr = window.CURRICULUM_TARGET_DATE;
-        if (targetDateStr) {
-            const target = new Date(targetDateStr);
-            const days = Math.max(0, Math.ceil((target - new Date()) / (1000 * 60 * 60 * 24)));
-            countdownEl.textContent = days.toLocaleString();
-            if (countdownLabel) countdownLabel.textContent = 'days until interviews';
-        } else {
-            const days = Math.ceil((new Date('2027-01-01') - new Date()) / (1000 * 60 * 60 * 24));
-            countdownEl.textContent = days.toLocaleString();
         }
     }
 
@@ -329,15 +222,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const intensityBtns = overlay ? overlay.querySelectorAll('.intensity-btn') : [];
 
     let _pendingWeekLabel = null;
-    let _pendingType = 'interview';
+    let _pendingType = 'running-edit';
 
     const _modalConfig = {
-        interview: {
-            title: '✦ Generate Interview Prep',
-            warning: 'Completed tasks will be preserved. Incomplete tasks will be regenerated.',
-            showIntensity: true,
-            placeholder: 'e.g. Exclude Wednesday from scheduling and redistribute those tasks across the remaining days.',
-        },
         'running-full': {
             title: '✦ Generate Training Plan',
             warning: 'This will replace your entire running plan through October 10th.',
@@ -357,8 +244,8 @@ document.addEventListener("DOMContentLoaded", () => {
     function openClaudeModal(weekLabel, hasPlan, type) {
         if (!overlay) return;
         _pendingWeekLabel = weekLabel;
-        _pendingType = type || 'interview';
-        const cfg = _modalConfig[_pendingType] || _modalConfig.interview;
+        _pendingType = type || 'running-edit';
+        const cfg = _modalConfig[_pendingType] || _modalConfig['running-edit'];
         if (modalTitle) modalTitle.textContent = cfg.title;
         if (warning) {
             warning.textContent = cfg.warning;
@@ -409,234 +296,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     window.handleClaudeGenerate = function handleClaudeGenerate(btn) {
-        const type = btn.dataset.generateType || 'interview';
+        const type = btn.dataset.generateType || 'running-edit';
         const hasPlan = btn.dataset.hasPlan === 'true';
         openClaudeModal(btn.dataset.generateWeek, hasPlan, type);
         return false;
     };
-
-    // ── Day pill selection ────────────────────────────────────────────────
-    window.selectDay = function selectDay(day) {
-        document.querySelectorAll('.day-pill-hero').forEach(p => p.classList.remove('day-pill-hero--active'));
-        document.querySelectorAll('.day-task-panel').forEach(p => { p.style.display = 'none'; });
-        const pill = document.querySelector(`.day-pill-hero[data-day="${day}"]`);
-        if (pill) pill.classList.add('day-pill-hero--active');
-        const panel = document.getElementById(`day-panel-${day}`);
-        if (panel) panel.style.display = 'block';
-    };
-
-    // Auto-select today (or first day with tasks)
-    const todayPill = document.querySelector('.day-pill-hero--today');
-    if (todayPill) {
-        selectDay(todayPill.dataset.day);
-    } else {
-        const firstWithTasks = document.querySelector('.day-pill-hero[data-day]');
-        if (firstWithTasks) selectDay(firstWithTasks.dataset.day);
-    }
-
-    // ── Live coach ───────────────────────────────────────────────────────
-
-    // Show pending feedback from a previous coach job (stored across reload)
-    const pendingFeedback = localStorage.getItem('coachFeedback');
-    if (pendingFeedback) {
-        localStorage.removeItem('coachFeedback');
-        const banner = document.getElementById('coach-feedback-banner');
-        if (banner) {
-            banner.textContent = pendingFeedback;
-            banner.style.display = 'block';
-        }
-    }
-
-    window.applyCheckedSuggestions = function applyCheckedSuggestions(weekLabel) {
-        const checked = Array.from(document.querySelectorAll('.suggestion-cb:checked')).map(cb => cb.value);
-        if (!checked.length) { alert('Check at least one suggestion first.'); return; }
-        const message = 'Please apply these suggested adjustments to my plan:\n' +
-            checked.map((s, i) => `${i + 1}. ${s}`).join('\n');
-        const textarea = document.getElementById('coach-message');
-        if (textarea) {
-            textarea.value = message;
-            textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            document.getElementById('coach-submit')?.focus();
-        } else {
-            submitCoach(weekLabel, message);
-        }
-    };
-
-    window.submitCoach = async function submitCoach(weekLabel, overrideMessage) {
-        const textarea = document.getElementById('coach-message');
-        const btn = document.getElementById('coach-submit');
-        const message = overrideMessage || textarea?.value.trim();
-        if (!message) return;
-
-        btn.disabled = true;
-        btn.textContent = 'Thinking...';
-        const banner = document.getElementById('coach-feedback-banner');
-        if (banner) banner.style.display = 'none';
-
-        try {
-            const body = new URLSearchParams({ week_label: weekLabel, message });
-            const res = await fetch('/interview/coach', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: body.toString(),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed');
-
-            // Poll until done
-            const jobId = data.job_id;
-            const timer = setInterval(async () => {
-                try {
-                    const r = await fetch(`/interview/coach/status?job_id=${jobId}`);
-                    const job = await r.json();
-                    if (job.status === 'done') {
-                        clearInterval(timer);
-                        if (job.feedback) localStorage.setItem('coachFeedback', job.feedback);
-                        window.location.href = '/?tab=interview';
-                    } else if (job.status === 'error') {
-                        clearInterval(timer);
-                        btn.disabled = false;
-                        btn.textContent = '✦ Ask coach';
-                        alert('Coach error: ' + (job.error || 'Unknown error'));
-                    }
-                } catch { /* keep polling */ }
-            }, 1500);
-        } catch (e) {
-            btn.disabled = false;
-            btn.textContent = '✦ Ask coach';
-            alert('Error: ' + e.message);
-        }
-    };
-
-    // Allow Ctrl+Enter to submit coach input
-    document.getElementById('coach-message')?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-            const weekLabel = document.getElementById('coach-submit')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-            if (weekLabel) submitCoach(weekLabel);
-        }
-    });
-
-    // ── Curriculum setup modal (2-step) ──────────────────────────────────
-
-    const cpOverlay = document.getElementById('curriculum-modal-overlay');
-
-    function _readCurriculumIntake() {
-        return {
-            target_roles:     document.getElementById('cp-target-roles')?.value.trim()     || '',
-            target_companies: document.getElementById('cp-target-companies')?.value.trim() || '',
-            interview_timeline: document.getElementById('cp-timeline')?.value.trim()       || '',
-            current_level:    document.getElementById('cp-level')?.value                   || '',
-            weekly_hours:     document.getElementById('cp-hours')?.value.trim()            || '',
-            current_strengths: document.getElementById('cp-strengths')?.value.trim()       || '',
-            notes:            document.getElementById('cp-notes')?.value.trim()            || '',
-        };
-    }
-
-    function _showCpStep(num) {
-        const s1 = document.getElementById('cp-step-1');
-        const s2 = document.getElementById('cp-step-2');
-        const ind = document.getElementById('cp-step-indicator');
-        if (s1) s1.style.display = num === 1 ? '' : 'none';
-        if (s2) s2.style.display = num === 2 ? '' : 'none';
-        if (ind) ind.textContent = num === 1 ? 'Step 1 of 2 — Your goals' : 'Step 2 of 2 — Claude\'s questions';
-    }
-
-    function openCurriculumModal() {
-        if (!cpOverlay) return false;
-        _showCpStep(1);
-        const title = document.getElementById('curriculum-modal-title');
-        if (title) title.textContent = '✦ Set up curriculum';
-        cpOverlay.setAttribute('aria-hidden', 'false');
-        cpOverlay.classList.add('modal--open');
-        setTimeout(() => document.getElementById('cp-target-roles')?.focus(), 50);
-        return false;
-    }
-    window.openCurriculumModal = openCurriculumModal;
-
-    function closeCurriculumModal() {
-        if (!cpOverlay) return;
-        cpOverlay.classList.remove('modal--open');
-        cpOverlay.setAttribute('aria-hidden', 'true');
-    }
-
-    if (cpOverlay) {
-        cpOverlay.addEventListener('click', (e) => { if (e.target === cpOverlay) closeCurriculumModal(); });
-        document.getElementById('cp-cancel')?.addEventListener('click', closeCurriculumModal);
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && cpOverlay.classList.contains('modal--open')) closeCurriculumModal();
-        });
-
-        document.getElementById('cp-continue')?.addEventListener('click', async () => {
-            const btn = document.getElementById('cp-continue');
-            btn.disabled = true;
-            btn.textContent = 'Thinking...';
-            try {
-                const body = new URLSearchParams(_readCurriculumIntake());
-                const res = await fetch('/interview/intake-questions', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: body.toString(),
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to get questions');
-                const block = document.getElementById('cp-questions-block');
-                if (block) block.textContent = data.questions;
-                document.getElementById('cp-answers').value = '';
-                _showCpStep(2);
-                setTimeout(() => document.getElementById('cp-answers')?.focus(), 50);
-            } catch (e) {
-                alert('Error: ' + e.message);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Continue →';
-            }
-        });
-
-        document.getElementById('cp-back')?.addEventListener('click', () => _showCpStep(1));
-
-        document.getElementById('cp-confirm')?.addEventListener('click', () => {
-            const intake = _readCurriculumIntake();
-            const questions = document.getElementById('cp-questions-block')?.textContent || '';
-            const answers = document.getElementById('cp-answers')?.value.trim() || '';
-            if (questions) {
-                intake.qa_context = `Claude's questions:\n${questions}\n\nAnswers:\n${answers}`;
-            }
-            closeCurriculumModal();
-            _startCurriculumGenerate(intake);
-        });
-    }
-
-    async function _startCurriculumGenerate(intake) {
-        // Show curriculum skeleton, hide everything else in interview tab
-        const headerBlock = document.getElementById('curriculum-header-block');
-        const overview = document.querySelector('.interview-overview');
-        const skel = document.getElementById('curriculum-skeleton');
-        if (headerBlock) headerBlock.style.display = 'none';
-        if (overview) overview.style.display = 'none';
-        if (skel) skel.style.display = 'block';
-        const tabBtn = document.querySelector('[data-target="#interview"]');
-        if (tabBtn && tabBtn.getAttribute('aria-selected') !== 'true') tabBtn.click();
-
-        localStorage.setItem('claudeGenJob', JSON.stringify({ type: 'curriculum' }));
-        try {
-            const body = new URLSearchParams(intake);
-            const res = await fetch('/interview/generate-curriculum', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-                body: body.toString(),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Failed to start generation');
-            localStorage.setItem('claudeGenJob', JSON.stringify({ jobId: data.job_id, type: 'curriculum' }));
-            pollJob(data.job_id, 'curriculum');
-        } catch (e) {
-            if (headerBlock) headerBlock.style.display = '';
-            if (overview) overview.style.display = '';
-            if (skel) skel.style.display = 'none';
-            localStorage.removeItem('claudeGenJob');
-            alert('Error: ' + e.message);
-        }
-    }
 
     // ── New training plan modal (2-step) ─────────────────────────────────
 
@@ -778,71 +442,36 @@ document.addEventListener("DOMContentLoaded", () => {
     // ── Skeleton show/hide ────────────────────────────────────────────────
 
     function showSkeleton(type) {
-        if (type === 'running-full' || type === 'running-edit' || type === 'running') {
-            const tabBtn = document.querySelector('[data-target="#running"]');
-            if (tabBtn && tabBtn.getAttribute('aria-selected') !== 'true') tabBtn.click();
-            const content = document.getElementById('running-plan-content');
-            if (content) content.style.display = 'none';
-            const skel = document.getElementById('running-skeleton');
-            if (skel) {
-                skel.style.display = 'block';
-                const msg = skel.querySelector('.skel-status');
-                if (msg) {
-                    const text = type === 'running-full'
-                        ? 'Claude is building your training plan...'
-                        : 'Claude is updating your plan...';
-                    msg.innerHTML = `<span class="spinner"></span>${text}`;
-                }
+        const tabBtn = document.querySelector('[data-target="#running"]');
+        if (tabBtn && tabBtn.getAttribute('aria-selected') !== 'true') tabBtn.click();
+        const content = document.getElementById('running-plan-content');
+        if (content) content.style.display = 'none';
+        const skel = document.getElementById('running-skeleton');
+        if (skel) {
+            skel.style.display = 'block';
+            const msg = skel.querySelector('.skel-status');
+            if (msg) {
+                const text = type === 'running-full'
+                    ? 'Claude is building your training plan...'
+                    : 'Claude is updating your plan...';
+                msg.innerHTML = `<span class="spinner"></span>${text}`;
             }
-        } else {
-            const tabBtn = document.querySelector('[data-target="#interview"]');
-            if (tabBtn && tabBtn.getAttribute('aria-selected') !== 'true') tabBtn.click();
-            const overview = document.querySelector('.interview-overview');
-            if (overview) overview.style.display = 'none';
-            const weekGrid = document.getElementById('interview-week-grid');
-            if (weekGrid) weekGrid.style.display = 'none';
-            const skel = document.getElementById('claude-skeleton');
-            if (skel) skel.style.display = 'block';
         }
     }
 
-    function hideSkeleton(type) {
-        if (type === 'running-full' || type === 'running-edit' || type === 'running') {
-            const skel = document.getElementById('running-skeleton');
-            if (skel) skel.style.display = 'none';
-            const content = document.getElementById('running-plan-content');
-            if (content) content.style.display = '';
-        } else if (type === 'curriculum') {
-            const skel = document.getElementById('curriculum-skeleton');
-            if (skel) skel.style.display = 'none';
-            const headerBlock = document.getElementById('curriculum-header-block');
-            if (headerBlock) headerBlock.style.display = '';
-            const overview = document.querySelector('.interview-overview');
-            if (overview) overview.style.display = '';
-        } else {
-            const skel = document.getElementById('claude-skeleton');
-            if (skel) skel.style.display = 'none';
-            const overview = document.querySelector('.interview-overview');
-            if (overview) overview.style.display = '';
-            const weekGrid = document.getElementById('interview-week-grid');
-            if (weekGrid) weekGrid.style.display = '';
-        }
+    function hideSkeleton() {
+        const skel = document.getElementById('running-skeleton');
+        if (skel) skel.style.display = 'none';
+        const content = document.getElementById('running-plan-content');
+        if (content) content.style.display = '';
     }
 
     // ── Polling ───────────────────────────────────────────────────────────
 
     function pollJob(jobId, type) {
-        let endpoint;
-        if (type === 'running-full') {
-            endpoint = `/running/generate-full-plan/status?job_id=${jobId}`;
-        } else if (type === 'running-edit' || type === 'running') {
-            endpoint = `/running/generate-ai/status?job_id=${jobId}`;
-        } else if (type === 'curriculum') {
-            endpoint = `/interview/generate-curriculum/status?job_id=${jobId}`;
-        } else {
-            endpoint = `/interview/generate-ai/status?job_id=${jobId}`;
-        }
-        const redirectTab = type.startsWith('running') ? 'running' : 'interview';
+        const endpoint = type === 'running-full'
+            ? `/running/generate-full-plan/status?job_id=${jobId}`
+            : `/running/generate-ai/status?job_id=${jobId}`;
 
         const timer = setInterval(async () => {
             try {
@@ -851,20 +480,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (data.status === 'done') {
                     clearInterval(timer);
                     localStorage.removeItem('claudeGenJob');
-                    if (document.getElementById('interview-week-grid') && !type.startsWith('running')) {
-                        window.location.reload();
-                    } else {
-                        window.location.href = `/?tab=${redirectTab}`;
-                    }
+                    window.location.href = '/?tab=running';
                 } else if (data.status === 'error') {
                     clearInterval(timer);
                     localStorage.removeItem('claudeGenJob');
-                    hideSkeleton(type);
+                    hideSkeleton();
                     alert('Claude generation failed: ' + (data.error || 'Unknown error'));
-                } else if (data.message && type === 'curriculum') {
-                    const skelMsg = document.getElementById('curriculum-skel-msg');
-                    if (skelMsg) skelMsg.innerHTML = `<span class="spinner"></span>${data.message}`;
-                } else if (data.message && type.startsWith('running')) {
+                } else if (data.message) {
                     const skelMsg = document.querySelector('#running-skeleton .skel-status');
                     if (skelMsg) skelMsg.innerHTML = `<span class="spinner"></span>${data.message}`;
                 }
@@ -883,12 +505,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (type === 'running-full') {
             endpoint = '/running/generate-full-plan';
             bodyParams = { custom_prompt: customPrompt || '' };
-        } else if (type === 'running-edit' || type === 'running') {
+        } else {
             endpoint = '/running/generate-ai';
             bodyParams = { week_num: weekLabel, custom_prompt: customPrompt || '' };
-        } else {
-            endpoint = '/interview/generate-ai';
-            bodyParams = { week_label: weekLabel, intensity: intensity || 'normal', custom_prompt: customPrompt || '' };
         }
         try {
             const body = new URLSearchParams(bodyParams);
@@ -916,19 +535,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (pendingJobStr) {
         try {
             const {jobId, weekLabel, type} = JSON.parse(pendingJobStr);
-            const resolvedType = type || 'interview';
+            const resolvedType = type || 'running-edit';
             if (jobId) {
-                if (resolvedType === 'curriculum') {
-                    _startCurriculumGenerate.__resuming = true;
-                    const headerBlock = document.getElementById('curriculum-header-block');
-                    const overview = document.querySelector('.interview-overview');
-                    const skel = document.getElementById('curriculum-skeleton');
-                    if (headerBlock) headerBlock.style.display = 'none';
-                    if (overview) overview.style.display = 'none';
-                    if (skel) skel.style.display = 'block';
-                } else {
-                    showSkeleton(resolvedType);
-                }
+                showSkeleton(resolvedType);
                 pollJob(jobId, resolvedType);
             } else {
                 localStorage.removeItem('claudeGenJob');
@@ -936,6 +545,266 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch {
             localStorage.removeItem('claudeGenJob');
         }
+    }
+
+    // ── Interview prep: log-time buttons ──────────────────────────────────
+
+    document.querySelectorAll('.log-time-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+            const category = btn.dataset.category;
+            const itemId = btn.dataset.itemId || null;
+            const minutes = parseInt(btn.dataset.minutes, 10);
+            btn.disabled = true;
+            try {
+                const res = await fetch('/interview/log-time', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({category, item_id: itemId, minutes}),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to log time');
+                const totalEl = itemId
+                    ? document.querySelector(`[data-today-total][data-item-id="${itemId}"]`)
+                    : document.querySelector(`[data-today-total][data-category="${category}"]`);
+                if (totalEl) totalEl.textContent = `${data.total_minutes}m today`;
+            } catch (e) {
+                alert('Error: ' + e.message);
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    });
+
+    // ── Interview prep: LeetCode today refresh ────────────────────────────
+
+    document.getElementById('leetcode-refresh-btn')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        const listEl = document.getElementById('leetcode-today-list');
+        btn.disabled = true;
+        try {
+            const res = await fetch('/interview/leetcode-today');
+            const data = await res.json();
+            if (!listEl) return;
+            if (data.problems && data.problems.length) {
+                listEl.innerHTML = '<ul class="leetcode-list"></ul>';
+                const ul = listEl.querySelector('ul');
+                data.problems.forEach((p) => {
+                    const li = document.createElement('li');
+                    li.textContent = p.title;
+                    ul.appendChild(li);
+                });
+            } else {
+                listEl.innerHTML = '<p class="muted" style="font-size:.85rem;">Nothing solved yet today.</p>';
+            }
+        } catch {
+            // best-effort — leave existing content in place
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    // ── Interview prep: analytics ──────────────────────────────────────────
+
+    const ANALYTICS_CATEGORIES = [
+        { key: 'books', label: 'Books', color: 'var(--iprep-series-1)' },
+        { key: 'projects', label: 'Projects', color: 'var(--iprep-series-2)' },
+        { key: 'wildcard', label: 'Wildcard', color: 'var(--iprep-series-3)' },
+        { key: 'system_design', label: 'System Design', color: 'var(--iprep-series-4)' },
+        { key: 'behavioral', label: 'Behavioral', color: 'var(--iprep-series-5)' },
+    ];
+
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    function _svgEl(tag, attrs) {
+        const el = document.createElementNS(SVG_NS, tag);
+        Object.keys(attrs || {}).forEach((k) => el.setAttribute(k, attrs[k]));
+        return el;
+    }
+
+    function _ensureTooltip() {
+        let tip = document.getElementById('analytics-tooltip');
+        if (!tip) {
+            tip = document.createElement('div');
+            tip.id = 'analytics-tooltip';
+            tip.className = 'analytics-tooltip';
+            tip.style.display = 'none';
+            document.body.appendChild(tip);
+        }
+        return tip;
+    }
+
+    function _showTooltip(evt, text) {
+        const tip = _ensureTooltip();
+        tip.textContent = text;
+        tip.style.display = 'block';
+        tip.style.left = `${evt.clientX + 12}px`;
+        tip.style.top = `${evt.clientY + 12}px`;
+    }
+
+    function _hideTooltip() {
+        const tip = document.getElementById('analytics-tooltip');
+        if (tip) tip.style.display = 'none';
+    }
+
+    function _dateRange(start, end) {
+        const dates = [];
+        let d = new Date(start + 'T00:00:00');
+        const endD = new Date(end + 'T00:00:00');
+        while (d <= endD) {
+            dates.push(d.toISOString().slice(0, 10));
+            d.setDate(d.getDate() + 1);
+        }
+        return dates;
+    }
+
+    function _renderStackedBarChart(container, dates, byDay) {
+        container.innerHTML = '';
+        const width = Math.max(container.clientWidth || 600, 300);
+        const height = 220;
+        const barGap = 4;
+        const barW = Math.max((width / dates.length) - barGap, 4);
+
+        let maxTotal = 1;
+        dates.forEach((d) => {
+            const dayTotals = byDay[d] || {};
+            const total = ANALYTICS_CATEGORIES.reduce((sum, c) => sum + (dayTotals[c.key] || 0), 0);
+            if (total > maxTotal) maxTotal = total;
+        });
+
+        const svg = _svgEl('svg', { width: '100%', height, viewBox: `0 0 ${width} ${height}`, class: 'analytics-svg' });
+
+        // Gridlines at 0, 1/2, and max
+        [0, 0.5, 1].forEach((frac) => {
+            const y = height - 24 - frac * (height - 40);
+            const line = _svgEl('line', { x1: 0, y1: y, x2: width, y2: y, class: 'analytics-gridline' });
+            svg.appendChild(line);
+        });
+
+        dates.forEach((d, i) => {
+            const dayTotals = byDay[d] || {};
+            const x = i * (barW + barGap);
+            let cursorY = height - 24;
+            ANALYTICS_CATEGORIES.forEach((c) => {
+                const minutes = dayTotals[c.key] || 0;
+                if (minutes <= 0) return;
+                const barH = (minutes / maxTotal) * (height - 40);
+                const rect = _svgEl('rect', {
+                    x, y: cursorY - barH, width: barW, height: Math.max(barH - 2, 0),
+                    fill: c.color, rx: 2,
+                });
+                rect.addEventListener('pointerenter', (e) => _showTooltip(e, `${c.label}: ${minutes}m on ${d}`));
+                rect.addEventListener('pointermove', (e) => _showTooltip(e, `${c.label}: ${minutes}m on ${d}`));
+                rect.addEventListener('pointerleave', _hideTooltip);
+                svg.appendChild(rect);
+                cursorY -= barH;
+            });
+        });
+
+        container.appendChild(svg);
+
+        // Legend
+        const legend = document.createElement('div');
+        legend.className = 'analytics-legend';
+        ANALYTICS_CATEGORIES.forEach((c) => {
+            const item = document.createElement('span');
+            item.className = 'analytics-legend__item';
+            const swatch = document.createElement('span');
+            swatch.className = 'analytics-legend__swatch';
+            swatch.style.background = c.color;
+            item.appendChild(swatch);
+            item.appendChild(document.createTextNode(c.label));
+            legend.appendChild(item);
+        });
+        container.appendChild(legend);
+    }
+
+    function _renderLeetcodeChart(container, dates, leetcodeDaily) {
+        container.innerHTML = '';
+        const width = Math.max(container.clientWidth || 600, 300);
+        const height = 140;
+        const barGap = 4;
+        const barW = Math.max((width / dates.length) - barGap, 4);
+        const maxCount = Math.max(1, ...dates.map((d) => leetcodeDaily[d] || 0));
+
+        const svg = _svgEl('svg', { width: '100%', height, viewBox: `0 0 ${width} ${height}`, class: 'analytics-svg' });
+        dates.forEach((d, i) => {
+            const count = leetcodeDaily[d] || 0;
+            if (count <= 0) return;
+            const x = i * (barW + barGap);
+            const barH = (count / maxCount) * (height - 24);
+            const rect = _svgEl('rect', {
+                x, y: height - 12 - barH, width: barW, height: barH,
+                fill: 'var(--success)', rx: 2,
+            });
+            rect.addEventListener('pointerenter', (e) => _showTooltip(e, `${count} solved on ${d}`));
+            rect.addEventListener('pointermove', (e) => _showTooltip(e, `${count} solved on ${d}`));
+            rect.addEventListener('pointerleave', _hideTooltip);
+            svg.appendChild(rect);
+        });
+        container.appendChild(svg);
+    }
+
+    function _renderAnalyticsTable(container, dates, byDay, leetcodeDaily) {
+        container.innerHTML = '';
+        const table = document.createElement('table');
+        table.className = 'analytics-table';
+        const thead = document.createElement('thead');
+        const headRow = document.createElement('tr');
+        ['Date', ...ANALYTICS_CATEGORIES.map((c) => c.label), 'LeetCode'].forEach((label) => {
+            const th = document.createElement('th');
+            th.textContent = label;
+            headRow.appendChild(th);
+        });
+        thead.appendChild(headRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        dates.forEach((d) => {
+            const row = document.createElement('tr');
+            const dayTotals = byDay[d] || {};
+            [d, ...ANALYTICS_CATEGORIES.map((c) => `${dayTotals[c.key] || 0}m`), `${leetcodeDaily[d] || 0}`].forEach((val) => {
+                const td = document.createElement('td');
+                td.textContent = val;
+                row.appendChild(td);
+            });
+            tbody.appendChild(row);
+        });
+        table.appendChild(tbody);
+        container.appendChild(table);
+    }
+
+    async function _loadAnalytics(days) {
+        const chartContainer = document.getElementById('analytics-chart-container');
+        const lcContainer = document.getElementById('analytics-leetcode-container');
+        const tableContainer = document.getElementById('analytics-table-container');
+        if (!chartContainer) return;
+        try {
+            const res = await fetch(`/interview/analytics?days=${days}`);
+            const data = await res.json();
+            const dates = _dateRange(data.start, data.end);
+            _renderStackedBarChart(chartContainer, dates, data.category_totals_by_day || {});
+            if (lcContainer) _renderLeetcodeChart(lcContainer, dates, data.leetcode_daily || {});
+            if (tableContainer) _renderAnalyticsTable(tableContainer, dates, data.category_totals_by_day || {}, data.leetcode_daily || {});
+        } catch {
+            chartContainer.textContent = 'Failed to load analytics.';
+        }
+    }
+
+    function initAnalytics() {
+        const rangeButtons = document.querySelectorAll('.analytics-range-btn');
+        rangeButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                rangeButtons.forEach((b) => b.classList.remove('analytics-range-btn--active'));
+                btn.classList.add('analytics-range-btn--active');
+                _loadAnalytics(parseInt(btn.dataset.days, 10));
+            });
+        });
+        _loadAnalytics(7);
+    }
+
+    const analyticsChartContainer = document.getElementById('analytics-chart-container');
+    if (analyticsChartContainer) {
+        initAnalytics();
     }
 
 });

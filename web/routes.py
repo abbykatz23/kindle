@@ -5,10 +5,13 @@ from datetime import date, timedelta
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 
 from config import Config
-from integrations.leetcode import get_problem_by_number
 from utils import jobs as job_store
-from utils.plan import get_week_label, get_week_monday, get_week_task_lists, load_plan, load_birthdays, save_birthdays
+from utils.interview_items import ITEM_CATEGORIES, add_item, get_items, mark_item_complete
+from utils.interview_prep import CATEGORY_LABELS, get_dashboard_summary, get_loggable_rows
+from utils.leetcode_history import get_today as get_leetcode_today, get_history as get_leetcode_analytics_history
+from utils.plan import load_plan, load_birthdays, save_birthdays
 from utils.tap_handler import handle_tap
+from utils.time_log import ALL_CATEGORIES, FIXED_CATEGORIES, VALID_MINUTES, get_category_totals_by_day, log_time
 
 bp = Blueprint("main", __name__)
 
@@ -88,25 +91,6 @@ def _get_next_birthday(birthdays: list[dict], today: date) -> dict | None:
                     best = {"name": b.get("name", ""), "days_until": days_until}
                 break
     return best
-
-
-def _interview_week_stats(week_data: dict) -> dict:
-    stats: dict = {"total": 0, "done": 0, "by_type": {}}
-    for day_tasks in week_data.values():
-        for task in day_tasks:
-            stats["total"] += 1
-            if task.get("completed"):
-                stats["done"] += 1
-            t = task.get("type", "other")
-            stats["by_type"][t] = stats["by_type"].get(t, 0) + 1
-    return stats
-
-
-def _interview_redirect(week_label: str):
-    ref = request.referrer or ""
-    if "/interview/week/" in ref:
-        return redirect(url_for("main.interview_week", week_label=week_label))
-    return redirect(url_for("main.index", tab="interview"))
 
 
 def _preserve_notes_actual(new_week: dict, existing_week: dict) -> dict:
@@ -255,153 +239,23 @@ def _running_generate_full_thread(job_id: str, intake: dict) -> None:
         job_store.mark_failed(job_id, str(e))
 
 
-def _coach_thread(job_id: str, week_label: str, user_message: str) -> None:
-    try:
-        from integrations.claude_api import coach_interview_week
-        plan = load_plan()
-        curriculum_path = Config.DATA_DIR / "curriculum.json"
-        curriculum = json.loads(curriculum_path.read_text()) if curriculum_path.exists() else {}
-
-        result = coach_interview_week(
-            week_label=week_label,
-            plan=plan,
-            curriculum=curriculum,
-            user_message=user_message,
-        )
-
-        # Apply changes: merge day-by-day, never replace whole weeks
-        changes = result.get("changes", {})
-        if changes:
-            fresh_plan = load_plan()
-            interview = fresh_plan.setdefault("interview_prep", {})
-            for wl, week_changes in changes.items():
-                week_data = interview.setdefault(wl, {})
-                for day, tasks in week_changes.items():
-                    week_data[day] = tasks
-            _save_plan(fresh_plan)
-
-        # Persist coaching note if Claude extracted one
-        note = result.get("persistent_note")
-        if note:
-            from utils.coaching_notes import save_coaching_note
-            save_coaching_note(note, user_message)
-
-        job_store.mark_done(job_id, extra={"feedback": result.get("feedback", "")})
-    except Exception as e:
-        job_store.mark_failed(job_id, str(e))
-
-
-def _curriculum_generate_thread(job_id: str, intake: dict) -> None:
-    try:
-        from integrations.curriculum_claude_api import generate_curriculum
-
-        def _progress(msg: str):
-            job_store.mark_progress(job_id, msg)
-
-        curriculum = generate_curriculum(intake, progress_cb=_progress)
-
-        # Always anchor start_date to this week's Monday so week counter = 1
-        today = date.today()
-        this_monday = (today - timedelta(days=today.weekday())).isoformat()
-        curriculum["start_date"] = this_monday
-
-        Config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-        (Config.DATA_DIR / "curriculum.json").write_text(json.dumps(curriculum, indent=2))
-
-        # Clear stale interview_prep data — regeneration is a fresh start
-        fresh_plan = load_plan()
-        fresh_plan["interview_prep"] = {}
-        _save_plan(fresh_plan)
-
-        # Clear stale coaching summary so it regenerates from the new curriculum
-        if Config.INTERVIEW_SUMMARY_FILE.exists():
-            Config.INTERVIEW_SUMMARY_FILE.unlink()
-
-        # Generate this week's plan
-        _progress("Generating this week's plan...")
-        from utils.plan import get_week_label as _gwl
-        week_label = _gwl(today)
-        plan = load_plan()
-        from integrations.claude_api import generate_weekly_interview_prep
-        result = generate_weekly_interview_prep(
-            week_label=week_label,
-            plan=plan,
-            curriculum=curriculum,
-        )
-        fresh_plan = load_plan()
-        fresh_plan.setdefault("interview_prep", {})[week_label] = result
-        _save_plan(fresh_plan)
-
-        job_store.mark_done(job_id)
-    except Exception as e:
-        job_store.mark_failed(job_id, str(e))
-
-
-def _claude_generate_thread(job_id: str, week_label: str, curriculum: dict, intensity: str = "normal", custom_prompt: str = "") -> None:
-    try:
-        from integrations.claude_api import generate_weekly_interview_prep
-        plan = load_plan()
-        result = generate_weekly_interview_prep(
-            week_label=week_label,
-            plan=plan,
-            curriculum=curriculum,
-            intensity=intensity,
-            custom_prompt=custom_prompt,
-        )
-        fresh_plan = load_plan()
-        fresh_plan.setdefault("interview_prep", {})[week_label] = result
-        _save_plan(fresh_plan)
-        job_store.mark_done(job_id)
-    except Exception as e:
-        job_store.mark_failed(job_id, str(e))
-
-
 @bp.route("/")
 def index():
     today = date.today()
-    current_week = get_week_label(today)
     plan = load_plan()
     birthdays = _load_sorted_birthdays()
-    leetcode_tasks, other_tasks = get_week_task_lists(today)
-    for t in leetcode_tasks + other_tasks:
-        task_date = date.fromisoformat(t["date"])
-        t["day_name"] = task_date.strftime("%A")
-        t["formatted_date"] = task_date.strftime("%b %d").lstrip("0")
 
     default_tab = (request.args.get("tab") or "interview").lower()
 
-    # Interview prep
-    interview_past_weeks = sorted(
-        [w for w in plan.get("interview_prep", {}) if w < current_week],
-        reverse=True,
-    )
-
-    current_interview = plan.get("interview_prep", {}).get(current_week, {})
-
-    # Attach date + completion status to current week's tasks (in-memory only)
-    from utils.completions import get_manual_completions
-    _comp_cache: dict[str, set] = {}
-    today_monday = today - timedelta(days=today.weekday())
-    for _i, _day in enumerate(DAYS):
-        _day_date = today_monday + timedelta(days=_i)
-        _iso = _day_date.isoformat()
-        if _iso not in _comp_cache:
-            _comp_cache[_iso] = get_manual_completions(_day_date)
-        for _task in current_interview.get(_day, []):
-            _task["date"] = _iso
-            _task["completed"] = _task.get("task", "") in _comp_cache[_iso]
-
-    interview_week_stats = {
-        w: _interview_week_stats(data)
-        for w, data in plan.get("interview_prep", {}).items()
+    # Interview prep — time-tracking items + today's log rows
+    items_by_category = {
+        category: get_items(category=category)
+        for category in ITEM_CATEGORIES
     }
-
-    carryover_by_day: dict[str, int] = {}
-    total_carryovers = 0
-    for _day in DAYS:
-        count = sum(1 for t in current_interview.get(_day, []) if t.get("carryover_from"))
-        carryover_by_day[_day] = count
-        total_carryovers += count
+    loggable_rows = get_loggable_rows(today)
+    fixed_totals = {row["category"]: row["today_minutes"] for row in loggable_rows if row["item_id"] is None}
+    item_totals = {row["item_id"]: row["today_minutes"] for row in loggable_rows if row["item_id"] is not None}
+    leetcode_today = get_leetcode_today(Config.LEETCODE_USERNAME)
 
     # Running plan — new data model: {active: {...}, archived: [...]}
     running_section = plan.get("running", {})
@@ -436,52 +290,18 @@ def index():
 
     next_birthday = _get_next_birthday(birthdays, today)
 
-    curriculum_path = Config.DATA_DIR / "curriculum.json"
-    curriculum = json.loads(curriculum_path.read_text()) if curriculum_path.exists() else None
-
-    # Topic coverage
-    current_topic = topic_idx = topics_total = lc_completed = 0
-    current_topic_name = None
-    if curriculum:
-        topic_order = curriculum.get("lc_topic_order", [])
-        total_weeks = curriculum.get("total_weeks", 1)
-        start_dt = date.fromisoformat(curriculum.get("start_date", today.isoformat()))
-        start_mon = start_dt - timedelta(days=start_dt.weekday())
-        today_mon = today - timedelta(days=today.weekday())
-        curr_week_num = max(1, (today_mon - start_mon).days // 7 + 1)
-        if topic_order:
-            topic_idx = min(len(topic_order) - 1, int((curr_week_num - 1) * len(topic_order) / total_weeks))
-            current_topic_name = topic_order[topic_idx]
-            topics_total = len(topic_order)
-        lc_completed = sum(
-            1 for week_data in plan.get("interview_prep", {}).values()
-            for day_tasks in week_data.values()
-            for task in day_tasks
-            if task.get("type") == "leetcode" and task.get("completed")
-        )
-
-    from utils.interview_summary import load_interview_summary
-    from utils.interviews import load_interviews
     from utils.race_results import load_race_results
-    interview_summary = load_interview_summary()
-    interviews = load_interviews()
     race_results = load_race_results()
 
     return render_template(
         "index.html",
-        current_week=current_week,
-        interview_past_weeks=interview_past_weeks,
-        interview_week_stats=interview_week_stats,
         plan=plan,
         birthdays=birthdays,
-        leetcode_tasks=leetcode_tasks,
-        other_tasks=other_tasks,
         default_tab=default_tab,
         days=DAYS,
         workout_types=WORKOUT_TYPES,
         today=today,
         timedelta=timedelta,
-        get_week_monday=get_week_monday,
         active_plan=active_plan,
         archived_plans=archived_plans,
         current_plan_week=current_plan_week,
@@ -492,16 +312,13 @@ def index():
         race_date_str=race_date_str,
         race_name=race_name,
         next_birthday=next_birthday,
-        carryover_by_day=carryover_by_day,
-        total_carryovers=total_carryovers,
-        curriculum=curriculum,
-        current_topic_name=current_topic_name,
-        topic_idx=topic_idx,
-        topics_total=topics_total,
-        lc_completed=lc_completed,
-        interview_summary=interview_summary,
-        interviews=interviews,
         race_results=race_results,
+        items_by_category=items_by_category,
+        category_labels=CATEGORY_LABELS,
+        fixed_categories=FIXED_CATEGORIES,
+        fixed_totals=fixed_totals,
+        item_totals=item_totals,
+        leetcode_today=leetcode_today,
     )
 
 
@@ -833,267 +650,86 @@ def generate_running_ai_status():
     return jsonify(job)
 
 
-@bp.route("/interview/coach", methods=["POST"])
-def interview_coach():
-    if not Config.ANTHROPIC_API_KEY:
-        return jsonify({"error": "ANTHROPIC_API_KEY is not set."}), 400
-    week_label = request.form.get("week_label") or get_week_label(date.today())
-    user_message = request.form.get("message", "").strip()
-    if not user_message:
-        return jsonify({"error": "Message is required."}), 400
-    job_id = job_store.create(f"coach-{week_label}")
-    thread = threading.Thread(target=_coach_thread, args=(job_id, week_label, user_message), daemon=True)
-    thread.start()
-    return jsonify({"job_id": job_id})
-
-
-@bp.route("/interview/coach/status")
-def interview_coach_status():
-    job_id = request.args.get("job_id", "")
-    job = job_store.get_job(job_id)
-    if not job:
-        return jsonify({"status": "unknown"}), 404
-    return jsonify(job)
-
-
-@bp.route("/interview/intake-questions", methods=["POST"])
-def interview_intake_questions():
-    if not Config.ANTHROPIC_API_KEY:
-        return jsonify({"error": "ANTHROPIC_API_KEY is not set."}), 400
-    intake = {
-        "target_roles": request.form.get("target_roles", "").strip(),
-        "target_companies": request.form.get("target_companies", "").strip(),
-        "interview_timeline": request.form.get("interview_timeline", "").strip(),
-        "current_level": request.form.get("current_level", "").strip(),
-        "weekly_hours": request.form.get("weekly_hours", "").strip(),
-        "current_strengths": request.form.get("current_strengths", "").strip(),
-        "notes": request.form.get("notes", "").strip(),
-    }
-    try:
-        from integrations.curriculum_claude_api import generate_curriculum_questions
-        questions = generate_curriculum_questions(intake)
-        return jsonify({"questions": questions})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@bp.route("/interview/generate-curriculum", methods=["POST"])
-def generate_interview_curriculum():
-    if not Config.ANTHROPIC_API_KEY:
-        return jsonify({"error": "ANTHROPIC_API_KEY is not set."}), 400
-    intake = {
-        "target_roles": request.form.get("target_roles", "").strip(),
-        "target_companies": request.form.get("target_companies", "").strip(),
-        "interview_timeline": request.form.get("interview_timeline", "").strip(),
-        "current_level": request.form.get("current_level", "").strip(),
-        "weekly_hours": request.form.get("weekly_hours", "").strip(),
-        "current_strengths": request.form.get("current_strengths", "").strip(),
-        "qa_context": request.form.get("qa_context", "").strip(),
-        "notes": request.form.get("notes", "").strip(),
-    }
-    job_id = job_store.create("curriculum")
-    thread = threading.Thread(target=_curriculum_generate_thread, args=(job_id, intake), daemon=True)
-    thread.start()
-    return jsonify({"job_id": job_id})
-
-
-@bp.route("/interview/generate-curriculum/status")
-def generate_interview_curriculum_status():
-    job_id = request.args.get("job_id", "")
-    job = job_store.get_job(job_id)
-    if not job:
-        return jsonify({"status": "unknown"}), 404
-    return jsonify(job)
-
-
-@bp.route("/interview/generate-ai", methods=["POST"])
-def generate_interview_prep_ai():
-    if not Config.ANTHROPIC_API_KEY:
-        return jsonify({"error": "ANTHROPIC_API_KEY is not set. Add it to your .env file."}), 400
-
-    week_label = request.form.get("week_label") or get_week_label(date.today())
-
-    curriculum_path = Config.DATA_DIR / "curriculum.json"
-    if not curriculum_path.exists():
-        return jsonify({"error": "curriculum.json not found in data/."}), 400
-    curriculum = json.loads(curriculum_path.read_text())
-
-    intensity = request.form.get("intensity", "normal").strip().lower()
-    if intensity not in ("light", "normal", "intense"):
-        intensity = "normal"
-    custom_prompt = request.form.get("custom_prompt", "").strip()
-
-    job_id = job_store.create(week_label)
-    thread = threading.Thread(
-        target=_claude_generate_thread,
-        args=(job_id, week_label, curriculum, intensity, custom_prompt),
-        daemon=True,
-    )
-    thread.start()
-    return jsonify({"job_id": job_id, "week_label": week_label})
-
-
-@bp.route("/interview/generate-ai/status")
-def generate_interview_prep_ai_status():
-    job_id = request.args.get("job_id", "")
-    job = job_store.get_job(job_id)
-    if not job:
-        return jsonify({"status": "unknown"}), 404
-    return jsonify(job)
-
-
-@bp.route("/interview/week/<week_label>")
-def interview_week(week_label: str):
-    today = date.today()
-    current_week = get_week_label(today)
-    plan = load_plan()
-    monday = get_week_monday(week_label)
-    sunday = monday + timedelta(days=6)
-    interview_tasks = plan.get("interview_prep", {}).get(week_label, {})
-    return render_template(
-        "interview_week.html",
-        week_label=week_label,
-        interview_tasks=interview_tasks,
-        monday=monday,
-        sunday=sunday,
-        days=DAYS,
-        today=today,
-        current_week=current_week,
-        is_past=(week_label < current_week),
-        timedelta=timedelta,
-        get_week_monday=get_week_monday,
-    )
-
-
-@bp.route("/interview/task", methods=["POST"])
-def interview_task():
-    action = request.form.get("action", "add")
-    week_label = request.form.get("week_label") or get_week_label(date.today())
-    day = request.form.get("day", "").strip().lower()
-    type_ = request.form.get("type", "other").strip()
-    task_text = request.form.get("task", "").strip()
-    leetcode_slug = request.form.get("leetcode_slug", "").strip()
-
-    if day not in DAYS:
-        flash("Please select a valid day.", "error")
-        return _interview_redirect(week_label)
-
-    plan = load_plan()
-    interview = plan.setdefault("interview_prep", {})
-    week_tasks = interview.setdefault(week_label, {})
-    day_tasks = week_tasks.setdefault(day, [])
-
-    if action == "add":
-        if not task_text:
-            flash("Task text is required.", "error")
-            return _interview_redirect(week_label)
-        new_task: dict = {"type": type_ or "other", "task": task_text, "completed": False}
-        if leetcode_slug:
-            new_task["leetcode_slug"] = leetcode_slug
-        day_tasks.append(new_task)
-        _save_plan(plan)
-        flash("Added interview prep task.", "success")
-        return _interview_redirect(week_label)
-
-    try:
-        idx = int(request.form.get("idx", ""))
-    except (TypeError, ValueError):
-        flash("Invalid task index.", "error")
-        return _interview_redirect(week_label)
-
-    if not (0 <= idx < len(day_tasks)):
-        flash("Interview prep task not found.", "error")
-        return _interview_redirect(week_label)
-
-    if action == "update":
-        if not task_text:
-            flash("Task text is required.", "error")
-            return _interview_redirect(week_label)
-        completed = day_tasks[idx].get("completed", False)
-        carryover_from = day_tasks[idx].get("carryover_from")
-        day_tasks[idx] = {"type": type_ or "other", "task": task_text, "completed": completed}
-        if leetcode_slug:
-            day_tasks[idx]["leetcode_slug"] = leetcode_slug
-        if carryover_from:
-            day_tasks[idx]["carryover_from"] = carryover_from
-        _save_plan(plan)
-        flash("Updated interview prep task.", "success")
-        return _interview_redirect(week_label)
-
-    if action == "delete":
-        removed = day_tasks.pop(idx)
-        if not day_tasks:
-            week_tasks.pop(day, None)
-        if not week_tasks:
-            interview.pop(week_label, None)
-        _save_plan(plan)
-        flash(f"Deleted task: {removed.get('task')}", "success")
-        return _interview_redirect(week_label)
-
-    if action == "complete":
-        day_tasks[idx]["completed"] = not day_tasks[idx].get("completed", False)
-        _save_plan(plan)
-        return _interview_redirect(week_label)
-
-    flash("Unknown interview prep action.", "error")
-    return _interview_redirect(week_label)
-
-
-@bp.route("/interview/outcomes", methods=["POST"])
-def add_interview_outcome():
-    from utils.interviews import add_interview
-    entry = {
-        "date": request.form.get("date", "").strip(),
-        "company": request.form.get("company", "").strip(),
-        "round_type": request.form.get("round_type", "").strip(),
-        "result": request.form.get("result", "pending").strip(),
-        "topics": request.form.get("topics", "").strip(),
-        "notes": request.form.get("notes", "").strip(),
-    }
-    if not entry["company"] or not entry["date"]:
-        flash("Company and date are required.", "error")
+@bp.route("/interview/items", methods=["POST"])
+def add_interview_item():
+    category = request.form.get("category", "").strip()
+    title = request.form.get("title", "").strip()
+    if category not in ITEM_CATEGORIES:
+        flash("Invalid category.", "error")
         return redirect(url_for("main.index", tab="interview"))
-    add_interview(entry)
-    flash("Interview outcome logged.", "success")
+    if not title:
+        flash("Title is required.", "error")
+        return redirect(url_for("main.index", tab="interview"))
+    add_item(category, title)
+    flash(f"Added {CATEGORY_LABELS.get(category, category)} item.", "success")
     return redirect(url_for("main.index", tab="interview"))
 
 
-@bp.route("/interview/outcomes/delete", methods=["POST"])
-def delete_interview_outcome():
-    from utils.interviews import delete_interview
-    interview_id = request.form.get("id", "").strip()
-    delete_interview(interview_id)
-    flash("Interview outcome deleted.", "success")
+@bp.route("/interview/items/complete", methods=["POST"])
+def complete_interview_item():
+    item_id = request.form.get("item_id", "").strip()
+    mark_item_complete(item_id)
+    flash("Marked complete.", "success")
     return redirect(url_for("main.index", tab="interview"))
 
 
-@bp.route("/interview/toggle-completion", methods=["POST"])
-def toggle_completion():
+@bp.route("/interview/log-time", methods=["POST"])
+def log_interview_time():
     data = request.get_json() or {}
+    category = data.get("category")
+    item_id = data.get("item_id")
     try:
-        task_date = date.fromisoformat(data["date"])
-        task_name = data["task"]
-    except (KeyError, ValueError):
-        return jsonify({"error": "invalid"}), 400
-    from utils.completions import toggle_manual_completion
-    new_state = toggle_manual_completion(task_date, task_name)
-    return jsonify({"completed": new_state})
-
-
-@bp.route("/leetcode/lookup")
-def leetcode_lookup():
-    try:
-        number = int(request.args.get("number", ""))
+        minutes = int(data.get("minutes"))
     except (TypeError, ValueError):
-        return jsonify({"error": "number is required"}), 400
+        return jsonify({"error": "minutes is required"}), 400
+
+    if category not in ALL_CATEGORIES or minutes not in VALID_MINUTES:
+        return jsonify({"error": "invalid category or minutes"}), 400
+
     try:
-        problem = get_problem_by_number(number)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 502
-    if not problem:
-        return jsonify({"error": "not found"}), 404
+        entry = log_time(category, minutes, item_id=item_id)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    from utils.time_log import get_total_minutes
+    total = get_total_minutes(category, entry["item_id"], date.today())
+    return jsonify({"total_minutes": total})
+
+
+@bp.route("/interview/leetcode-today")
+def interview_leetcode_today():
+    return jsonify(get_leetcode_today(Config.LEETCODE_USERNAME))
+
+
+@bp.route("/interview/analytics")
+def interview_analytics():
+    end = date.today()
+    try:
+        days = int(request.args.get("days", "30"))
+    except (TypeError, ValueError):
+        days = 30
+    start = end - timedelta(days=max(days, 1) - 1)
+
+    start_str = request.args.get("start")
+    end_str = request.args.get("end")
+    if start_str:
+        try:
+            start = date.fromisoformat(start_str)
+        except ValueError:
+            pass
+    if end_str:
+        try:
+            end = date.fromisoformat(end_str)
+        except ValueError:
+            pass
+
+    category_totals = get_category_totals_by_day(start, end)
+    leetcode_history = get_leetcode_analytics_history(start, end)
+    leetcode_daily = {iso: entry["count"] for iso, entry in leetcode_history.items()}
+
     return jsonify({
-        "title": problem["title"],
-        "slug": problem["titleSlug"],
-        "task": f"#{problem['questionFrontendId']} {problem['title']}",
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "category_totals_by_day": category_totals,
+        "leetcode_daily": leetcode_daily,
     })

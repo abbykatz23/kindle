@@ -32,13 +32,9 @@ def create_app() -> Flask:
 
     if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
         from apscheduler.schedulers.background import BackgroundScheduler
-        from utils.leetcode_checker import run_carryover_check
         from utils.tap_handler import trigger_refresh
-        from utils.weekly_generator import run_weekly_generation, run_running_compliance_check, run_summary_generation
+        from utils.weekly_generator import run_running_compliance_check
         scheduler = BackgroundScheduler()
-        scheduler.add_job(run_carryover_check, trigger="cron", hour=1, minute=0, id="lc_carryover")
-        scheduler.add_job(run_summary_generation, trigger="cron", hour=1, minute=30, id="interview_summary")
-        scheduler.add_job(run_weekly_generation, trigger="cron", day_of_week="sun", hour=23, minute=0, id="weekly_gen")
         scheduler.add_job(run_running_compliance_check, trigger="cron", hour=1, minute=5, id="running_compliance")
         scheduler.add_job(trigger_refresh, trigger="interval", minutes=30, id="dashboard_refresh")
         scheduler.start()
