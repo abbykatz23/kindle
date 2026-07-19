@@ -1,4 +1,4 @@
-"""Quick test to verify intervals.icu API connectivity."""
+"""Quick manual check that intervals.icu API credentials work. Run from project root."""
 import requests
 from config import Config
 

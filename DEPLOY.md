@@ -14,14 +14,9 @@ side from scratch.
   - re-renders + pushes the dashboard every 30 minutes (`trigger_refresh`)
   - runs a daily running-compliance check at 01:05
   - **This is the only scheduling mechanism currently in use.** The dashboard
-    only auto-refreshes while this Flask process is alive.
-- `cron/crontab.example` and `scheduler/poller.py` are **legacy** — an early
-  cron-based refresh loop from before APScheduler was added directly to the
-  Flask app (2026-07-02, commit `a4a0fdc`). It was never deleted. Do **not**
-  install it alongside the Flask app — you'd get duplicate refreshes/pushes.
-  It also references `scheduler/generate_week.py`, which no longer exists, so
-  installing it as-is will produce a failing Sunday cron job. Safe to ignore
-  or delete; the Flask app is the source of truth for scheduling.
+    only auto-refreshes while this Flask process is alive. (An early
+    cron-based refresh loop predates this and has since been removed —
+    the Flask app is the sole source of truth for scheduling.)
 - Kindle-side taps are read by `kindle/tap_listener.sh` (deployed onto the
   Kindle itself) and POSTed to the Flask app's `/tap` endpoint, which calls
   into `utils/tap_handler.py`.
