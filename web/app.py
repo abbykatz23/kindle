@@ -1,5 +1,5 @@
 import os
-from datetime import date as Date, date
+from datetime import date as Date, date, datetime
 
 from flask import Flask
 
@@ -36,7 +36,12 @@ def create_app() -> Flask:
         from utils.weekly_generator import run_running_compliance_check
         scheduler = BackgroundScheduler()
         scheduler.add_job(run_running_compliance_check, trigger="cron", hour=1, minute=5, id="running_compliance")
-        scheduler.add_job(trigger_refresh, trigger="interval", minutes=30, id="dashboard_refresh")
+        # next_run_time=now: fire once immediately on startup (not just 30 min later),
+        # so a reboot after a power outage gets a fresh push to the Kindle right away.
+        scheduler.add_job(
+            trigger_refresh, trigger="interval", minutes=30, id="dashboard_refresh",
+            next_run_time=datetime.now(),
+        )
         scheduler.start()
 
     return app
