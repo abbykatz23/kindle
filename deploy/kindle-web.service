@@ -1,0 +1,29 @@
+# Runs the Flask app (web UI, /tap endpoint, and the in-process APScheduler that
+# refreshes + pushes the dashboard every 30 min) as a persistent service via
+# Flask's own dev server (not gunicorn — this is what's actually deployed and
+# has been running reliably; keeping it simple rather than swapping in a
+# production WSGI server that wasn't needed in practice).
+#
+# Install on the Pi:
+#   sudo cp deploy/kindle-web.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now kindle-web.service
+#
+# Only ever run one dashboard service at a time — running this alongside any
+# other copy of the app (e.g. a manual `python run.py`) will fight over port
+# 5000, since the in-process scheduler pushes to the Kindle from whichever
+# instance is running.
+
+[Unit]
+Description=Kindle Dashboard Flask App
+After=network.target
+
+[Service]
+User=abbykatz
+WorkingDirectory=/home/abbykatz/kindle
+EnvironmentFile=/home/abbykatz/kindle/.env
+ExecStart=/home/abbykatz/kindle/.venv/bin/python run.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

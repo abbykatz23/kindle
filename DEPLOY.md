@@ -87,21 +87,26 @@ python run.py            # Flask dev server, port 5000, starts APScheduler
 ```
 
 For unattended production use (survives reboot), use the committed systemd
-unit at `deploy/kindle-dashboard.service`. It runs the app via `gunicorn
---workers 1` (must stay at 1 worker — more than one would start the
-in-process scheduler multiple times and duplicate-push to the Kindle) and
-fires an immediate refresh on startup so a reboot doesn't wait up to 30 min
-for the first push. On the Pi:
+unit at `deploy/kindle-web.service`. It runs `python run.py` directly
+(Flask's dev server, not gunicorn — deliberate: it's what's actually been
+running reliably in production, and the app is single-user/low-traffic
+enough that a production WSGI server hasn't been necessary) with
+`Restart=always`, and the app fires an immediate refresh on startup (see
+`web/app.py`) so a reboot doesn't wait up to 30 min for the first push. On
+the Pi:
 
 ```
-sudo cp deploy/kindle-dashboard.service /etc/systemd/system/
+sudo cp deploy/kindle-web.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now kindle-dashboard.service
+sudo systemctl enable --now kindle-web.service
 ```
 
-Adjust `User=`/`WorkingDirectory=` in the unit file first if the Pi's
-username or clone path isn't `pi` / `/home/pi/kindle-dashboard`. Note the
-30-minute refresh job only exists while this service is running.
+The committed unit already has this deployment's real `User=`/
+`WorkingDirectory=`/`EnvironmentFile=` (`abbykatz` / `/home/abbykatz/kindle`)
+— adjust those three lines if the username or clone path differs on new
+hardware. Only ever run one copy of the app at a time (this service, or a
+manual `python run.py`, never both) — they'll fight over port 5000, since
+each instance starts its own copy of the in-process refresh scheduler.
 
 One-off manual render+push (no web app needed): `python main.py`
 
