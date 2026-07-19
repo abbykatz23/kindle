@@ -17,9 +17,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=pi
-WorkingDirectory=/home/pi/kindle-dashboard
-ExecStart=/home/pi/kindle-dashboard/.venv/bin/gunicorn --workers 1 --bind 0.0.0.0:5000 run:app
+User=abbykatz
+WorkingDirectory=/home/abbykatz/kindle
+ExecStart=/home/abbykatz/kindle/.venv/bin/gunicorn --workers 1 --bind 0.0.0.0:5000 run:app
 Restart=always
 RestartSec=5
 
