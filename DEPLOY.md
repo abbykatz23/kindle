@@ -109,9 +109,16 @@ One-off manual render+push (no web app needed): `python main.py`
 
 ## 4. Kindle-side setup
 
-Assumes the Kindle is already jailbroken (FW 5.3.3-era jailbreak; out of
-scope here — see whatever jailbreak guide you used originally) and has SSH
-access as `root`.
+Assumes the Kindle is jailbroken. This Kindle (Paperwhite 1, FW 5.3.3,
+internal codename `yoshime3`) has `KUAL`, `MRInstaller`, and `usbnet` in
+`/mnt/us/extensions/`, plus `sshd.conf`/`usbnet.conf`/`usbnetd.conf` upstart
+jobs — that's the fingerprint of the standard **"Kindle 5.x Jailbreak" +
+USBNetwork + SSH hack** toolchain (community tooling, mobileread.com
+forums), which was the canonical jailbreak method for this device
+generation. No original guide link was preserved anywhere for this project,
+but that fingerprint is enough to find the right process again by searching
+for it. On a new Kindle, expect: install the base jailbreak, then KUAL, then
+the USBNetwork + SSH hacks on top.
 
 Deploy the tap listener:
 1. Set `DASHBOARD_HOST_IP` in `.env` to this host's own LAN IP (the address
@@ -120,24 +127,17 @@ Deploy the tap listener:
    `kindle/tap_listener.sh` and SCPs the result to the Kindle. Re-run this
    any time the host's IP changes (new hardware, DHCP lease change) instead
    of hand-editing the script.
-3. Run it on the Kindle as a background process:
-   `sh /mnt/us/kindle/tap_listener.sh &`
-
-**Known gap — does not survive a Kindle reboot.** Step 3 above only starts
-it for the current boot session; nothing restarts it if the Kindle itself
-reboots (crash, battery death) while the host stays up. This is a narrower
-problem than the host-side one fixed elsewhere in this doc — it only bites
-when the *Kindle* restarts independently of the host — and hasn't been
-fixed, by choice: the fix requires adding an `upstart` job (the Kindle's
-init system, not systemd) under `/etc/upstart/`, which means running
-`mntroot rw` first (rootfs is read-only by default), writing the job file,
-and setting it back to `mntroot ro` afterward. Real but moderate effort for
-a low-frequency failure mode. If it's worth doing later: look at how
-existing Kindle services (`lab126_gui`, `framework` — visible in
-`dashboard/push.py`'s stop commands) are defined under `/etc/upstart/` for
-the pattern to follow.
-
-In the meantime: after any Kindle reboot, SSH in and re-run step 3 by hand.
+3. Install the upstart job so it runs persistently, including across Kindle
+   reboots (`respawn` also restarts it if it crashes):
+   ```
+   ssh root@<KINDLE_HOST> mntroot rw
+   scp kindle/tap-listener.upstart.conf root@<KINDLE_HOST>:/etc/upstart/tap-listener.conf
+   ssh root@<KINDLE_HOST> "mntroot ro; initctl start tap-listener"
+   ```
+   (`kindle/tap-listener.upstart.conf` is a backup of what's already running
+   on the current Kindle — confirmed via `initctl status tap-listener` — so
+   this isn't new, just finally captured in git instead of living only on
+   the device.)
 
 ## 5. Data
 
