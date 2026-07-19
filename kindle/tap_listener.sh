@@ -2,9 +2,13 @@
 # Kindle tap listener — reads touch events one at a time via dd+hexdump and
 # POSTs coordinates to the Flask /tap endpoint on the dashboard host.
 #
+# HOST below is a placeholder substituted at deploy time by
+# kindle/deploy_tap_listener.sh — don't hand-edit this file and scp it
+# directly, or the substitution will just get overwritten next deploy.
+#
 # Usage: sh /mnt/us/kindle/tap_listener.sh
 
-HOST="192.168.0.16"
+HOST="__DASHBOARD_HOST_IP__"
 PORT="5000"
 DEBOUNCE_SECONDS=2
 TOUCH_DEV="/dev/input/event0"

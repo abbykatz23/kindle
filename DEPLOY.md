@@ -117,20 +117,15 @@ scope here — see whatever jailbreak guide you used originally) and has SSH
 access as `root`.
 
 Deploy the tap listener:
-1. Open `kindle/tap_listener.sh` and edit the `HOST=` line at the top to the
-   **new host machine's LAN IP** (not the Kindle's IP — this is the IP the
-   Kindle POSTs tap coordinates to). This is a hardcoded literal in the
-   script, not read from any config — there's no templating, so this edit is
-   manual and easy to forget when the host's IP changes.
-2. `scp kindle/tap_listener.sh root@<KINDLE_HOST>:/mnt/us/kindle/tap_listener.sh`
+1. Set `DASHBOARD_HOST_IP` in `.env` to this host's own LAN IP (the address
+   the Kindle should POST tap coordinates to — not the Kindle's IP).
+2. `sh kindle/deploy_tap_listener.sh` — substitutes that IP into
+   `kindle/tap_listener.sh` and SCPs the result to the Kindle. Re-run this
+   any time the host's IP changes (new hardware, DHCP lease change) instead
+   of hand-editing the script.
 3. Run it on the Kindle (as a persistent process — e.g. via whatever
    init/autostart mechanism your jailbreak setup uses, so it survives Kindle
    reboots): `sh /mnt/us/kindle/tap_listener.sh`
-
-Note: `.env` on the host also defines a `DASHBOARD_HOST_IP` variable, but
-nothing in the codebase currently reads it — it's not wired to
-`tap_listener.sh` or anything else. Treat step 1 above as the actual source
-of truth until/unless that's wired up.
 
 ## 5. Data
 
