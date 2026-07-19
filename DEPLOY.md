@@ -26,11 +26,8 @@ side from scratch.
   Kindle itself) and POSTed to the Flask app's `/tap` endpoint, which calls
   into `utils/tap_handler.py`.
 - The web UI (also served by `web/app.py`, port 5000) is how you edit
-  birthdays / running plan / interview-prep data. It's reportedly exposed
-  externally via a Cloudflare Tunnel — that tunnel's config lives in your
-  Cloudflare dashboard, **not in this repo**, so it isn't reproduced by
-  cloning. Re-create the tunnel route (→ `localhost:5000`) manually on new
-  hardware if you want remote access to the web UI.
+  birthdays / running plan / interview-prep data. It's exposed externally
+  via a Cloudflare Tunnel — see section 6 below.
 
 ## 1. Host machine setup (Pi or otherwise)
 
@@ -123,9 +120,24 @@ Deploy the tap listener:
    `kindle/tap_listener.sh` and SCPs the result to the Kindle. Re-run this
    any time the host's IP changes (new hardware, DHCP lease change) instead
    of hand-editing the script.
-3. Run it on the Kindle (as a persistent process — e.g. via whatever
-   init/autostart mechanism your jailbreak setup uses, so it survives Kindle
-   reboots): `sh /mnt/us/kindle/tap_listener.sh`
+3. Run it on the Kindle as a background process:
+   `sh /mnt/us/kindle/tap_listener.sh &`
+
+**Known gap — does not survive a Kindle reboot.** Step 3 above only starts
+it for the current boot session; nothing restarts it if the Kindle itself
+reboots (crash, battery death) while the host stays up. This is a narrower
+problem than the host-side one fixed elsewhere in this doc — it only bites
+when the *Kindle* restarts independently of the host — and hasn't been
+fixed, by choice: the fix requires adding an `upstart` job (the Kindle's
+init system, not systemd) under `/etc/upstart/`, which means running
+`mntroot rw` first (rootfs is read-only by default), writing the job file,
+and setting it back to `mntroot ro` afterward. Real but moderate effort for
+a low-frequency failure mode. If it's worth doing later: look at how
+existing Kindle services (`lab126_gui`, `framework` — visible in
+`dashboard/push.py`'s stop commands) are defined under `/etc/upstart/` for
+the pattern to follow.
+
+In the meantime: after any Kindle reboot, SSH in and re-run step 3 by hand.
 
 ## 5. Data
 
@@ -134,6 +146,31 @@ etc.) is intentionally gitignored and does not transfer via `git clone` — a
 fresh checkout starts with an empty dashboard. Re-enter this through the web
 UI, or manually copy the `data/*.json` files over from the old host if you
 have access to them before it's decommissioned.
+
+## 6. Cloudflare Tunnel (remote access to the web UI)
+
+The web UI is reportedly exposed externally via a Cloudflare Tunnel pointed
+at `localhost:5000`, run as its own systemd service (`cloudflared.service`
+on the Pi — check `systemctl status cloudflared.service`). None of this is
+backed up in this repo, deliberately: tunnel credentials are secrets and
+don't belong in git.
+
+What you'd need to recreate this on new hardware, in general terms (exact
+steps depend on Cloudflare's current tooling — check their docs):
+- A Cloudflare account with the tunnel already created (`cloudflared tunnel
+  create ...`), which is tied to a specific domain/zone in that account —
+  this isn't something `git clone` can ever reproduce.
+- The tunnel's credentials/config (`cloudflared` typically stores these as
+  either a token used with `cloudflared service install <token>`, or a
+  `config.yml` + a `<tunnel-id>.json` credentials file under
+  `/etc/cloudflared/` or `~/.cloudflared/`).
+- A DNS route from your chosen hostname to the tunnel.
+
+**Action item, not done here:** back up whatever credentials/config file
+`cloudflared` is actually using on the current Pi to a private, non-git
+location (password manager, encrypted note) before this hardware is
+decommissioned — losing it means recreating the tunnel from scratch in the
+Cloudflare dashboard instead of restoring it.
 
 ## Known platform gotchas
 
