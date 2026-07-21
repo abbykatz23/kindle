@@ -39,6 +39,8 @@ actual e-ink display and use that, but then felt cheap and decided to buy a 10 y
 
 https://excalidraw.com/#json=8G8CLpjyidtB5qVa8PFEr,Z4pU58nCj_xEU8AoMPspVA
 
+<img width="2736" height="1248" alt="image" src="https://github.com/user-attachments/assets/1661d757-ace3-4f23-929a-c1108d153b4d" />
+
 The Flask app serves the web UI,
 runs the in-process scheduler that triggers renders/pushes, and handles
 incoming taps from the Kindle. `main.py` is the one-shot render+push path,
