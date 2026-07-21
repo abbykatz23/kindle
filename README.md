@@ -2,13 +2,16 @@
 
 A personal e-ink dashboard running on a jailbroken Kindle Paperwhite
 
-1. A Raspberry Pi renders a PNG (running plan w/ AI coaching, learning/project tracking, upcoming birthdays) and pushes it to the Kindle over SSH every
+My Raspberry Pi renders a PNG (running plan w/ AI coaching, learning/project tracking, upcoming birthdays) and pushes it to the Kindle over SSH every
 30 minutes. Tapping the Kindle's touchscreen navigates between views.
 It works with just a static image and a raw
-touch-event listener.
+touch-event listener. Integrations with external APIs make it extra functional + cool.
 
-![dashboard placeholder](docs/screenshot.png)
-<!-- TODO: replace with a real photo of the Kindle -->
+## Well... this is what it look like (before + after run)
+
+<img width="707" height="874" alt="image" src="https://github.com/user-attachments/assets/b32e5783-332d-48da-800e-1d43e4b49e71" />
+<img width="740" height="880" alt="image" src="https://github.com/user-attachments/assets/430177b5-611f-4472-815c-8e1d17d41a8f" />
+
 
 ## Why
 
