@@ -6,8 +6,8 @@ from flask import Blueprint, flash, jsonify, redirect, render_template, request,
 
 from config import Config
 from utils import jobs as job_store
-from utils.interview_items import ITEM_CATEGORIES, add_item, get_items, mark_item_complete
-from utils.interview_prep import CATEGORY_LABELS, get_loggable_rows
+from utils.learning_items import ITEM_CATEGORIES, add_item, get_items, mark_item_complete
+from utils.learning import CATEGORY_LABELS, get_loggable_rows
 from utils.leetcode_history import get_today as get_leetcode_today, get_history as get_leetcode_analytics_history
 from utils.plan import load_plan, load_birthdays, save_birthdays
 from utils.tap_handler import handle_tap
@@ -246,9 +246,9 @@ def index():
     plan = load_plan()
     birthdays = _load_sorted_birthdays()
 
-    default_tab = (request.args.get("tab") or "interview").lower()
+    default_tab = (request.args.get("tab") or "learning").lower()
 
-    # Interview prep — time-tracking items + today's log rows
+    # Learning/projects — time-tracking items + today's log rows
     items_by_category = {
         category: get_items(category=category)
         for category in ITEM_CATEGORIES
@@ -662,31 +662,31 @@ def generate_running_ai_status():
     return jsonify(job)
 
 
-@bp.route("/interview/items", methods=["POST"])
-def add_interview_item():
+@bp.route("/learning/items", methods=["POST"])
+def add_learning_item():
     category = request.form.get("category", "").strip()
     title = request.form.get("title", "").strip()
     if category not in ITEM_CATEGORIES:
         flash("Invalid category.", "error")
-        return redirect(url_for("main.index", tab="interview"))
+        return redirect(url_for("main.index", tab="learning"))
     if not title:
         flash("Title is required.", "error")
-        return redirect(url_for("main.index", tab="interview"))
+        return redirect(url_for("main.index", tab="learning"))
     add_item(category, title)
     flash(f"Added {CATEGORY_LABELS.get(category, category)} item.", "success")
-    return redirect(url_for("main.index", tab="interview"))
+    return redirect(url_for("main.index", tab="learning"))
 
 
-@bp.route("/interview/items/complete", methods=["POST"])
-def complete_interview_item():
+@bp.route("/learning/items/complete", methods=["POST"])
+def complete_learning_item():
     item_id = request.form.get("item_id", "").strip()
     mark_item_complete(item_id)
     flash("Marked complete.", "success")
-    return redirect(url_for("main.index", tab="interview"))
+    return redirect(url_for("main.index", tab="learning"))
 
 
-@bp.route("/interview/log-time", methods=["POST"])
-def log_interview_time():
+@bp.route("/learning/log-time", methods=["POST"])
+def log_learning_time():
     data = request.get_json() or {}
     category = data.get("category")
     item_id = data.get("item_id")
@@ -708,13 +708,13 @@ def log_interview_time():
     return jsonify({"total_minutes": total})
 
 
-@bp.route("/interview/leetcode-today")
-def interview_leetcode_today():
+@bp.route("/learning/leetcode-today")
+def learning_leetcode_today():
     return jsonify(get_leetcode_today(Config.LEETCODE_USERNAME))
 
 
-@bp.route("/interview/analytics")
-def interview_analytics():
+@bp.route("/learning/analytics")
+def learning_analytics():
     end = date.today()
     try:
         days = int(request.args.get("days", "30"))

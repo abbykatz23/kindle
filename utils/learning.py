@@ -1,4 +1,4 @@
-"""Composition/query layer for interview prep time-tracking.
+"""Composition/query layer for learning/project time-tracking.
 
 This is the single source of truth for row order and identity, imported by both
 the render pipeline (via main.py) and the tap handler, so rendering and
@@ -7,7 +7,7 @@ weekly-row layout constants live in one place and get imported everywhere needed
 """
 from datetime import date
 
-from utils.interview_items import ITEM_CATEGORIES, get_active_items
+from utils.learning_items import ITEM_CATEGORIES, get_active_items
 from utils.time_log import FIXED_CATEGORIES, get_totals_for_date
 
 CATEGORY_LABELS = {

@@ -21,7 +21,7 @@ side from scratch.
   Kindle itself) and POSTed to the Flask app's `/tap` endpoint, which calls
   into `utils/tap_handler.py`.
 - The web UI (also served by `web/app.py`, port 5000) is how you edit
-  birthdays / running plan / interview-prep data. It's exposed externally
+  birthdays / running plan / learning-project data. It's exposed externally
   via a Cloudflare Tunnel — see section 6 below.
 
 ## 1. Host machine setup (Pi or otherwise)

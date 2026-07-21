@@ -1,11 +1,11 @@
-"""Append-only time-log for interview prep categories. Additive by construction."""
+"""Append-only time-log for learning/project categories. Additive by construction."""
 import json
 import uuid
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 
 from config import Config
-from utils.interview_items import ITEM_CATEGORIES
+from utils.learning_items import ITEM_CATEGORIES
 
 FIXED_CATEGORIES = ("system_design",)
 ALL_CATEGORIES = ITEM_CATEGORIES + FIXED_CATEGORIES
@@ -13,9 +13,9 @@ VALID_MINUTES = (5, 15, 30)
 
 
 def load_log() -> list[dict]:
-    if Config.INTERVIEW_TIME_LOG_FILE.exists():
+    if Config.LEARNING_TIME_LOG_FILE.exists():
         try:
-            return json.loads(Config.INTERVIEW_TIME_LOG_FILE.read_text())
+            return json.loads(Config.LEARNING_TIME_LOG_FILE.read_text())
         except Exception:
             return []
     return []
@@ -23,7 +23,7 @@ def load_log() -> list[dict]:
 
 def save_log(entries: list[dict]) -> None:
     Config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-    Config.INTERVIEW_TIME_LOG_FILE.write_text(json.dumps(entries, indent=2))
+    Config.LEARNING_TIME_LOG_FILE.write_text(json.dumps(entries, indent=2))
 
 
 def log_time(category: str, minutes: int, item_id: str | None = None, on_date: date | None = None) -> dict:

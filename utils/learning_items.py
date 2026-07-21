@@ -1,4 +1,4 @@
-"""CRUD for books/projects/wildcard items (interview prep time-tracking)."""
+"""CRUD for books/projects/wildcard items (learning/project time-tracking)."""
 import json
 import uuid
 from datetime import date
@@ -9,9 +9,9 @@ ITEM_CATEGORIES = ("books", "projects", "wildcard")
 
 
 def load_items() -> list[dict]:
-    if Config.INTERVIEW_ITEMS_FILE.exists():
+    if Config.LEARNING_ITEMS_FILE.exists():
         try:
-            return json.loads(Config.INTERVIEW_ITEMS_FILE.read_text())
+            return json.loads(Config.LEARNING_ITEMS_FILE.read_text())
         except Exception:
             return []
     return []
@@ -19,7 +19,7 @@ def load_items() -> list[dict]:
 
 def save_items(items: list[dict]) -> None:
     Config.DATA_DIR.mkdir(parents=True, exist_ok=True)
-    Config.INTERVIEW_ITEMS_FILE.write_text(json.dumps(items, indent=2))
+    Config.LEARNING_ITEMS_FILE.write_text(json.dumps(items, indent=2))
 
 
 def add_item(category: str, title: str) -> dict:

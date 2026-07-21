@@ -376,7 +376,7 @@ input:focus, select:focus, textarea:focus {
 button:focus { outline: 3px solid var(--accent-dim); outline-offset: 2px }
 button, input[type=text] { font-size: 16px }
 
-/* Race results / interview outcomes (shared list styling) */
+/* Race results / learning outcomes (shared list styling) */
 .outcome-form { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin-bottom: .75rem; }
 .outcomes-list { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
 .outcome-item {
@@ -418,7 +418,7 @@ button, input[type=text] { font-size: 16px }
   margin-bottom: .75rem;
 }
 
-/* ── Interview prep: time-tracking ── */
+/* ── Learning/projects: time-tracking ── */
 :root {
   --iprep-series-1: #3987e5; /* Books */
   --iprep-series-2: #199e70; /* Projects */

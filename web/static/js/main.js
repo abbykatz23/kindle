@@ -548,7 +548,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // ── Interview prep: log-time buttons ──────────────────────────────────
+    // ── Learning/projects: log-time buttons ───────────────────────────────
 
     document.querySelectorAll('.log-time-btn').forEach((btn) => {
         btn.addEventListener('click', async () => {
@@ -557,7 +557,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const minutes = parseInt(btn.dataset.minutes, 10);
             btn.disabled = true;
             try {
-                const res = await fetch('/interview/log-time', {
+                const res = await fetch('/learning/log-time', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({category, item_id: itemId, minutes}),
@@ -576,14 +576,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // ── Interview prep: LeetCode today refresh ────────────────────────────
+    // ── Learning/projects: LeetCode today refresh ─────────────────────────
 
     document.getElementById('leetcode-refresh-btn')?.addEventListener('click', async (e) => {
         const btn = e.currentTarget;
         const listEl = document.getElementById('leetcode-today-list');
         btn.disabled = true;
         try {
-            const res = await fetch('/interview/leetcode-today');
+            const res = await fetch('/learning/leetcode-today');
             const data = await res.json();
             if (!listEl) return;
             if (data.problems && data.problems.length) {
@@ -604,7 +604,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ── Interview prep: analytics ──────────────────────────────────────────
+    // ── Learning/projects: analytics ───────────────────────────────────────
 
     const ANALYTICS_CATEGORIES = [
         { key: 'books', label: 'Books', color: 'var(--iprep-series-1)' },
@@ -779,7 +779,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const tableContainer = document.getElementById('analytics-table-container');
         if (!chartContainer) return;
         try {
-            const res = await fetch(`/interview/analytics?days=${days}`);
+            const res = await fetch(`/learning/analytics?days=${days}`);
             const data = await res.json();
             const dates = _dateRange(data.start, data.end);
             _renderStackedBarChart(chartContainer, dates, data.category_totals_by_day || {});

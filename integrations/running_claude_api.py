@@ -160,7 +160,7 @@ Injury prevention:
 # ── System prompts ────────────────────────────────────────────────────────────
 
 _QUESTIONS_SYSTEM = """\
-You are an elite running coach conducting a brief intake interview before designing
+You are an elite running coach conducting a brief intake conversation before designing
 a personalized training plan. The athlete has filled out a basic intake form.
 
 Ask 3–4 targeted questions that would most meaningfully improve the plan.

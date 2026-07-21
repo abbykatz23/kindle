@@ -7,13 +7,13 @@ from dashboard.push import push_to_kindle
 from dashboard.render import (
     render_birthdays_detail,
     render_dashboard,
-    render_interview_prep_detail,
+    render_learning_detail,
     render_running_day_detail,
     render_running_detail,
     save_dashboard,
 )
 from integrations.intervals_api import is_run_completed_today
-from utils.interview_prep import get_loggable_rows
+from utils.learning import get_loggable_rows
 from utils.kindle_state import get_pending_minutes, get_selected_date, get_view
 from utils.leetcode_history import get_today as get_leetcode_today
 from utils.plan import (
@@ -57,16 +57,16 @@ def run(push: bool = True) -> None:
         day_route = get_or_fetch_route(selected) if day_completed else []
         img = render_running_day_detail(run_day, selected, day_completed, route=day_route)
 
-    elif view == "interview_prep":
+    elif view == "learning":
         rows = get_loggable_rows(today)
-        img = render_interview_prep_detail(rows, leetcode_today)
+        img = render_learning_detail(rows, leetcode_today)
 
     elif view == "birthdays":
         img = render_birthdays_detail(load_birthdays(), today)
 
     else:
         last_refreshed_label = _format_now(datetime.now())
-        interview_prep_rows = get_loggable_rows(today)
+        learning_rows = get_loggable_rows(today)
         pending_minutes = get_pending_minutes()
         run_plan = get_todays_run_plan(today)
         run_completed = is_run_completed_today()
@@ -86,7 +86,7 @@ def run(push: bool = True) -> None:
             run_route = get_or_fetch_route(today)
 
         img = render_dashboard(
-            interview_prep_rows=interview_prep_rows,
+            learning_rows=learning_rows,
             pending_minutes=pending_minutes,
             leetcode_today=leetcode_today,
             run=run_plan,

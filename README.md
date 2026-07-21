@@ -32,7 +32,7 @@ actual e-ink display and use that, but then felt cheap and decided to buy a 10 y
 - **Touch navigation**: tapping a section on the Kindle drills into a more detailed
   view (e.g. tapping the running section shows the full week).
 - **Web UI**: a small Flask app (also the thing that renders/pushes the
-  dashboard) for entering/editing plan, birthday, and interview-prep data
+  dashboard) for entering/editing plan, birthday, and learning/project data
   from a browser. It's also exposed via a Cloudflare Tunnel so I (and only I) can access it when I'm not on my home network.
 
 ## Architecture

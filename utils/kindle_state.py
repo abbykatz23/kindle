@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 _STATE_FILE = Path(__file__).parent.parent / "data" / "kindle_view.json"
-VALID_VIEWS = {"dashboard", "running", "interview_prep", "birthdays", "running_day"}
+VALID_VIEWS = {"dashboard", "running", "learning", "birthdays", "running_day"}
 
 
 def _read() -> dict:

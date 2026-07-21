@@ -18,6 +18,6 @@ data/run_route.json
 data/running_coaching_notes.json
 data/plan.json
 data/birthdays.json
-data/interview_items.json
-data/interview_time_log.json
+data/learning_items.json
+data/learning_time_log.json
 data/leetcode_history.json
