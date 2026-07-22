@@ -65,6 +65,25 @@
                 </div>
             </div>
 
+            {# Backfill time for a past day — web UI only, not reachable from the Kindle #}
+            <div class="prep-card">
+                <div class="prep-card__header">
+                    <span class="prep-card__title">Log time for a past day</span>
+                </div>
+                <form action="{{ url_for('main.backfill_learning_time') }}" method="post" class="outcome-form" id="backfill-form">
+                    <input class="field__input" type="date" name="date" max="{{ today.isoformat() }}" value="{{ today.isoformat() }}" required style="max-width:150px;">
+                    <select class="field__input" name="category" id="backfill-category" required style="max-width:160px;">
+                        {% for category, label in category_labels.items() %}
+                        <option value="{{ category }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <select class="field__input" name="item_id" id="backfill-item" style="min-width:140px;flex:1;"></select>
+                    <input class="field__input" type="number" name="minutes" min="1" placeholder="Minutes" required style="max-width:100px;">
+                    <button type="submit" class="btn btn--primary">Log</button>
+                </form>
+            </div>
+            <script>window.LEARNING_ITEMS_BY_CATEGORY = {{ items_by_category | tojson }};</script>
+
             {# Books / Projects / Wildcard #}
             {% for category in ['books', 'projects', 'wildcard'] %}
             {% set active_items = items_by_category[category] | selectattr('status', 'equalto', 'active') | list %}

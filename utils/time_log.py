@@ -26,17 +26,17 @@ def save_log(entries: list[dict]) -> None:
     Config.LEARNING_TIME_LOG_FILE.write_text(json.dumps(entries, indent=2))
 
 
-def log_time(category: str, minutes: int, item_id: str | None = None, on_date: date | None = None) -> dict:
+def _resolve_item_id(category: str, item_id: str | None) -> str | None:
     if category not in ALL_CATEGORIES:
         raise ValueError(f"Unknown category: {category!r}")
-    if minutes not in VALID_MINUTES:
-        raise ValueError(f"minutes must be one of {VALID_MINUTES}")
     if category in FIXED_CATEGORIES:
-        item_id = None
-    elif not item_id:
+        return None
+    if not item_id:
         raise ValueError(f"item_id is required for category {category!r}")
+    return item_id
 
-    on_date = on_date or date.today()
+
+def _append_entry(category: str, minutes: int, item_id: str | None, on_date: date) -> dict:
     entry = {
         "id": uuid.uuid4().hex[:8],
         "date": on_date.isoformat(),
@@ -49,6 +49,22 @@ def log_time(category: str, minutes: int, item_id: str | None = None, on_date: d
     entries.append(entry)
     save_log(entries)
     return entry
+
+
+def log_time(category: str, minutes: int, item_id: str | None = None, on_date: date | None = None) -> dict:
+    """Log time via the Kindle tap flow / dashboard quick-log buttons — fixed +5/+15/+30 increments only."""
+    if minutes not in VALID_MINUTES:
+        raise ValueError(f"minutes must be one of {VALID_MINUTES}")
+    item_id = _resolve_item_id(category, item_id)
+    return _append_entry(category, minutes, item_id, on_date or date.today())
+
+
+def log_time_manual(category: str, minutes: int, item_id: str | None, on_date: date) -> dict:
+    """Log an arbitrary amount of time against any date — web UI only, for backfilling missed entries."""
+    if minutes <= 0:
+        raise ValueError("minutes must be a positive number")
+    item_id = _resolve_item_id(category, item_id)
+    return _append_entry(category, minutes, item_id, on_date)
 
 
 def get_totals_for_date(on_date: date) -> dict[tuple[str, str | None], int]:

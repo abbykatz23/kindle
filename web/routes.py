@@ -11,7 +11,7 @@ from utils.learning import CATEGORY_LABELS, get_loggable_rows
 from utils.leetcode_history import get_today as get_leetcode_today, get_history as get_leetcode_analytics_history
 from utils.plan import load_plan, load_birthdays, save_birthdays
 from utils.tap_handler import handle_tap
-from utils.time_log import ALL_CATEGORIES, FIXED_CATEGORIES, VALID_MINUTES, get_category_totals_by_day, log_time
+from utils.time_log import ALL_CATEGORIES, FIXED_CATEGORIES, VALID_MINUTES, get_category_totals_by_day, log_time, log_time_manual
 
 bp = Blueprint("main", __name__)
 
@@ -706,6 +706,39 @@ def log_learning_time():
     from utils.time_log import get_total_minutes
     total = get_total_minutes(category, entry["item_id"], date.today())
     return jsonify({"total_minutes": total})
+
+
+@bp.route("/learning/log-time/backfill", methods=["POST"])
+def backfill_learning_time():
+    """Web-UI-only: log time against a past day, for entries missed at the time. Not reachable from the Kindle."""
+    category = request.form.get("category", "").strip()
+    item_id = request.form.get("item_id", "").strip() or None
+    date_str = request.form.get("date", "").strip()
+
+    try:
+        minutes = int(request.form.get("minutes", ""))
+    except (TypeError, ValueError):
+        flash("Minutes must be a whole number.", "error")
+        return redirect(url_for("main.index", tab="learning"))
+
+    try:
+        on_date = date.fromisoformat(date_str)
+    except ValueError:
+        flash("A valid date is required.", "error")
+        return redirect(url_for("main.index", tab="learning"))
+
+    if on_date > date.today():
+        flash("Can't log time for a future date.", "error")
+        return redirect(url_for("main.index", tab="learning"))
+
+    try:
+        log_time_manual(category, minutes, item_id, on_date)
+    except ValueError as e:
+        flash(str(e), "error")
+        return redirect(url_for("main.index", tab="learning"))
+
+    flash(f"Logged {minutes}m on {on_date.isoformat()}.", "success")
+    return redirect(url_for("main.index", tab="learning"))
 
 
 @bp.route("/learning/leetcode-today")

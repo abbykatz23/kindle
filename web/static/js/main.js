@@ -548,6 +548,43 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // ── Learning/projects: backfill form (log time for a past day) ────────
+
+    (function initBackfillForm() {
+        const categorySelect = document.getElementById('backfill-category');
+        const itemSelect = document.getElementById('backfill-item');
+        if (!categorySelect || !itemSelect) return;
+
+        function populateItems() {
+            const category = categorySelect.value;
+            const items = (window.LEARNING_ITEMS_BY_CATEGORY || {})[category] || [];
+            itemSelect.innerHTML = '';
+            if (category === 'system_design') {
+                itemSelect.style.display = 'none';
+                itemSelect.required = false;
+                return;
+            }
+            itemSelect.style.display = '';
+            itemSelect.required = true;
+            if (!items.length) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = 'No items yet';
+                itemSelect.appendChild(opt);
+                return;
+            }
+            items.forEach((item) => {
+                const opt = document.createElement('option');
+                opt.value = item.id;
+                opt.textContent = item.title + (item.status === 'complete' ? ' (completed)' : '');
+                itemSelect.appendChild(opt);
+            });
+        }
+
+        categorySelect.addEventListener('change', populateItems);
+        populateItems();
+    })();
+
     // ── Learning/projects: log-time buttons ───────────────────────────────
 
     document.querySelectorAll('.log-time-btn').forEach((btn) => {
