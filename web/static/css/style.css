@@ -161,6 +161,8 @@ input:focus, select:focus, textarea:focus {
 .week-card__pills { display: flex; flex-wrap: wrap; gap: .5rem }
 .day-pill { padding: .45rem .6rem; border-radius: 10px; background: var(--glass); font-size: .85rem; display: flex; flex-direction: column; align-items: flex-start; border: 1px solid var(--border) }
 .day-pill__name { font-weight: 700 }
+.day-pill[data-date], .day-pill-hero[data-date] { cursor: pointer; transition: filter .12s ease }
+.day-pill[data-date]:hover, .day-pill-hero[data-date]:hover { filter: brightness(1.2) }
 
 /* Run type colors — compact pills */
 .day-pill--easy    { background: rgba(74,222,128,0.07);  border-color: rgba(74,222,128,0.25) }

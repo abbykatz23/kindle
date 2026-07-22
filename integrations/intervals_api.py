@@ -144,18 +144,18 @@ def summarize_training_history(activities: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def get_todays_run_detail() -> dict | None:
-    """Return the first run activity logged today, with distance/pace/splits, or None."""
+def get_run_detail_for_date(on_date: date) -> dict | None:
+    """Return the first run activity logged on the given date, with distance/pace/splits, or None."""
     if not Config.INTERVALS_API_KEY or not Config.INTERVALS_ATHLETE_ID:
         return None
-    today_str = date.today().isoformat()
+    date_str = on_date.isoformat()
     try:
         r = requests.get(
             f"{_BASE}/athlete/{Config.INTERVALS_ATHLETE_ID}/activities",
             auth=_auth(),
             params={
-                "oldest": today_str,
-                "newest": today_str,
+                "oldest": date_str,
+                "newest": date_str,
                 "fields": "id,name,start_date_local,type,distance,moving_time,average_speed,laps",
             },
             timeout=10,
@@ -177,6 +177,11 @@ def get_todays_run_detail() -> dict | None:
             "laps": a.get("laps") or [],
         }
     return None
+
+
+def get_todays_run_detail() -> dict | None:
+    """Return the first run activity logged today, with distance/pace/splits, or None."""
+    return get_run_detail_for_date(date.today())
 
 
 def get_route_points(activity_id: str) -> list[tuple[float, float]]:

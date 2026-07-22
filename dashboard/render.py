@@ -15,9 +15,8 @@ RUNNING_SECTION_HEIGHT = 400
 BIRTHDAYS_SECTION_HEIGHT = 184  # 1024 - 30 - 360 - 400 - 50 footer
 FOOTER_HEIGHT = 50
 
-# Max wrapped lines for the RUNNING section's coaching feedback / plan notes text.
+# Max wrapped lines for the RUNNING section's coaching feedback text.
 FB_MAX_LINES = 7
-NOTES_MAX_LINES = 6
 
 # Route map thumbnail — shown top-right of the home-screen RUNNING section
 # when today's run is completed and has GPS data.
@@ -94,10 +93,12 @@ def render_dashboard(
     last_refreshed_label: str,
     run_feedback: str | None = None,
     route: list[tuple[float, float]] | None = None,
+    actual_run: dict | None = None,
 ) -> Image.Image:
     """learning_rows is utils.learning.get_loggable_rows()'s output;
     pending_minutes is utils.kindle_state.get_pending_minutes()'s output;
-    leetcode_today is utils.leetcode_history.get_today()'s output."""
+    leetcode_today is utils.leetcode_history.get_today()'s output;
+    actual_run is integrations.intervals_api.get_todays_run_detail()'s output."""
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
     img = Image.new("L", (width, height), color=255)
     draw = ImageDraw.Draw(img)
@@ -109,7 +110,8 @@ def render_dashboard(
     _draw_running_section(draw, y, width, run, run_completed,
                           feedback=run_feedback,
                           show_bottom_divider=bool(birthdays),
-                          route=route)
+                          route=route,
+                          actual_run=actual_run)
     y += RUNNING_SECTION_HEIGHT
 
     if birthdays:
@@ -207,6 +209,40 @@ def _draw_arm_buttons(draw: ImageDraw.ImageDraw, width: int, btn_y: int, pending
                   text, font=btn_font, fill=(255 if armed else 100))
 
 
+def _draw_plan_details(draw: ImageDraw.ImageDraw, y: int, text_width: int, run: dict) -> None:
+    """Draw a not-yet-completed (or feedback-less) run's title/subtitle/notes, using
+    all the room actually available in the RUNNING section before it runs into the
+    birthdays section below. Most notes are short and render at the default size with
+    room to spare; a longer, more explanatory note (e.g. a workout with real structure)
+    shrinks its font just enough to fit in full rather than getting cut off.
+    """
+    formatted = _format_run(run)
+    draw.text((PADDING_X, y + 70), formatted["title"], font=_font(54, bold=True), fill=0)
+    cursor_y = y + 140
+    if formatted.get("subtitle"):
+        draw.text((PADDING_X, cursor_y), formatted["subtitle"], font=_font(30), fill=70)
+        cursor_y += 44
+
+    notes = formatted.get("notes")
+    if not notes:
+        return
+
+    # Leave a few px of breathing room before the divider at y + RUNNING_SECTION_HEIGHT.
+    max_bottom = y + RUNNING_SECTION_HEIGHT - 6
+    notes_font_size, notes_line_h, max_lines = 22, 30, 1
+    for fs, lh in ((22, 30), (20, 27), (18, 24)):
+        lines_available = max(1, (max_bottom - cursor_y) // lh)
+        if len(_wrap_text(notes, _font(fs), text_width)) <= lines_available:
+            notes_font_size, notes_line_h, max_lines = fs, lh, lines_available
+            break
+        max_lines = lines_available  # keep shrinking; this is our fallback if nothing fits fully
+
+    wrapped = _wrap_text(notes, _font(notes_font_size), text_width)
+    for line in wrapped[:max_lines]:
+        draw.text((PADDING_X, cursor_y), line, font=_font(notes_font_size), fill=80)
+        cursor_y += notes_line_h
+
+
 def _draw_running_section(
     draw: ImageDraw.ImageDraw,
     y: int,
@@ -216,6 +252,7 @@ def _draw_running_section(
     feedback: str | None = None,
     show_bottom_divider: bool = True,
     route: list[tuple[float, float]] | None = None,
+    actual_run: dict | None = None,
 ) -> None:
     draw.text((PADDING_X, y + 22), "RUNNING", font=_font(36, bold=True), fill=80)
 
@@ -231,47 +268,37 @@ def _draw_running_section(
             _draw_route(draw, thumb_x0, thumb_y0, ROUTE_THUMB_W, ROUTE_THUMB_H, route)
 
         if feedback:
-            # Replace the plan details with the coaching note.
-            # Try font sizes largest-first; shrink until the whole message fits in FB_MAX_LINES lines.
+            # Replace the plan details with the coaching note — but always lead with
+            # the actual distance and pace, so those numbers don't get lost in prose.
+            cursor_y = y + 78
+            fb_max_lines = FB_MAX_LINES
+            if actual_run:
+                dist_text = f"{actual_run.get('distance_miles', 0)} mi"
+                draw.text((PADDING_X, cursor_y), dist_text, font=_font(40, bold=True), fill=0)
+                cursor_y += 46
+                pace_text = f"{actual_run.get('pace_per_mile', '?')}/mi avg pace"
+                draw.text((PADDING_X, cursor_y), pace_text, font=_font(24), fill=70)
+                cursor_y += 40
+                fb_max_lines = FB_MAX_LINES - 2
+
+            # Try font sizes largest-first; shrink until the whole message fits in fb_max_lines lines.
             fb_font_size, fb_line_h = 24, 34
             for fs, lh in ((24, 34), (22, 31), (20, 28)):
-                if len(_wrap_text(feedback, _font(fs), text_width)) <= FB_MAX_LINES:
+                if len(_wrap_text(feedback, _font(fs), text_width)) <= fb_max_lines:
                     fb_font_size, fb_line_h = fs, lh
                     break
             wrapped = _wrap_text(feedback, _font(fb_font_size), text_width)
-            cursor_y = y + 82
-            for line in wrapped[:FB_MAX_LINES]:
+            for line in wrapped[:fb_max_lines]:
                 draw.text((PADDING_X, cursor_y), line, font=_font(fb_font_size), fill=50)
                 cursor_y += fb_line_h
         else:
             # No feedback yet — show plan as-is
-            formatted = _format_run(run)
-            draw.text((PADDING_X, y + 70), formatted["title"], font=_font(54, bold=True), fill=0)
-            cursor_y = y + 140
-            if formatted.get("subtitle"):
-                draw.text((PADDING_X, cursor_y), formatted["subtitle"], font=_font(30), fill=70)
-                cursor_y += 44
-            if formatted.get("notes"):
-                wrapped = _wrap_text(formatted["notes"], _font(22), text_width)
-                for line in wrapped[:NOTES_MAX_LINES]:
-                    draw.text((PADDING_X, cursor_y), line, font=_font(22), fill=80)
-                    cursor_y += 30
+            _draw_plan_details(draw, y, text_width, run)
     elif not run:
         draw.text((PADDING_X, y + 90), "Nothing planned for today",
                   font=_font(34), fill=140)
     else:
-        formatted = _format_run(run)
-        draw.text((PADDING_X, y + 70), formatted["title"], font=_font(54, bold=True), fill=0)
-        cursor_y = y + 140
-        if formatted.get("subtitle"):
-            draw.text((PADDING_X, cursor_y), formatted["subtitle"],
-                      font=_font(30), fill=70)
-            cursor_y += 44
-        if formatted.get("notes"):
-            wrapped = _wrap_text(formatted["notes"], _font(22), width - 2 * PADDING_X)
-            for line in wrapped[:NOTES_MAX_LINES]:
-                draw.text((PADDING_X, cursor_y), line, font=_font(22), fill=80)
-                cursor_y += 30
+        _draw_plan_details(draw, y, width - 2 * PADDING_X, run)
 
     if show_bottom_divider:
         draw.line(

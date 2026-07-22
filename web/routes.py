@@ -575,6 +575,64 @@ def running_week_compliance():
         return jsonify({"has_data": False, "error": str(e)})
 
 
+@bp.route("/running/day-detail/<iso_date>")
+def running_day_detail(iso_date):
+    """Web-UI-only: full info for a single day — planned run, post-run notes, and (if the
+    day has passed) the actual logged run and today's cached coaching note, if any."""
+    try:
+        day_date = date.fromisoformat(iso_date)
+    except ValueError:
+        return jsonify({"error": "invalid date"}), 400
+
+    plan = load_plan()
+    active_plan = (plan.get("running") or {}).get("active")
+    if not active_plan:
+        return jsonify({"error": "no active plan"}), 404
+
+    start_date = active_plan.get("start_date")
+    start_dt = date.fromisoformat(start_date)
+    start_monday = start_dt - timedelta(days=start_dt.weekday())
+    week_num = ((day_date - start_monday).days // 7) + 1
+    if week_num < 1:
+        return jsonify({"error": "date is before the plan's start"}), 404
+
+    week_data = active_plan.get("weeks", {}).get(str(week_num), {})
+    day_name = day_date.strftime("%A").lower()
+    day_plan = week_data.get(day_name, {})
+
+    result = {
+        "date": iso_date,
+        "day_name": day_date.strftime("%A"),
+        "week_num": week_num,
+        "type": day_plan.get("type", "rest"),
+        "distance_miles": day_plan.get("distance_miles", 0),
+        "notes": day_plan.get("notes", ""),
+        "notes_actual": day_plan.get("notes_actual", ""),
+        "actual": None,
+        "feedback": None,
+    }
+
+    today = date.today()
+    if day_date <= today:
+        try:
+            from integrations.intervals_api import get_run_detail_for_date
+            actual = get_run_detail_for_date(day_date)
+            if actual:
+                result["actual"] = {
+                    "distance_miles": actual["distance_miles"],
+                    "pace_per_mile": actual["pace_per_mile"],
+                    "moving_time_s": actual["moving_time_s"],
+                }
+        except Exception:
+            pass
+
+        if day_date == today:
+            from utils.run_feedback import load_todays_feedback
+            result["feedback"] = load_todays_feedback(today)
+
+    return jsonify(result)
+
+
 @bp.route("/running/generate-full-plan/status")
 def generate_running_full_plan_status():
     job_id = request.args.get("job_id", "")

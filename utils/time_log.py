@@ -60,10 +60,19 @@ def log_time(category: str, minutes: int, item_id: str | None = None, on_date: d
 
 
 def log_time_manual(category: str, minutes: int, item_id: str | None, on_date: date) -> dict:
-    """Log an arbitrary amount of time against any date — web UI only, for backfilling missed entries."""
-    if minutes <= 0:
-        raise ValueError("minutes must be a positive number")
+    """Log (or, with a negative value, subtract) an arbitrary amount of time against any
+    date — web UI only, for backfilling missed entries or correcting mistaken ones. A
+    day's logged total for a category/item can never be pushed below zero."""
+    if minutes == 0:
+        raise ValueError("minutes must not be zero")
     item_id = _resolve_item_id(category, item_id)
+    if minutes < 0:
+        current_total = get_total_minutes(category, item_id, on_date)
+        if current_total + minutes < 0:
+            raise ValueError(
+                f"That would take {on_date.isoformat()}'s total below 0 minutes "
+                f"(currently {current_total})."
+            )
     return _append_entry(category, minutes, item_id, on_date)
 
 

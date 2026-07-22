@@ -211,6 +211,93 @@ document.addEventListener("DOMContentLoaded", () => {
         raceCountdownEl.textContent = Math.max(0, raceDays).toLocaleString();
     }
 
+    // ── Running day detail modal ──────────────────────────────────────────
+
+    (function initDayDetail() {
+        const overlay = document.getElementById('day-detail-modal-overlay');
+        const title = document.getElementById('day-detail-modal-title');
+        const body = document.getElementById('day-detail-modal-body');
+        const closeBtn = document.getElementById('day-detail-modal-close');
+        if (!overlay || !body) return;
+
+        function addRow(label, value) {
+            if (!value) return;
+            const row = document.createElement('div');
+            row.style.marginBottom = '.75rem';
+            const lbl = document.createElement('div');
+            lbl.className = 'modal__label';
+            lbl.textContent = label;
+            const val = document.createElement('div');
+            val.style.fontSize = '.9rem';
+            val.textContent = value;
+            row.appendChild(lbl);
+            row.appendChild(val);
+            body.appendChild(row);
+        }
+
+        function renderDayDetail(data) {
+            body.innerHTML = '';
+            if (title) title.textContent = `${data.day_name}, ${data.date}`;
+
+            const typeLabel = data.type ? data.type.charAt(0).toUpperCase() + data.type.slice(1) : 'Rest';
+            addRow('Planned', data.distance_miles ? `${typeLabel} — ${data.distance_miles} mi` : typeLabel);
+            addRow('Coach notes', data.notes);
+            addRow('Post-run notes', data.notes_actual);
+
+            if (data.actual) {
+                const mins = Math.floor(data.actual.moving_time_s / 60);
+                const secs = Math.round(data.actual.moving_time_s % 60);
+                const timeStr = data.actual.moving_time_s ? ` (${mins}:${String(secs).padStart(2, '0')})` : '';
+                addRow('Actual', `${data.actual.distance_miles} mi @ ${data.actual.pace_per_mile}/mi${timeStr}`);
+            } else if (new Date(data.date + 'T00:00:00') < new Date(new Date().toDateString())) {
+                addRow('Actual', 'No run logged');
+            }
+
+            if (data.feedback) addRow("Coach's note", data.feedback);
+
+            if (!body.children.length) {
+                const empty = document.createElement('p');
+                empty.className = 'muted';
+                empty.textContent = 'Nothing planned for this day.';
+                body.appendChild(empty);
+            }
+        }
+
+        function openDayDetail(dateStr) {
+            overlay.setAttribute('aria-hidden', 'false');
+            overlay.classList.add('modal--open');
+            body.innerHTML = '<p class="muted">Loading…</p>';
+            fetch(`/running/day-detail/${dateStr}`)
+                .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (!ok) throw new Error(data.error || 'Failed to load');
+                    renderDayDetail(data);
+                })
+                .catch(() => {
+                    body.innerHTML = '';
+                    const err = document.createElement('p');
+                    err.className = 'muted';
+                    err.textContent = 'Could not load day detail.';
+                    body.appendChild(err);
+                });
+        }
+
+        function closeDayDetail() {
+            overlay.classList.remove('modal--open');
+            overlay.setAttribute('aria-hidden', 'true');
+        }
+
+        document.querySelectorAll('.day-pill-hero[data-date], .day-pill[data-date]').forEach((el) => {
+            el.addEventListener('click', () => openDayDetail(el.dataset.date));
+        });
+
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) closeDayDetail(); });
+        closeBtn?.addEventListener('click', closeDayDetail);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && overlay.classList.contains('modal--open')) closeDayDetail();
+        });
+    })();
+
     // ── Claude generation modal ───────────────────────────────────────────
 
     const overlay    = document.getElementById('claude-modal-overlay');

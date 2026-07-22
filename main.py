@@ -12,7 +12,7 @@ from dashboard.render import (
     render_running_detail,
     save_dashboard,
 )
-from integrations.intervals_api import is_run_completed_today
+from integrations.intervals_api import get_todays_run_detail, is_run_completed_today
 from utils.learning import get_loggable_rows
 from utils.kindle_state import get_pending_minutes, get_selected_date, get_view
 from utils.leetcode_history import get_today as get_leetcode_today
@@ -74,6 +74,7 @@ def run(push: bool = True) -> None:
 
         run_feedback = None
         run_route = []
+        actual_run = None
         if run_completed and run_plan:
             week_plan = get_week_run_plan(today)
             active = (load_plan().get("running") or {}).get("active") or {}
@@ -84,6 +85,7 @@ def run(push: bool = True) -> None:
             }
             run_feedback = get_or_generate_feedback(today, run_plan, week_plan, plan_meta)
             run_route = get_or_fetch_route(today)
+            actual_run = get_todays_run_detail()
 
         img = render_dashboard(
             learning_rows=learning_rows,
@@ -95,6 +97,7 @@ def run(push: bool = True) -> None:
             last_refreshed_label=last_refreshed_label,
             run_feedback=run_feedback,
             route=run_route,
+            actual_run=actual_run,
         )
 
     image_path = save_dashboard(img)
