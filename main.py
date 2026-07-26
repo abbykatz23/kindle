@@ -12,7 +12,7 @@ from dashboard.render import (
     render_running_detail,
     save_dashboard,
 )
-from integrations.intervals_api import get_todays_run_detail, is_run_completed_today
+from integrations.intervals_api import get_run_detail_for_date, get_todays_run_detail, is_run_completed_today
 from utils.learning import get_loggable_rows
 from utils.kindle_state import get_pending_minutes, get_selected_date, get_view
 from utils.leetcode_history import get_today as get_leetcode_today
@@ -23,7 +23,7 @@ from utils.plan import (
     load_birthdays,
     load_plan,
 )
-from utils.run_feedback import get_or_generate_feedback
+from utils.run_feedback import get_or_generate_feedback, load_todays_feedback
 from utils.run_route import get_or_fetch_route
 
 
@@ -53,9 +53,26 @@ def run(push: bool = True) -> None:
         week_plan = get_week_run_plan(today)
         day_name = selected.strftime("%A").lower()
         run_day = week_plan.get(day_name)
-        day_completed = is_run_completed_today() if selected == today else False
-        day_route = get_or_fetch_route(selected) if day_completed else []
-        img = render_running_day_detail(run_day, selected, day_completed, route=day_route)
+
+        day_actual = None
+        day_feedback = None
+        day_route = []
+        if selected <= today:
+            day_actual = get_run_detail_for_date(selected)
+            if day_actual:
+                day_route = get_or_fetch_route(selected)
+            if selected == today:
+                day_feedback = load_todays_feedback(today)
+
+        img = render_running_day_detail(
+            run_day,
+            selected,
+            day_actual is not None,
+            route=day_route,
+            actual=day_actual,
+            feedback=day_feedback,
+            notes_actual=(run_day or {}).get("notes_actual"),
+        )
 
     elif view == "learning":
         rows = get_loggable_rows(today)

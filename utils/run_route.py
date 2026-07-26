@@ -1,4 +1,4 @@
-"""Cache today's run GPS route (list of lat/lng points) in data/run_route.json."""
+"""Cache run GPS routes (list of lat/lng points), keyed per calendar day, in data/run_route.json."""
 import json
 from datetime import date
 from pathlib import Path
@@ -6,40 +6,38 @@ from pathlib import Path
 _CACHE_FILE = Path(__file__).parent.parent / "data" / "run_route.json"
 
 
-def load_todays_route(today: date) -> list[tuple[float, float]] | None:
-    """Return cached route for today (possibly []), or None if not yet cached."""
+def _load_cache() -> dict:
     if not _CACHE_FILE.exists():
-        return None
+        return {}
     try:
-        data = json.loads(_CACHE_FILE.read_text())
-        if data.get("date") == today.isoformat():
-            return [tuple(p) for p in data.get("points") or []]
+        return json.loads(_CACHE_FILE.read_text())
     except Exception:
-        pass
-    return None
+        return {}
 
 
-def save_route(today: date, points: list[tuple[float, float]]) -> None:
+def _save_cache(cache: dict) -> None:
     _CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _CACHE_FILE.write_text(json.dumps({"date": today.isoformat(), "points": points}))
+    _CACHE_FILE.write_text(json.dumps(cache))
 
 
-def get_or_fetch_route(today: date) -> list[tuple[float, float]]:
-    """Return today's cached GPS route, fetching from intervals.icu on first call.
+def get_or_fetch_route(on_date: date) -> list[tuple[float, float]]:
+    """Return the cached GPS route for on_date, fetching from intervals.icu on first call.
 
-    Returns [] (and caches that) if there's no run today or no GPS data for it,
-    so treadmill/indoor days don't re-hit the API on every dashboard refresh.
+    Returns [] (and caches that) if there's no run on that day or no GPS data for it,
+    so treadmill/indoor days and repeated day-detail views don't re-hit the API.
     """
-    cached = load_todays_route(today)
-    if cached is not None:
-        return cached
+    cache = _load_cache()
+    key = on_date.isoformat()
+    if key in cache:
+        return [tuple(p) for p in cache[key]]
 
-    from integrations.intervals_api import get_route_points, get_todays_run_detail
+    from integrations.intervals_api import get_route_points, get_run_detail_for_date
 
-    run = get_todays_run_detail()
+    run = get_run_detail_for_date(on_date)
     points: list[tuple[float, float]] = []
     if run and run.get("id"):
         points = get_route_points(run["id"])
 
-    save_route(today, points)
+    cache[key] = points
+    _save_cache(cache)
     return points

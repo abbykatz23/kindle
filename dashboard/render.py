@@ -744,16 +744,51 @@ def render_birthdays_detail(
     return img
 
 
+def _draw_labeled_block(
+    draw: ImageDraw.ImageDraw,
+    cursor_y: int,
+    max_bottom: int,
+    text_width: int,
+    label: str,
+    text: str,
+    label_size: int = 20,
+    text_size: int = 24,
+    line_h: int = 32,
+) -> int:
+    """Draw a small caption label followed by wrapped body text, starting at cursor_y.
+
+    Stops (without drawing a partial label) once max_bottom is reached. Returns the
+    new cursor_y so callers can stack multiple blocks.
+    """
+    if not text or cursor_y + label_size + line_h > max_bottom:
+        return cursor_y
+    cursor_y += 14
+    draw.text((PADDING_X, cursor_y), label, font=_font(label_size, bold=True), fill=130)
+    cursor_y += label_size + 8
+    for line in _wrap_text(text, _font(text_size), text_width):
+        if cursor_y + line_h > max_bottom:
+            break
+        draw.text((PADDING_X, cursor_y), line, font=_font(text_size), fill=30)
+        cursor_y += line_h
+    return cursor_y
+
+
 def render_running_day_detail(
     run: dict | None,
     selected_date: date,
     run_completed: bool,
     route: list[tuple[float, float]] | None = None,
+    actual: dict | None = None,
+    feedback: str | None = None,
+    notes_actual: str | None = None,
 ) -> Image.Image:
-    """Full-page Kindle view: detailed info for a single day's run."""
+    """Full-page Kindle view: detailed info for a single day — the assigned run, what
+    was actually run (distance/pace/time from intervals.icu), the coach's feedback
+    note, and (if GPS data exists) a route map."""
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
     img = Image.new("L", (width, height), color=255)
     draw = ImageDraw.Draw(img)
+    text_width = width - 2 * PADDING_X
 
     _draw_back_button(draw)
 
@@ -766,30 +801,49 @@ def render_running_day_detail(
 
     if not run:
         draw.text((PADDING_X, 180), "Nothing planned.", font=_font(34), fill=140)
-        return img
+        cursor_y = 230
+    else:
+        formatted = _format_run(run)
+        draw.text((PADDING_X, 170), formatted["title"], font=_font(48, bold=True), fill=0)
 
-    formatted = _format_run(run)
-    draw.text((PADDING_X, 170), formatted["title"], font=_font(54, bold=True), fill=0)
+        cursor_y = 230
+        if formatted.get("subtitle"):
+            draw.text((PADDING_X, cursor_y), formatted["subtitle"], font=_font(28), fill=70)
+            cursor_y += 44
 
-    cursor_y = 242
-    if formatted.get("subtitle"):
-        draw.text((PADDING_X, cursor_y), formatted["subtitle"], font=_font(30), fill=70)
-        cursor_y += 50
+        if formatted.get("notes"):
+            cursor_y += 6
+            for line in _wrap_text(formatted["notes"], _font(22), text_width):
+                if cursor_y + 30 > height - 20:
+                    break
+                draw.text((PADDING_X, cursor_y), line, font=_font(22), fill=60)
+                cursor_y += 30
 
-    if formatted.get("notes"):
-        cursor_y += 10
-        wrapped = _wrap_text(formatted["notes"], _font(24), width - 2 * PADDING_X)
-        for line in wrapped:
-            if cursor_y + 34 > height - 20:
-                break
-            draw.text((PADDING_X, cursor_y), line, font=_font(24), fill=60)
-            cursor_y += 34
+    # Reserve room at the bottom for the map, so the text blocks above don't crowd it out.
+    has_map = run_completed and bool(route) and len(route) >= 2
+    max_bottom = height - 20 - (260 if has_map else 0)
 
-    if run_completed and route and len(route) >= 2:
-        map_y0 = cursor_y + 24
+    if actual:
+        mins = int(actual.get("moving_time_s") or 0) // 60
+        secs = int(actual.get("moving_time_s") or 0) % 60
+        time_str = f" ({mins}:{secs:02d})" if actual.get("moving_time_s") else ""
+        actual_text = (
+            f"{actual.get('distance_miles', 0)} mi @ "
+            f"{actual.get('pace_per_mile', '?')}/mi avg pace{time_str}"
+        )
+        cursor_y = _draw_labeled_block(draw, cursor_y, max_bottom, text_width, "ACTUAL", actual_text)
+
+    if feedback:
+        cursor_y = _draw_labeled_block(draw, cursor_y, max_bottom, text_width, "COACH'S NOTE", feedback)
+
+    if notes_actual:
+        cursor_y = _draw_labeled_block(draw, cursor_y, max_bottom, text_width, "POST-RUN NOTES", notes_actual)
+
+    if has_map:
+        map_y0 = max(cursor_y + 24, height - 20 - 260)
         map_h = height - 20 - map_y0
         if map_h > 100:
-            _draw_route(draw, PADDING_X, map_y0, width - 2 * PADDING_X, map_h, route, line_width=4)
+            _draw_route(draw, PADDING_X, map_y0, text_width, map_h, route, line_width=4)
 
     return img
 
