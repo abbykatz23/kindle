@@ -89,6 +89,25 @@ def get_week_run_plan(today: date) -> dict:
     return active.get("weeks", {}).get(str(week_num), {})
 
 
+def get_plan_week_bounds(today: date) -> tuple[int, int] | None:
+    """Return (current_week_num, total_weeks) for the active plan, or None if there's no active plan.
+
+    Shared by the Kindle weekly-view renderer and its tap handler so both agree on how
+    far the PREV/NEXT week navigation is allowed to go.
+    """
+    plan = load_plan()
+    running = plan.get("running", {})
+    active = running.get("active") if isinstance(running, dict) else None
+    if not active or not active.get("start_date"):
+        return None
+    start = date.fromisoformat(active["start_date"])
+    start_monday = start - timedelta(days=start.weekday())
+    today_monday = today - timedelta(days=today.weekday())
+    current_week_num = max(1, ((today_monday - start_monday).days // 7) + 1)
+    total_weeks = len(active.get("weeks", {}))
+    return current_week_num, total_weeks
+
+
 def get_upcoming_birthdays(today: date, days_ahead: int = 7) -> list[dict]:
     upcoming = []
     for entry in load_birthdays():

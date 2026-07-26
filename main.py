@@ -1,6 +1,6 @@
 """Render the dashboard (or a detail view) and push it to the Kindle. Run from project root."""
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from config import Config
 from dashboard.push import push_to_kindle
@@ -14,9 +14,10 @@ from dashboard.render import (
 )
 from integrations.intervals_api import get_run_detail_for_date, get_todays_run_detail, is_run_completed_today
 from utils.learning import get_loggable_rows
-from utils.kindle_state import get_pending_minutes, get_selected_date, get_view
+from utils.kindle_state import get_pending_minutes, get_selected_date, get_view, get_week_offset
 from utils.leetcode_history import get_today as get_leetcode_today
 from utils.plan import (
+    get_plan_week_bounds,
     get_todays_run_plan,
     get_upcoming_birthdays,
     get_week_run_plan,
@@ -43,14 +44,23 @@ def run(push: bool = True) -> None:
     leetcode_today = get_leetcode_today(Config.LEETCODE_USERNAME)
 
     if view == "running":
-        week_plan = get_week_run_plan(today)
+        week_offset = get_week_offset()
+        week_plan = get_week_run_plan(today + timedelta(weeks=week_offset))
         run_completed = is_run_completed_today()
-        img = render_running_detail(week_plan, today, run_completed)
+
+        bounds = get_plan_week_bounds(today)
+        has_prev = week_offset > 0
+        has_next = bool(bounds) and (bounds[0] + week_offset) < bounds[1]
+
+        img = render_running_detail(
+            week_plan, today, run_completed,
+            week_offset=week_offset, has_prev=has_prev, has_next=has_next,
+        )
 
     elif view == "running_day":
         selected_iso = get_selected_date()
         selected = date.fromisoformat(selected_iso) if selected_iso else today
-        week_plan = get_week_run_plan(today)
+        week_plan = get_week_run_plan(selected)
         day_name = selected.strftime("%A").lower()
         run_day = week_plan.get(day_name)
 

@@ -23,6 +23,11 @@ def get_selected_date() -> str | None:
     return _read().get("selected_date")
 
 
+def get_week_offset() -> int:
+    """Which week the 'running' (or 'running_day') view is showing: 0 = current week, 1 = next, etc."""
+    return _read().get("week_offset", 0)
+
+
 def get_pending_minutes() -> int | None:
     """The minute value 'armed' via the dashboard's shared 5/15 buttons, if any."""
     return _read().get("pending_minutes")
@@ -39,11 +44,11 @@ def set_pending_minutes(minutes: int | None) -> None:
     _STATE_FILE.write_text(json.dumps(state))
 
 
-def set_view(view: str, selected_date: str | None = None) -> None:
+def set_view(view: str, selected_date: str | None = None, week_offset: int = 0) -> None:
     if view not in VALID_VIEWS:
         raise ValueError(f"Unknown view: {view!r}")
     _STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    state: dict = {"view": view}
+    state: dict = {"view": view, "week_offset": week_offset}
     if selected_date is not None:
         state["selected_date"] = selected_date
     _STATE_FILE.write_text(json.dumps(state))

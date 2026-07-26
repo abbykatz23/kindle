@@ -31,8 +31,16 @@ BACK_BUTTON_MAX_X = 160
 BACK_BUTTON_MAX_Y = 80
 
 # Weekly detail view layout — used by tap_handler to map y → day row
-WEEKLY_HEADER_Y = 78   # y where day rows begin
-WEEKLY_ROW_H = 130     # height of each day row
+WEEKLY_HEADER_Y = 148  # y where day rows begin
+WEEKLY_ROW_H = 122     # height of each day row
+
+# Weekly detail view — prev/next week nav buttons, one row below the title. Kept below
+# BACK_BUTTON_MAX_Y so its generous back-button tap zone (top-left corner) never overlaps
+# the PREV WEEK button, which would otherwise sit under the same x/y range.
+WEEK_NAV_BTN_Y0 = 88          # top y of the nav button row
+WEEK_NAV_BTN_H = 40           # height of a nav button
+WEEK_NAV_BTN_Y1 = WEEK_NAV_BTN_Y0 + WEEK_NAV_BTN_H
+WEEK_NAV_BTN_GAP = 20         # gap between the prev and next buttons
 
 # Learning detail view layout — used by tap_handler to map y → loggable row
 LEARNING_HEADER_Y = 110  # y where the tappable row list begins
@@ -486,24 +494,73 @@ def _draw_back_button(draw: ImageDraw.ImageDraw) -> None:
     draw.text((bx + pad_x, by + pad_y - bbox[1]), text, font=font, fill=100)
 
 
+def get_week_nav_button_ranges(width: int) -> tuple[tuple[int, int], tuple[int, int]]:
+    """Return ((x0,x1) for PREV WEEK, (x0,x1) for NEXT WEEK), split evenly across the row.
+
+    Shared by _draw_week_nav_buttons and tap_handler so button geometry can never
+    drift between what's drawn and what's tap-hit-tested.
+    """
+    total_w = width - 2 * PADDING_X
+    btn_w = (total_w - WEEK_NAV_BTN_GAP) // 2
+    prev_x0 = PADDING_X
+    prev_x1 = prev_x0 + btn_w
+    next_x1 = width - PADDING_X
+    next_x0 = next_x1 - btn_w
+    return (prev_x0, prev_x1), (next_x0, next_x1)
+
+
+def _draw_week_nav_buttons(draw: ImageDraw.ImageDraw, width: int, show_prev: bool, show_next: bool) -> None:
+    (prev_x0, prev_x1), (next_x0, next_x1) = get_week_nav_button_ranges(width)
+    font = _font(20, bold=True)
+
+    if show_prev:
+        draw.rectangle([prev_x0, WEEK_NAV_BTN_Y0, prev_x1, WEEK_NAV_BTN_Y1], fill=255, outline=100, width=2)
+        text = "‹ PREV WEEK"
+        tb = draw.textbbox((0, 0), text, font=font)
+        tx = prev_x0 + ((prev_x1 - prev_x0) - (tb[2] - tb[0])) // 2
+        draw.text((tx, WEEK_NAV_BTN_Y0 + (WEEK_NAV_BTN_H - (tb[3] - tb[1])) // 2 - tb[1]),
+                  text, font=font, fill=70)
+
+    if show_next:
+        draw.rectangle([next_x0, WEEK_NAV_BTN_Y0, next_x1, WEEK_NAV_BTN_Y1], fill=255, outline=100, width=2)
+        text = "NEXT WEEK ›"
+        tb = draw.textbbox((0, 0), text, font=font)
+        tx = next_x0 + ((next_x1 - next_x0) - (tb[2] - tb[0])) // 2
+        draw.text((tx, WEEK_NAV_BTN_Y0 + (WEEK_NAV_BTN_H - (tb[3] - tb[1])) // 2 - tb[1]),
+                  text, font=font, fill=70)
+
+
 def render_running_detail(
     week_plan: dict,
     today: date,
     run_completed: bool,
+    week_offset: int = 0,
+    has_prev: bool = False,
+    has_next: bool = False,
 ) -> Image.Image:
-    """Full-page Kindle view: this week's running plan, condensed one-line summary per day."""
+    """Full-page Kindle view: a week of the running plan, condensed one-line summary per day.
+
+    week_offset=0 is the current week; week_offset=1 is next week, etc. has_prev/has_next
+    control whether the PREV WEEK / NEXT WEEK nav buttons are drawn (the caller decides
+    this from the active plan's bounds, since render.py stays pure-Pillow).
+    """
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
     img = Image.new("L", (width, height), color=255)
     draw = ImageDraw.Draw(img)
 
     # ── Header ───────────────────────────────────────────────────────────────
     _draw_back_button(draw)
-    title = "THIS WEEK'S RUNS"
+    if week_offset == 0:
+        title = "THIS WEEK'S RUNS"
+    elif week_offset == 1:
+        title = "NEXT WEEK'S RUNS"
+    else:
+        title = "WEEK'S RUNS"
     title_font = _font(28, bold=True)
     tb = draw.textbbox((0, 0), title, font=title_font)
     draw.text(((width - (tb[2] - tb[0])) // 2, 18), title, font=title_font, fill=80)
 
-    monday = today - timedelta(days=today.weekday())
+    monday = today - timedelta(days=today.weekday()) + timedelta(weeks=week_offset)
     sunday = monday + timedelta(days=6)
     week_range = (
         f"{monday.strftime('%b')} {monday.day} – "
@@ -513,11 +570,13 @@ def render_running_detail(
     rb = draw.textbbox((0, 0), week_range, font=range_font)
     draw.text((width - PADDING_X - (rb[2] - rb[0]), 24), week_range, font=range_font, fill=130)
 
+    _draw_week_nav_buttons(draw, width, has_prev, has_next)
+
     draw.line([(PADDING_X, WEEKLY_HEADER_Y - 10), (width - PADDING_X, WEEKLY_HEADER_Y - 10)],
               fill=80, width=2)
 
     if not week_plan:
-        draw.text((PADDING_X, 120), "No active running plan.", font=_font(28), fill=130)
+        draw.text((PADDING_X, WEEKLY_HEADER_Y + 20), "No runs planned for this week.", font=_font(28), fill=130)
         return img
 
     # ── Day rows (condensed: day label + one summary line, tap to see full detail) ───────────
