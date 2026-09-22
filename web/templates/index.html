@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}{% endblock %}
 
+{% macro running_mode_toggle(tab) %}
+<form method="post" action="{{ url_for('main.set_kindle_running_mode') }}" class="running-mode-toggle" role="group" aria-label="Kindle running display">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <span class="running-mode-toggle__label">Kindle shows</span>
+    <button type="submit" name="mode" value="plan" class="btn {% if running_mode == 'plan' %}btn--primary{% else %}btn--ghost{% endif %}" aria-pressed="{{ 'true' if running_mode == 'plan' else 'false' }}">Running plan</button>
+    <button type="submit" name="mode" value="last_run" class="btn {% if running_mode == 'last_run' %}btn--primary{% else %}btn--ghost{% endif %}" aria-pressed="{{ 'true' if running_mode == 'last_run' else 'false' }}">Last run</button>
+</form>
+{% endmacro %}
+
 {% block content %}
 <div class="tabs card card--spacious" role="tablist" aria-label="Main tabs">
     <div class="row" style="gap:.5rem;">
@@ -173,6 +182,7 @@
         <div></div>
         {% endif %}
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+            {{ running_mode_toggle('running') }}
             {% if active_plan %}
             <form method="post" action="{{ url_for('main.archive_running_plan') }}" style="display:inline">
                 <button type="submit" class="btn" onclick="return confirm('Archive this plan? You can still view it below.')">Archive</button>
@@ -477,6 +487,9 @@
                 </div>
 
                 <div style="margin-top:1.25rem;">
+                    {{ running_mode_toggle('kindle') }}
+                </div>
+                <div style="margin-top:.75rem;">
                     <span class="muted" style="font-size:.8rem;" id="kindle-preview-status"></span>
                 </div>
             </div>

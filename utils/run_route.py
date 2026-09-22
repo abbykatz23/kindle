@@ -41,3 +41,19 @@ def get_or_fetch_route(on_date: date) -> list[tuple[float, float]]:
     cache[key] = points
     _save_cache(cache)
     return points
+
+
+def get_or_fetch_route_for_activity(activity_id: str) -> list[tuple[float, float]]:
+    """Like get_or_fetch_route, but keyed by a specific intervals.icu activity id
+    (so a day with multiple runs still maps to the right one)."""
+    cache = _load_cache()
+    key = f"activity:{activity_id}"
+    if key in cache:
+        return [tuple(p) for p in cache[key]]
+
+    from integrations.intervals_api import get_route_points
+
+    points = get_route_points(activity_id)
+    cache[key] = points
+    _save_cache(cache)
+    return points

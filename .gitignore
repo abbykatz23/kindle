@@ -15,6 +15,7 @@ data/jobs.json
 data/kindle_view.json
 data/run_feedback.json
 data/run_route.json
+data/running_mode.json
 data/running_coaching_notes.json
 data/plan.json
 data/birthdays.json

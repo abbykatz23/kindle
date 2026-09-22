@@ -10,7 +10,8 @@ from utils.learning_items import ITEM_CATEGORIES, add_item, get_items, mark_item
 from utils.learning import CATEGORY_LABELS, get_loggable_rows
 from utils.leetcode_history import get_today as get_leetcode_today, get_history as get_leetcode_analytics_history
 from utils.plan import load_plan, load_birthdays, save_birthdays
-from utils.tap_handler import handle_tap
+from utils.running_mode import VALID_MODES as RUNNING_MODES, get_running_mode, set_running_mode
+from utils.tap_handler import _safe_refresh, handle_tap
 from utils.time_log import ALL_CATEGORIES, FIXED_CATEGORIES, VALID_MINUTES, get_category_totals_by_day, log_time, log_time_manual
 
 bp = Blueprint("main", __name__)
@@ -320,6 +321,7 @@ def index():
         fixed_totals=fixed_totals,
         item_totals=item_totals,
         leetcode_today=leetcode_today,
+        running_mode=get_running_mode(),
         dashboard_width=Config.DASHBOARD_WIDTH,
         dashboard_height=Config.DASHBOARD_HEIGHT,
     )
@@ -410,6 +412,18 @@ def tap():
     except (TypeError, ValueError):
         return "Need integer x and y query params", 400
     return handle_tap(x, y) + "\n", 200
+
+
+@bp.route("/running/kindle-mode", methods=["POST"])
+def set_kindle_running_mode():
+    """Switch the Kindle's RUNNING section between the plan and the last run, then re-render."""
+    mode = request.form.get("mode", "")
+    if mode not in RUNNING_MODES:
+        flash("Unknown running display mode.", "error")
+    elif mode != get_running_mode():
+        set_running_mode(mode)
+        _safe_refresh()
+    return redirect(url_for("main.index", tab=request.form.get("tab") or "running"))
 
 
 @bp.route("/birthdays/update", methods=["POST"])

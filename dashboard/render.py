@@ -102,11 +102,16 @@ def render_dashboard(
     run_feedback: str | None = None,
     route: list[tuple[float, float]] | None = None,
     actual_run: dict | None = None,
+    running_mode: str = "plan",
+    last_run: dict | None = None,
+    last_run_route: list[tuple[float, float]] | None = None,
 ) -> Image.Image:
     """learning_rows is utils.learning.get_loggable_rows()'s output;
     pending_minutes is utils.kindle_state.get_pending_minutes()'s output;
     leetcode_today is utils.leetcode_history.get_today()'s output;
-    actual_run is integrations.intervals_api.get_todays_run_detail()'s output."""
+    actual_run is integrations.intervals_api.get_todays_run_detail()'s output;
+    running_mode is utils.running_mode.get_running_mode()'s output — in "last_run"
+    mode the RUNNING section shows last_run (get_last_run()'s output) instead of the plan."""
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
     img = Image.new("L", (width, height), color=255)
     draw = ImageDraw.Draw(img)
@@ -115,11 +120,16 @@ def render_dashboard(
     _draw_learning_section(draw, y, width, learning_rows, leetcode_today, pending_minutes)
     y += LEARNING_SECTION_HEIGHT
 
-    _draw_running_section(draw, y, width, run, run_completed,
-                          feedback=run_feedback,
-                          show_bottom_divider=bool(birthdays),
-                          route=route,
-                          actual_run=actual_run)
+    if running_mode == "last_run":
+        _draw_last_run_section(draw, y, width, last_run,
+                               show_bottom_divider=bool(birthdays),
+                               route=last_run_route)
+    else:
+        _draw_running_section(draw, y, width, run, run_completed,
+                              feedback=run_feedback,
+                              show_bottom_divider=bool(birthdays),
+                              route=route,
+                              actual_run=actual_run)
     y += RUNNING_SECTION_HEIGHT
 
     if birthdays:
@@ -307,6 +317,86 @@ def _draw_running_section(
                   font=_font(34), fill=140)
     else:
         _draw_plan_details(draw, y, width - 2 * PADDING_X, run)
+
+    if show_bottom_divider:
+        draw.line(
+            [(PADDING_X, y + RUNNING_SECTION_HEIGHT - 1),
+             (width - PADDING_X, y + RUNNING_SECTION_HEIGHT - 1)],
+            fill=80, width=2,
+        )
+
+
+def _format_duration(total_s: int) -> str:
+    """e.g. 3725 -> '1:02:05', 1450 -> '24:10'."""
+    hours, rem = divmod(int(total_s), 3600)
+    mins, secs = divmod(rem, 60)
+    return f"{hours}:{mins:02d}:{secs:02d}" if hours else f"{mins}:{secs:02d}"
+
+
+def _last_run_date_label(start_date_local: str, today: date) -> str:
+    """e.g. 'Today, Sep 22', 'Yesterday, Sep 21', 'Sat, Sep 19'."""
+    try:
+        run_date = date.fromisoformat(start_date_local[:10])
+    except ValueError:
+        return ""
+    if run_date == today:
+        day = "Today"
+    elif run_date == today - timedelta(days=1):
+        day = "Yesterday"
+    else:
+        day = run_date.strftime("%a")
+    return f"{day}, {run_date.strftime('%b')} {run_date.day}"
+
+
+def _draw_last_run_section(
+    draw: ImageDraw.ImageDraw,
+    y: int,
+    width: int,
+    last_run: dict | None,
+    show_bottom_divider: bool = True,
+    route: list[tuple[float, float]] | None = None,
+) -> None:
+    """RUNNING section in "last run" mode: just the stats (and map) of the most recent
+    run — no plan, no coaching feedback."""
+    draw.text((PADDING_X, y + 22), "LAST RUN", font=_font(36, bold=True), fill=80)
+
+    if not last_run:
+        draw.text((PADDING_X, y + 90), "No recent runs", font=_font(34), fill=140)
+    else:
+        date_label = _last_run_date_label(last_run.get("start_date_local", ""), date.today())
+        if date_label:
+            font = _font(28, bold=True)
+            bbox = draw.textbbox((0, 0), date_label, font=font)
+            draw.text((width - PADDING_X - (bbox[2] - bbox[0]), y + 28), date_label, font=font, fill=0)
+
+        has_map = bool(route) and len(route) >= 2
+        text_width = width - 2 * PADDING_X
+        if has_map:
+            map_w, map_h = 300, 290
+            text_width -= map_w + ROUTE_THUMB_GAP
+            _draw_route(draw, width - PADDING_X - map_w, y + 84, map_w, map_h, route, line_width=4)
+
+        cursor_y = y + 84
+        if last_run.get("name"):
+            name = _truncate_to_width(last_run["name"], _font(24), text_width)
+            draw.text((PADDING_X, cursor_y), name, font=_font(24), fill=70)
+            cursor_y += 40
+
+        draw.text((PADDING_X, cursor_y), f"{last_run.get('distance_miles', 0)} mi",
+                  font=_font(60, bold=True), fill=0)
+        cursor_y += 82
+
+        stats = [f"{last_run.get('pace_per_mile', '?')}/mi avg pace"]
+        if last_run.get("moving_time_s"):
+            stats.append(f"{_format_duration(last_run['moving_time_s'])} moving time")
+        if last_run.get("elevation_ft") is not None:
+            stats.append(f"{last_run['elevation_ft']} ft elevation")
+        if last_run.get("average_heartrate"):
+            stats.append(f"{last_run['average_heartrate']} bpm avg HR")
+        for stat in stats:
+            draw.text((PADDING_X, cursor_y), _truncate_to_width(stat, _font(26), text_width),
+                      font=_font(26), fill=40)
+            cursor_y += 40
 
     if show_bottom_divider:
         draw.line(

@@ -12,7 +12,12 @@ from dashboard.render import (
     render_running_detail,
     save_dashboard,
 )
-from integrations.intervals_api import get_run_detail_for_date, get_todays_run_detail, is_run_completed_today
+from integrations.intervals_api import (
+    get_last_run,
+    get_run_detail_for_date,
+    get_todays_run_detail,
+    is_run_completed_today,
+)
 from utils.learning import get_loggable_rows
 from utils.kindle_state import get_pending_minutes, get_selected_date, get_view, get_week_offset
 from utils.leetcode_history import get_today as get_leetcode_today
@@ -25,7 +30,8 @@ from utils.plan import (
     load_plan,
 )
 from utils.run_feedback import get_or_generate_feedback, load_todays_feedback
-from utils.run_route import get_or_fetch_route
+from utils.run_route import get_or_fetch_route, get_or_fetch_route_for_activity
+from utils.running_mode import MODE_LAST_RUN, get_running_mode
 
 
 def _format_now(now: datetime) -> str:
@@ -96,12 +102,22 @@ def run(push: bool = True) -> None:
         learning_rows = get_loggable_rows(today)
         pending_minutes = get_pending_minutes()
         run_plan = get_todays_run_plan(today)
-        run_completed = is_run_completed_today()
         birthdays = get_upcoming_birthdays(today, days_ahead=7)
+        running_mode = get_running_mode()
 
+        run_completed = False
         run_feedback = None
         run_route = []
         actual_run = None
+        last_run = None
+        last_run_route = []
+        if running_mode == MODE_LAST_RUN:
+            # Just the most recent run's stats — no plan lookups, no AI feedback.
+            last_run = get_last_run()
+            if last_run and last_run.get("id"):
+                last_run_route = get_or_fetch_route_for_activity(last_run["id"])
+        else:
+            run_completed = is_run_completed_today()
         if run_completed and run_plan:
             week_plan = get_week_run_plan(today)
             active = (load_plan().get("running") or {}).get("active") or {}
@@ -125,6 +141,9 @@ def run(push: bool = True) -> None:
             run_feedback=run_feedback,
             route=run_route,
             actual_run=actual_run,
+            running_mode=running_mode,
+            last_run=last_run,
+            last_run_route=last_run_route,
         )
 
     image_path = save_dashboard(img)

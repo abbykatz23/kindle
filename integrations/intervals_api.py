@@ -184,6 +184,48 @@ def get_todays_run_detail() -> dict | None:
     return get_run_detail_for_date(date.today())
 
 
+def get_last_run(days_back: int = 60) -> dict | None:
+    """Return the most recent run activity in the last `days_back` days, or None."""
+    if not Config.INTERVALS_API_KEY or not Config.INTERVALS_ATHLETE_ID:
+        return None
+    today = date.today()
+    try:
+        r = requests.get(
+            f"{_BASE}/athlete/{Config.INTERVALS_ATHLETE_ID}/activities",
+            auth=_auth(),
+            params={
+                "oldest": (today - timedelta(days=days_back)).isoformat(),
+                "newest": today.isoformat(),
+                "fields": "id,name,start_date_local,type,distance,moving_time,"
+                          "total_elevation_gain,average_heartrate",
+            },
+            timeout=10,
+        )
+        r.raise_for_status()
+    except Exception:
+        return None
+    runs = [
+        a for a in r.json()
+        if not a.get("_note") and a.get("type") in ("Run", "TrailRun", "VirtualRun")
+    ]
+    if not runs:
+        return None
+    a = max(runs, key=lambda x: x.get("start_date_local") or "")
+    distance_m = a.get("distance") or 0
+    moving_time_s = a.get("moving_time") or 0
+    elev_m = a.get("total_elevation_gain")
+    return {
+        "id": a.get("id"),
+        "name": a.get("name", ""),
+        "start_date_local": a.get("start_date_local", ""),
+        "distance_miles": _meters_to_miles(distance_m),
+        "moving_time_s": moving_time_s,
+        "pace_per_mile": _pace_per_mile(distance_m, moving_time_s),
+        "elevation_ft": round(elev_m * 3.28084) if elev_m else None,
+        "average_heartrate": round(a["average_heartrate"]) if a.get("average_heartrate") else None,
+    }
+
+
 def get_route_points(activity_id: str) -> list[tuple[float, float]]:
     """Return [(lat, lng), ...] GPS points for an activity, or [] if unavailable.
 
