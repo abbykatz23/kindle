@@ -2,7 +2,7 @@
 
 A personal e-ink dashboard running on a jailbroken Kindle Paperwhite
 
-My Raspberry Pi renders a PNG (running plan w/ AI coaching, learning/project tracking, upcoming birthdays) and pushes it to the Kindle over SSH every
+My Raspberry Pi renders a PNG (running plan w/ AI coaching, upcoming birthdays) and pushes it to the Kindle over SSH every
 30 minutes. Tapping the Kindle's touchscreen navigates between views.
 It works with just a static image and a raw
 touch-event listener. Integrations with external APIs make it extra functional + cool.
@@ -24,15 +24,11 @@ actual e-ink display and use that, but then felt cheap and decided to buy a 10 y
 - **Running plan**: multi-week training plan, generated and edited via
   Claude from a short intake conversation in the UI. A daily job reconciles the planned run vs the actual run (via intervals.icu's API) and Claude writes a short post-run
   coaching note. It also adjusts the following day's assigned run if I was naughty and ran more or less than I was meant to.
-- **Learning/project tracking**: time-logged categories (system design, books,
-  projects, LeetCode) with tap-to-log `+5/+15/+30` minute buttons directly on
-  the Kindle.
-- **LeetCode**: today's solved count, pulled from LeetCode's GraphQL API.
 - **Birthdays**: upcoming birthdays surfaced on the dashboard.
 - **Touch navigation**: tapping a section on the Kindle drills into a more detailed
   view (e.g. tapping the running section shows the full week).
 - **Web UI**: a small Flask app (also the thing that renders/pushes the
-  dashboard) for entering/editing plan, birthday, and learning/project data
+  dashboard) for entering/editing plan and birthday data
   from a browser. It's also exposed via a Cloudflare Tunnel so I (and only I) can access it when I'm not on my home network.
 
 ## Architecture
@@ -54,8 +50,7 @@ runnable standalone (`python main.py`) without the web server.
   Kindle Paperwhite 1's native portrait resolution)
 - **AI**: Anthropic Claude (training plan generation/editing, post-run
   coaching notes)
-- **Data**: intervals.icu API (training history), LeetCode GraphQL API
-  (submissions), flat JSON files for local state (no database)
+- **Data**: intervals.icu API (training history), flat JSON files for local state (no database)
 - **Kindle side**: POSIX shell script reading raw Linux input events off
   `/dev/input/event0`, `eips` for e-ink refresh
 

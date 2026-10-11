@@ -6,13 +6,9 @@ from flask import Blueprint, flash, jsonify, redirect, render_template, request,
 
 from config import Config
 from utils import jobs as job_store
-from utils.learning_items import ITEM_CATEGORIES, add_item, get_items, mark_item_complete
-from utils.learning import CATEGORY_LABELS, get_loggable_rows
-from utils.leetcode_history import get_today as get_leetcode_today, get_history as get_leetcode_analytics_history
 from utils.plan import load_plan, load_birthdays, save_birthdays
 from utils.running_mode import VALID_MODES as RUNNING_MODES, get_running_mode, set_running_mode
 from utils.tap_handler import _safe_refresh, handle_tap
-from utils.time_log import ALL_CATEGORIES, FIXED_CATEGORIES, VALID_MINUTES, get_category_totals_by_day, log_time, log_time_manual
 
 bp = Blueprint("main", __name__)
 
@@ -247,17 +243,9 @@ def index():
     plan = load_plan()
     birthdays = _load_sorted_birthdays()
 
-    default_tab = (request.args.get("tab") or "learning").lower()
-
-    # Learning/projects — time-tracking items + today's log rows
-    items_by_category = {
-        category: get_items(category=category)
-        for category in ITEM_CATEGORIES
-    }
-    loggable_rows = get_loggable_rows(today)
-    fixed_totals = {row["category"]: row["today_minutes"] for row in loggable_rows if row["item_id"] is None}
-    item_totals = {row["item_id"]: row["today_minutes"] for row in loggable_rows if row["item_id"] is not None}
-    leetcode_today = get_leetcode_today(Config.LEETCODE_USERNAME)
+    default_tab = (request.args.get("tab") or "running").lower()
+    if default_tab not in ("running", "birthdays", "kindle"):
+        default_tab = "running"
 
     # Running plan — new data model: {active: {...}, archived: [...]}
     running_section = plan.get("running", {})
@@ -315,12 +303,6 @@ def index():
         race_name=race_name,
         next_birthday=next_birthday,
         race_results=race_results,
-        items_by_category=items_by_category,
-        category_labels=CATEGORY_LABELS,
-        fixed_categories=FIXED_CATEGORIES,
-        fixed_totals=fixed_totals,
-        item_totals=item_totals,
-        leetcode_today=leetcode_today,
         running_mode=get_running_mode(),
         dashboard_width=Config.DASHBOARD_WIDTH,
         dashboard_height=Config.DASHBOARD_HEIGHT,
@@ -732,121 +714,3 @@ def generate_running_ai_status():
     if not job:
         return jsonify({"status": "unknown"}), 404
     return jsonify(job)
-
-
-@bp.route("/learning/items", methods=["POST"])
-def add_learning_item():
-    category = request.form.get("category", "").strip()
-    title = request.form.get("title", "").strip()
-    if category not in ITEM_CATEGORIES:
-        flash("Invalid category.", "error")
-        return redirect(url_for("main.index", tab="learning"))
-    if not title:
-        flash("Title is required.", "error")
-        return redirect(url_for("main.index", tab="learning"))
-    add_item(category, title)
-    flash(f"Added {CATEGORY_LABELS.get(category, category)} item.", "success")
-    return redirect(url_for("main.index", tab="learning"))
-
-
-@bp.route("/learning/items/complete", methods=["POST"])
-def complete_learning_item():
-    item_id = request.form.get("item_id", "").strip()
-    mark_item_complete(item_id)
-    flash("Marked complete.", "success")
-    return redirect(url_for("main.index", tab="learning"))
-
-
-@bp.route("/learning/log-time", methods=["POST"])
-def log_learning_time():
-    data = request.get_json() or {}
-    category = data.get("category")
-    item_id = data.get("item_id")
-    try:
-        minutes = int(data.get("minutes"))
-    except (TypeError, ValueError):
-        return jsonify({"error": "minutes is required"}), 400
-
-    if category not in ALL_CATEGORIES or minutes not in VALID_MINUTES:
-        return jsonify({"error": "invalid category or minutes"}), 400
-
-    try:
-        entry = log_time(category, minutes, item_id=item_id)
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 400
-
-    from utils.time_log import get_total_minutes
-    total = get_total_minutes(category, entry["item_id"], date.today())
-    return jsonify({"total_minutes": total})
-
-
-@bp.route("/learning/log-time/backfill", methods=["POST"])
-def backfill_learning_time():
-    """Web-UI-only: log time against a past day, for entries missed at the time. Not reachable from the Kindle."""
-    category = request.form.get("category", "").strip()
-    item_id = request.form.get("item_id", "").strip() or None
-    date_str = request.form.get("date", "").strip()
-
-    try:
-        minutes = int(request.form.get("minutes", ""))
-    except (TypeError, ValueError):
-        flash("Minutes must be a whole number.", "error")
-        return redirect(url_for("main.index", tab="learning"))
-
-    try:
-        on_date = date.fromisoformat(date_str)
-    except ValueError:
-        flash("A valid date is required.", "error")
-        return redirect(url_for("main.index", tab="learning"))
-
-    if on_date > date.today():
-        flash("Can't log time for a future date.", "error")
-        return redirect(url_for("main.index", tab="learning"))
-
-    try:
-        log_time_manual(category, minutes, item_id, on_date)
-    except ValueError as e:
-        flash(str(e), "error")
-        return redirect(url_for("main.index", tab="learning"))
-
-    flash(f"Logged {minutes}m on {on_date.isoformat()}.", "success")
-    return redirect(url_for("main.index", tab="learning"))
-
-
-@bp.route("/learning/leetcode-today")
-def learning_leetcode_today():
-    return jsonify(get_leetcode_today(Config.LEETCODE_USERNAME))
-
-
-@bp.route("/learning/analytics")
-def learning_analytics():
-    end = date.today()
-    try:
-        days = int(request.args.get("days", "30"))
-    except (TypeError, ValueError):
-        days = 30
-    start = end - timedelta(days=max(days, 1) - 1)
-
-    start_str = request.args.get("start")
-    end_str = request.args.get("end")
-    if start_str:
-        try:
-            start = date.fromisoformat(start_str)
-        except ValueError:
-            pass
-    if end_str:
-        try:
-            end = date.fromisoformat(end_str)
-        except ValueError:
-            pass
-
-    category_totals = get_category_totals_by_day(start, end)
-    leetcode_history = get_leetcode_analytics_history(start, end)
-    leetcode_daily = {iso: entry["count"] for iso, entry in leetcode_history.items()}
-
-    return jsonify({
-        "start": start.isoformat(),
-        "end": end.isoformat(),
-        "category_totals_by_day": category_totals,
-        "leetcode_daily": leetcode_daily,
-    })

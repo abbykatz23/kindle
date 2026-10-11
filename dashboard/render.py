@@ -10,9 +10,8 @@ from config import Config
 # --- Layout constants ---
 PADDING_X = 40
 TOP_PADDING = 30
-LEARNING_SECTION_HEIGHT = 360
-RUNNING_SECTION_HEIGHT = 400
-BIRTHDAYS_SECTION_HEIGHT = 184  # 1024 - 30 - 360 - 400 - 50 footer
+RUNNING_SECTION_HEIGHT = 760
+BIRTHDAYS_SECTION_HEIGHT = 184  # 1024 - 30 - 760 - 50 footer
 FOOTER_HEIGHT = 50
 
 # Max wrapped lines for the RUNNING section's coaching feedback text.
@@ -41,25 +40,6 @@ WEEK_NAV_BTN_Y0 = 88          # top y of the nav button row
 WEEK_NAV_BTN_H = 40           # height of a nav button
 WEEK_NAV_BTN_Y1 = WEEK_NAV_BTN_Y0 + WEEK_NAV_BTN_H
 WEEK_NAV_BTN_GAP = 20         # gap between the prev and next buttons
-
-# Learning detail view layout — used by tap_handler to map y → loggable row
-LEARNING_HEADER_Y = 110  # y where the tappable row list begins
-LEARNING_ROW_H = 64      # height of each row
-LOG_BTN_W = 68                 # width of a +5/+15/+30 tap button
-LOG_BTN_H = 40                 # height of a +5/+15/+30 tap button
-LOG_BTN_GAP = 10               # gap between adjacent buttons
-
-# Learning dashboard summary layout — one shared "arm" control (+5/+15/+30)
-# plus a compact list of every loggable row (same rows as the detail view). Tap
-# a number to arm it, then tap a row to log that amount against it.
-LEARNING_DASH_ARM_Y = 12      # y-offset from section top where the arm buttons sit
-DASH_ARM_BTN_W = 56                 # width of a shared "+5"/"+15"/"+30" arm button
-DASH_ARM_BTN_H = 36                 # height of a shared "+5"/"+15"/"+30" arm button
-DASH_ARM_BTN_GAP = 8                # gap between adjacent arm buttons
-LEARNING_DASH_SUBTITLE_Y = 58  # y-offset for the "LeetCode: N solved" subtitle
-LEARNING_DASH_DIVIDER_Y = 88   # y-offset for the divider above the row list
-LEARNING_DASH_LIST_Y = 98      # y-offset from section top where the row list begins
-LEARNING_DASH_ROW_H = 44       # height of each compact dashboard row
 
 _FONTS_DIR = Path(__file__).parent / "assets" / "fonts"
 _font_cache: dict[tuple[int, bool], ImageFont.ImageFont] = {}
@@ -92,9 +72,6 @@ def _font(size: int, bold: bool = False) -> ImageFont.ImageFont:
 
 
 def render_dashboard(
-    learning_rows: list[dict],
-    pending_minutes: int | None,
-    leetcode_today: dict,
     run: dict | None,
     run_completed: bool,
     birthdays: list[dict],
@@ -106,10 +83,7 @@ def render_dashboard(
     last_run: dict | None = None,
     last_run_route: list[tuple[float, float]] | None = None,
 ) -> Image.Image:
-    """learning_rows is utils.learning.get_loggable_rows()'s output;
-    pending_minutes is utils.kindle_state.get_pending_minutes()'s output;
-    leetcode_today is utils.leetcode_history.get_today()'s output;
-    actual_run is integrations.intervals_api.get_todays_run_detail()'s output;
+    """actual_run is integrations.intervals_api.get_todays_run_detail()'s output;
     running_mode is utils.running_mode.get_running_mode()'s output — in "last_run"
     mode the RUNNING section shows last_run (get_last_run()'s output) instead of the plan."""
     width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
@@ -117,8 +91,6 @@ def render_dashboard(
     draw = ImageDraw.Draw(img)
 
     y = TOP_PADDING
-    _draw_learning_section(draw, y, width, learning_rows, leetcode_today, pending_minutes)
-    y += LEARNING_SECTION_HEIGHT
 
     if running_mode == "last_run":
         _draw_last_run_section(draw, y, width, last_run,
@@ -138,93 +110,6 @@ def render_dashboard(
     _draw_footer(draw, width, height, last_refreshed_label)
 
     return img
-
-
-def _draw_learning_section(
-    draw: ImageDraw.ImageDraw,
-    y: int,
-    width: int,
-    rows: list[dict],
-    leetcode_today: dict,
-    pending_minutes: int | None,
-) -> None:
-    """Shared arm-then-tap flow: tap 5/15 to arm an amount, then tap a row to log
-    it against that category/item. `rows` is the same list the detail view uses,
-    so every book/project/wildcard item gets its own unambiguous tap target."""
-    draw.text((PADDING_X, y + 14), "PROJECTS", font=_font(36, bold=True), fill=80)
-    _draw_arm_buttons(draw, width, y + LEARNING_DASH_ARM_Y, pending_minutes)
-
-    lc_count = (leetcode_today or {}).get("count", 0)
-    draw.text((PADDING_X, y + LEARNING_DASH_SUBTITLE_Y), f"LeetCode: {lc_count} solved today",
-              font=_font(18), fill=130)
-
-    draw.line(
-        [(PADDING_X, y + LEARNING_DASH_DIVIDER_Y), (width - PADDING_X, y + LEARNING_DASH_DIVIDER_Y)],
-        fill=140, width=1,
-    )
-
-    row_font = _font(22)
-    cursor_y = y + LEARNING_DASH_LIST_Y
-    max_row_bottom = y + LEARNING_SECTION_HEIGHT - 16
-
-    if not rows:
-        draw.text((PADDING_X, cursor_y), "Nothing to log yet.", font=row_font, fill=160)
-    else:
-        visible_count = 0
-        for row in rows:
-            if cursor_y + LEARNING_DASH_ROW_H > max_row_bottom:
-                break
-            if row["today_minutes"] > 0:
-                text = f"{row['label']} — {row['today_minutes']}m today"
-            else:
-                text = row["label"]
-            text = _truncate_to_width(text, row_font, width - 2 * PADDING_X)
-            draw.text((PADDING_X, cursor_y), text, font=row_font, fill=0)
-            cursor_y += LEARNING_DASH_ROW_H
-            visible_count += 1
-
-        overflow = len(rows) - visible_count
-        if overflow > 0:
-            draw.text((PADDING_X, cursor_y), f"+{overflow} more — tap to see all",
-                      font=_font(16), fill=140)
-
-    # Section separator
-    draw.line(
-        [(PADDING_X, y + LEARNING_SECTION_HEIGHT - 1),
-         (width - PADDING_X, y + LEARNING_SECTION_HEIGHT - 1)],
-        fill=80, width=2,
-    )
-
-
-def get_dash_arm_button_ranges(width: int) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
-    """Return ((x0,x1) for '+5', (x0,x1) for '+15', (x0,x1) for '+30'), right-aligned.
-
-    Shared by _draw_arm_buttons and tap_handler so button geometry can never
-    drift between what's drawn and what's tap-hit-tested.
-    """
-    btn30_x1 = width - PADDING_X
-    btn30_x0 = btn30_x1 - DASH_ARM_BTN_W
-    btn15_x1 = btn30_x0 - DASH_ARM_BTN_GAP
-    btn15_x0 = btn15_x1 - DASH_ARM_BTN_W
-    btn5_x1 = btn15_x0 - DASH_ARM_BTN_GAP
-    btn5_x0 = btn5_x1 - DASH_ARM_BTN_W
-    return (btn5_x0, btn5_x1), (btn15_x0, btn15_x1), (btn30_x0, btn30_x1)
-
-
-def _draw_arm_buttons(draw: ImageDraw.ImageDraw, width: int, btn_y: int, pending_minutes: int | None) -> None:
-    (x0_5, x1_5), (x0_15, x1_15), (x0_30, x1_30) = get_dash_arm_button_ranges(width)
-    btn_font = _font(20, bold=True)
-
-    for x0, x1, minutes, text in (
-        (x0_5, x1_5, 5, "+5"), (x0_15, x1_15, 15, "+15"), (x0_30, x1_30, 30, "+30"),
-    ):
-        armed = pending_minutes == minutes
-        draw.rectangle([x0, btn_y, x1, btn_y + DASH_ARM_BTN_H],
-                       fill=(0 if armed else 255), outline=100, width=2)
-        tb = draw.textbbox((0, 0), text, font=btn_font)
-        tw, th = tb[2] - tb[0], tb[3] - tb[1]
-        draw.text((x0 + (DASH_ARM_BTN_W - tw) // 2, btn_y + (DASH_ARM_BTN_H - th) // 2 - tb[1]),
-                  text, font=btn_font, fill=(255 if armed else 100))
 
 
 def _draw_plan_details(draw: ImageDraw.ImageDraw, y: int, text_width: int, run: dict) -> None:
@@ -710,109 +595,6 @@ def render_running_detail(
             )
 
     return img
-
-
-def get_log_button_ranges(width: int) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
-    """Return ((x0,x1) for +5, (x0,x1) for +15, (x0,x1) for +30), right-aligned within a row.
-
-    Shared by _draw_log_buttons and tap_handler so button geometry can never
-    drift between what's drawn and what's tap-hit-tested.
-    """
-    btn30_x1 = width - PADDING_X
-    btn30_x0 = btn30_x1 - LOG_BTN_W
-    btn15_x1 = btn30_x0 - LOG_BTN_GAP
-    btn15_x0 = btn15_x1 - LOG_BTN_W
-    btn5_x1 = btn15_x0 - LOG_BTN_GAP
-    btn5_x0 = btn5_x1 - LOG_BTN_W
-    return (btn5_x0, btn5_x1), (btn15_x0, btn15_x1), (btn30_x0, btn30_x1)
-
-
-def render_learning_detail(
-    rows: list[dict],
-    leetcode_today: dict,
-) -> Image.Image:
-    """Full-page Kindle view: every loggable category/item with +5/+15/+30 tap targets.
-
-    `rows` is utils.learning.get_loggable_rows()'s output, passed through
-    by the caller — render.py stays pure-Pillow with no utils/integrations imports.
-    """
-    width, height = Config.DASHBOARD_WIDTH, Config.DASHBOARD_HEIGHT
-    img = Image.new("L", (width, height), color=255)
-    draw = ImageDraw.Draw(img)
-
-    # ── Header ───────────────────────────────────────────────────────────────
-    _draw_back_button(draw)
-    title = "PROJECTS TIME LOG"
-    title_font = _font(28, bold=True)
-    tb = draw.textbbox((0, 0), title, font=title_font)
-    draw.text(((width - (tb[2] - tb[0])) // 2, 18), title, font=title_font, fill=80)
-
-    lc_count = (leetcode_today or {}).get("count", 0)
-    lc_text = f"LeetCode: {lc_count} solved today"
-    lc_font = _font(19)
-    lb = draw.textbbox((0, 0), lc_text, font=lc_font)
-    draw.text((width - PADDING_X - (lb[2] - lb[0]), 56), lc_text, font=lc_font, fill=130)
-
-    draw.line([(PADDING_X, LEARNING_HEADER_Y - 10), (width - PADDING_X, LEARNING_HEADER_Y - 10)],
-              fill=80, width=2)
-
-    if not rows:
-        draw.text((PADDING_X, 130), "Nothing to log yet.", font=_font(28), fill=130)
-        return img
-
-    max_visible = max(0, (height - LEARNING_HEADER_Y - 30) // LEARNING_ROW_H)
-    visible = rows[:max_visible]
-    overflow = len(rows) - len(visible)
-
-    for i, row in enumerate(visible):
-        row_y = LEARNING_HEADER_Y + i * LEARNING_ROW_H
-        _draw_log_row(draw, width, row_y, row)
-        if i < len(visible) - 1:
-            draw.line(
-                [(PADDING_X, row_y + LEARNING_ROW_H - 1),
-                 (width - PADDING_X, row_y + LEARNING_ROW_H - 1)],
-                fill=140, width=1,
-            )
-
-    if overflow > 0:
-        overflow_y = LEARNING_HEADER_Y + len(visible) * LEARNING_ROW_H + 10
-        draw.text((PADDING_X, overflow_y), f"+{overflow} more — manage from the web dashboard",
-                  font=_font(18), fill=140)
-
-    return img
-
-
-_ROW_CATEGORY_TAGS = {"books": "BOOK", "projects": "PROJECT", "wildcard": "OTHER"}
-
-
-def _draw_log_row(draw: ImageDraw.ImageDraw, width: int, row_y: int, row: dict) -> None:
-    tag = _ROW_CATEGORY_TAGS.get(row["category"])
-    label = f"{tag} · {row['label']}" if tag else row["label"]
-
-    label_font = _font(22)
-    buttons_w = 3 * LOG_BTN_W + 2 * LOG_BTN_GAP
-    max_label_w = width - 2 * PADDING_X - buttons_w - 20
-    label = _truncate_to_width(label, label_font, max_label_w)
-    draw.text((PADDING_X, row_y + 8), label, font=label_font, fill=0)
-
-    if row.get("today_minutes", 0) > 0:
-        today_text = f"{row['today_minutes']}m today"
-        draw.text((PADDING_X, row_y + 36), today_text, font=_font(17), fill=130)
-
-    _draw_log_buttons(draw, width, row_y)
-
-
-def _draw_log_buttons(draw: ImageDraw.ImageDraw, width: int, row_y: int) -> None:
-    (x0_5, x1_5), (x0_15, x1_15), (x0_30, x1_30) = get_log_button_ranges(width)
-    btn_y = row_y + (LEARNING_ROW_H - LOG_BTN_H) // 2
-    btn_font = _font(20, bold=True)
-
-    for x0, x1, text in ((x0_5, x1_5, "+5"), (x0_15, x1_15, "+15"), (x0_30, x1_30, "+30")):
-        draw.rectangle([x0, btn_y, x1, btn_y + LOG_BTN_H], fill=255, outline=100, width=2)
-        tb = draw.textbbox((0, 0), text, font=btn_font)
-        tw, th = tb[2] - tb[0], tb[3] - tb[1]
-        draw.text((x0 + (LOG_BTN_W - tw) // 2, btn_y + (LOG_BTN_H - th) // 2 - tb[1]),
-                  text, font=btn_font, fill=100)
 
 
 def render_birthdays_detail(

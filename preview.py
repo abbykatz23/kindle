@@ -10,18 +10,7 @@ def main() -> None:
     time_part = now.strftime("%I:%M %p").lstrip("0")
     last_refreshed_label = f"{date_part} at {time_part}"
 
-    learning_rows = [
-        {"category": "system_design", "item_id": None, "label": "System Design Learning", "today_minutes": 30},
-        {"category": "books", "item_id": "b1", "label": "Designing Data-Intensive Applications", "today_minutes": 45},
-        {"category": "projects", "item_id": "p1", "label": "Kindle Dashboard", "today_minutes": 15},
-    ]
-    pending_minutes = None
-    leetcode_today = {"count": 2, "problems": [{"title": "Two Sum"}, {"title": "Three Sum"}]}
-
     img = render_dashboard(
-        learning_rows=learning_rows,
-        pending_minutes=pending_minutes,
-        leetcode_today=leetcode_today,
         run={"type": "easy", "distance_miles": 5.0, "notes": "Recovery pace — keep HR under 140."},
         run_completed=False,
         birthdays=[

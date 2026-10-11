@@ -7,7 +7,6 @@ from dashboard.push import push_to_kindle
 from dashboard.render import (
     render_birthdays_detail,
     render_dashboard,
-    render_learning_detail,
     render_running_day_detail,
     render_running_detail,
     save_dashboard,
@@ -18,9 +17,7 @@ from integrations.intervals_api import (
     get_todays_run_detail,
     is_run_completed_today,
 )
-from utils.learning import get_loggable_rows
-from utils.kindle_state import get_pending_minutes, get_selected_date, get_view, get_week_offset
-from utils.leetcode_history import get_today as get_leetcode_today
+from utils.kindle_state import get_selected_date, get_view, get_week_offset
 from utils.plan import (
     get_plan_week_bounds,
     get_todays_run_plan,
@@ -44,10 +41,6 @@ def _format_now(now: datetime) -> str:
 def run(push: bool = True) -> None:
     today = date.today()
     view = get_view()
-
-    # Refresh the local LeetCode-solved-today record on every invocation (rides
-    # the existing 30-min dashboard-refresh scheduler job — no separate job needed).
-    leetcode_today = get_leetcode_today(Config.LEETCODE_USERNAME)
 
     if view == "running":
         week_offset = get_week_offset()
@@ -90,17 +83,11 @@ def run(push: bool = True) -> None:
             notes_actual=(run_day or {}).get("notes_actual"),
         )
 
-    elif view == "learning":
-        rows = get_loggable_rows(today)
-        img = render_learning_detail(rows, leetcode_today)
-
     elif view == "birthdays":
         img = render_birthdays_detail(load_birthdays(), today)
 
     else:
         last_refreshed_label = _format_now(datetime.now())
-        learning_rows = get_loggable_rows(today)
-        pending_minutes = get_pending_minutes()
         run_plan = get_todays_run_plan(today)
         birthdays = get_upcoming_birthdays(today, days_ahead=7)
         running_mode = get_running_mode()
@@ -131,9 +118,6 @@ def run(push: bool = True) -> None:
             actual_run = get_todays_run_detail()
 
         img = render_dashboard(
-            learning_rows=learning_rows,
-            pending_minutes=pending_minutes,
-            leetcode_today=leetcode_today,
             run=run_plan,
             run_completed=run_completed,
             birthdays=birthdays,

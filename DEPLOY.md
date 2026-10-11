@@ -21,7 +21,7 @@ side from scratch.
   Kindle itself) and POSTed to the Flask app's `/tap` endpoint, which calls
   into `utils/tap_handler.py`.
 - The web UI (also served by `web/app.py`, port 5000) is how you edit
-  birthdays / running plan / learning-project data. It's exposed externally
+  birthdays / running plan data. It's exposed externally
   via a Cloudflare Tunnel — see section 6 below.
 
 ## 1. Host machine setup (Pi or otherwise)
@@ -39,7 +39,6 @@ Fill in `.env`:
 - `KINDLE_HOST` / `KINDLE_USER` / `KINDLE_PASSWORD` — Kindle SSH access.
   Password auth is a fallback; SSH key auth (below) is preferred and is what
   actually gets used if a key is present.
-- `LEETCODE_USERNAME`
 - `ANTHROPIC_API_KEY`
 - `INTERVALS_API_KEY` / `INTERVALS_ATHLETE_ID`
 - `SECRET_KEY` — set to a real random value, not the placeholder, if the web
