@@ -30,6 +30,16 @@ def create_app() -> Flask:
     app.jinja_env.filters["short_date"] = _short_date
     app.register_blueprint(bp)
 
+    @app.url_defaults
+    def _static_cache_bust(endpoint: str, values: dict) -> None:
+        """Append ?v=<mtime> to static URLs so browsers/Cloudflare fetch fresh CSS/JS/images
+        after each deploy instead of pairing a new template with a stale cached file."""
+        if endpoint == "static" and "filename" in values:
+            try:
+                values["v"] = int(os.stat(os.path.join(app.static_folder, values["filename"])).st_mtime)
+            except OSError:
+                pass
+
     if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
         from apscheduler.schedulers.background import BackgroundScheduler
         from utils.tap_handler import trigger_refresh
