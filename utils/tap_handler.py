@@ -9,6 +9,7 @@ from dashboard.render import (
     BACK_BUTTON_MAX_X,
     BACK_BUTTON_MAX_Y,
     FOOTER_HEIGHT,
+    RESERVED_SECTION_HEIGHT,
     RUNNING_SECTION_HEIGHT,
     TOP_PADDING,
     WEEK_NAV_BTN_Y0,
@@ -18,7 +19,6 @@ from dashboard.render import (
     get_week_nav_button_ranges,
 )
 from utils.kindle_state import (
-    get_selected_date,
     get_view,
     get_week_offset,
     set_view,
@@ -112,7 +112,7 @@ def handle_tap(x: int, y: int) -> str:
     # ── Dashboard view ────────────────────────────────────────────────────────
     running_top = TOP_PADDING
     running_bottom = running_top + RUNNING_SECTION_HEIGHT
-    birthdays_top = running_bottom
+    birthdays_top = running_bottom + RESERVED_SECTION_HEIGHT
     birthdays_bottom = Config.DASHBOARD_HEIGHT - FOOTER_HEIGHT
 
     # Refresh button always wins (bottom-right corner)

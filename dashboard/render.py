@@ -10,12 +10,14 @@ from config import Config
 # --- Layout constants ---
 PADDING_X = 40
 TOP_PADDING = 30
-RUNNING_SECTION_HEIGHT = 760
-BIRTHDAYS_SECTION_HEIGHT = 184  # 1024 - 30 - 760 - 50 footer
+RUNNING_SECTION_HEIGHT = 480
+# Intentionally blank band between RUNNING and BIRTHDAYS, held for a future section.
+RESERVED_SECTION_HEIGHT = 280
+BIRTHDAYS_SECTION_HEIGHT = 184  # 1024 - 30 - 480 - 280 - 50 footer
 FOOTER_HEIGHT = 50
 
 # Max wrapped lines for the RUNNING section's coaching feedback text.
-FB_MAX_LINES = 7
+FB_MAX_LINES = 9
 
 # Route map thumbnail — shown top-right of the home-screen RUNNING section
 # when today's run is completed and has GPS data.
@@ -102,7 +104,7 @@ def render_dashboard(
                               show_bottom_divider=bool(birthdays),
                               route=route,
                               actual_run=actual_run)
-    y += RUNNING_SECTION_HEIGHT
+    y += RUNNING_SECTION_HEIGHT + RESERVED_SECTION_HEIGHT
 
     if birthdays:
         _draw_birthdays_section(draw, y, width, birthdays)
@@ -123,8 +125,8 @@ def _draw_plan_details(draw: ImageDraw.ImageDraw, y: int, text_width: int, run: 
     draw.text((PADDING_X, y + 70), formatted["title"], font=_font(54, bold=True), fill=0)
     cursor_y = y + 140
     if formatted.get("subtitle"):
-        draw.text((PADDING_X, cursor_y), formatted["subtitle"], font=_font(30), fill=70)
-        cursor_y += 44
+        draw.text((PADDING_X, cursor_y), formatted["subtitle"], font=_font(34), fill=70)
+        cursor_y += 50
 
     notes = formatted.get("notes")
     if not notes:
@@ -132,8 +134,8 @@ def _draw_plan_details(draw: ImageDraw.ImageDraw, y: int, text_width: int, run: 
 
     # Leave a few px of breathing room before the divider at y + RUNNING_SECTION_HEIGHT.
     max_bottom = y + RUNNING_SECTION_HEIGHT - 6
-    notes_font_size, notes_line_h, max_lines = 22, 30, 1
-    for fs, lh in ((22, 30), (20, 27), (18, 24)):
+    notes_font_size, notes_line_h, max_lines = 26, 36, 1
+    for fs, lh in ((26, 36), (24, 33), (22, 30)):
         lines_available = max(1, (max_bottom - cursor_y) // lh)
         if len(_wrap_text(notes, _font(fs), text_width)) <= lines_available:
             notes_font_size, notes_line_h, max_lines = fs, lh, lines_available
@@ -177,16 +179,16 @@ def _draw_running_section(
             fb_max_lines = FB_MAX_LINES
             if actual_run:
                 dist_text = f"{actual_run.get('distance_miles', 0)} mi"
-                draw.text((PADDING_X, cursor_y), dist_text, font=_font(40, bold=True), fill=0)
-                cursor_y += 46
+                draw.text((PADDING_X, cursor_y), dist_text, font=_font(44, bold=True), fill=0)
+                cursor_y += 52
                 pace_text = f"{actual_run.get('pace_per_mile', '?')}/mi avg pace"
-                draw.text((PADDING_X, cursor_y), pace_text, font=_font(24), fill=70)
-                cursor_y += 40
+                draw.text((PADDING_X, cursor_y), pace_text, font=_font(28), fill=70)
+                cursor_y += 44
                 fb_max_lines = FB_MAX_LINES - 2
 
             # Try font sizes largest-first; shrink until the whole message fits in fb_max_lines lines.
-            fb_font_size, fb_line_h = 24, 34
-            for fs, lh in ((24, 34), (22, 31), (20, 28)):
+            fb_font_size, fb_line_h = 28, 39
+            for fs, lh in ((28, 39), (26, 36), (24, 34)):
                 if len(_wrap_text(feedback, _font(fs), text_width)) <= fb_max_lines:
                     fb_font_size, fb_line_h = fs, lh
                     break
@@ -263,9 +265,9 @@ def _draw_last_run_section(
 
         cursor_y = y + 84
         if last_run.get("name"):
-            name = _truncate_to_width(last_run["name"], _font(24), text_width)
-            draw.text((PADDING_X, cursor_y), name, font=_font(24), fill=70)
-            cursor_y += 40
+            name = _truncate_to_width(last_run["name"], _font(28), text_width)
+            draw.text((PADDING_X, cursor_y), name, font=_font(28), fill=70)
+            cursor_y += 44
 
         draw.text((PADDING_X, cursor_y), f"{last_run.get('distance_miles', 0)} mi",
                   font=_font(60, bold=True), fill=0)
@@ -279,9 +281,9 @@ def _draw_last_run_section(
         if last_run.get("average_heartrate"):
             stats.append(f"{last_run['average_heartrate']} bpm avg HR")
         for stat in stats:
-            draw.text((PADDING_X, cursor_y), _truncate_to_width(stat, _font(26), text_width),
-                      font=_font(26), fill=40)
-            cursor_y += 40
+            draw.text((PADDING_X, cursor_y), _truncate_to_width(stat, _font(30), text_width),
+                      font=_font(30), fill=40)
+            cursor_y += 46
 
     if show_bottom_divider:
         draw.line(
