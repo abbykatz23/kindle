@@ -1,9 +1,12 @@
-"""Cache run GPS routes (list of lat/lng points), keyed per calendar day, in data/run_route.json."""
+"""Cache run GPS routes (list of lat/lng points), keyed per calendar day, in data/run_route.json.
+
+Only the MAX_CACHED_ROUTES most recently used entries are kept, so the file stays small."""
 import json
 from datetime import date
 from pathlib import Path
 
 _CACHE_FILE = Path(__file__).parent.parent / "data" / "run_route.json"
+MAX_CACHED_ROUTES = 10
 
 
 def _load_cache() -> dict:
@@ -16,8 +19,22 @@ def _load_cache() -> dict:
 
 
 def _save_cache(cache: dict) -> None:
+    # Dicts keep insertion order, and entries are moved to the end on use, so the
+    # oldest-used entries are at the front.
+    for key in list(cache)[:-MAX_CACHED_ROUTES]:
+        del cache[key]
     _CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
     _CACHE_FILE.write_text(json.dumps(cache))
+
+
+def _get_cached(cache: dict, key: str) -> list[tuple[float, float]] | None:
+    """Return the cached route for key (marking it most recently used), or None on a miss."""
+    if key not in cache:
+        return None
+    if list(cache)[-1] != key:
+        cache[key] = cache.pop(key)
+        _save_cache(cache)
+    return [tuple(p) for p in cache[key]]
 
 
 def get_or_fetch_route(on_date: date) -> list[tuple[float, float]]:
@@ -28,8 +45,9 @@ def get_or_fetch_route(on_date: date) -> list[tuple[float, float]]:
     """
     cache = _load_cache()
     key = on_date.isoformat()
-    if key in cache:
-        return [tuple(p) for p in cache[key]]
+    cached = _get_cached(cache, key)
+    if cached is not None:
+        return cached
 
     from integrations.intervals_api import get_route_points, get_run_detail_for_date
 
@@ -48,8 +66,9 @@ def get_or_fetch_route_for_activity(activity_id: str) -> list[tuple[float, float
     (so a day with multiple runs still maps to the right one)."""
     cache = _load_cache()
     key = f"activity:{activity_id}"
-    if key in cache:
-        return [tuple(p) for p in cache[key]]
+    cached = _get_cached(cache, key)
+    if cached is not None:
+        return cached
 
     from integrations.intervals_api import get_route_points
 
