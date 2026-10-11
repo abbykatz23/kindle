@@ -2,12 +2,20 @@
 {% block title %}{% endblock %}
 
 {% macro running_mode_toggle(tab) %}
+{% if is_public and tab == 'running' %}
+{# Public view of the running tab: just state what the Kindle shows, with no hint it can change. #}
+<div class="running-mode-toggle">
+    <span class="running-mode-toggle__label">Kindle shows</span>
+    <span class="running-mode-toggle__value">{{ 'Running plan' if running_mode == 'plan' else 'Last run' }}</span>
+</div>
+{% else %}
 <form method="post" action="{{ url_for('main.set_kindle_running_mode') }}" class="running-mode-toggle" role="group" aria-label="Kindle running display">
     <input type="hidden" name="tab" value="{{ tab }}">
     <span class="running-mode-toggle__label">Kindle shows</span>
     <button type="submit" name="mode" value="plan" class="btn {% if running_mode == 'plan' %}btn--primary{% else %}btn--ghost{% endif %}" aria-pressed="{{ 'true' if running_mode == 'plan' else 'false' }}">Running plan</button>
     <button type="submit" name="mode" value="last_run" class="btn {% if running_mode == 'last_run' %}btn--primary{% else %}btn--ghost{% endif %}" aria-pressed="{{ 'true' if running_mode == 'last_run' else 'false' }}">Last run</button>
 </form>
+{% endif %}
 {% endmacro %}
 
 {% block content %}
@@ -33,6 +41,9 @@
     </div>
 
     <div class="tab-contents" style="margin-top:.75rem">
+    {# Public (non-owner) visitors: a disabled fieldset greys out and disables every form control
+       inside it; the server refuses those requests regardless (see _enforce_public_read_only). #}
+    <fieldset class="public-lock"{% if is_public %} disabled{% endif %}>
 
         {# ── Running Plan tab ── #}
         <section id="running" class="tab-content" aria-hidden="{% if default_tab == 'running' %}false{% else %}true{% endif %}">
@@ -351,7 +362,7 @@
                     <img class="kindle-photo__bg" src="{{ url_for('static', filename='img/kindle_irl.jpg') }}" alt="" draggable="false">
                     <div class="kindle-device__screen" id="kindle-screen"
                          style="width:{{ dashboard_width }}px;height:{{ dashboard_height }}px;"
-                         data-tap-url="{{ url_for('main.tap') }}"
+                         {% if not is_public %}data-tap-url="{{ url_for('main.tap') }}"{% endif %}
                          data-image-url="{{ url_for('main.kindle_image') }}"
                          data-width="{{ dashboard_width }}"
                          data-height="{{ dashboard_height }}">
@@ -371,6 +382,7 @@
             </div>
         </section>
 
+    </fieldset>
     </div>
 </div>
 {% endblock %}

@@ -783,8 +783,8 @@ def render_running_day_detail(
 
 
 
-def save_dashboard(img: Image.Image) -> Path:
-    out = Config.OUTPUT_IMAGE_PATH
+def save_dashboard(img: Image.Image, out: Path | None = None) -> Path:
+    out = out or Config.OUTPUT_IMAGE_PATH
     out.parent.mkdir(parents=True, exist_ok=True)
     img.save(str(out))
     return out

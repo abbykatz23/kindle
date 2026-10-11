@@ -2,15 +2,37 @@ import json
 import threading
 from datetime import date, timedelta
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, abort, flash, g, jsonify, redirect, render_template, request, send_file, url_for
 
 from config import Config
 from utils import jobs as job_store
 from utils.plan import load_plan, load_birthdays, save_birthdays
+from utils.privacy import mask_birthdays
 from utils.running_mode import VALID_MODES as RUNNING_MODES, get_running_mode, set_running_mode
 from utils.tap_handler import _safe_refresh, handle_tap
+from web.access import is_owner
 
 bp = Blueprint("main", __name__)
+
+# GET endpoints that still change state (or are edit pages), so public visitors can't use them.
+_OWNER_ONLY_GET_ENDPOINTS = {"main.tap", "main.running_week"}
+
+
+@bp.before_request
+def _enforce_public_read_only():
+    """Public visitors get a read-only site: every write (and state-changing GET) is refused
+    here, server-side, so greyed-out buttons in the UI aren't the only line of defence."""
+    g.is_owner = is_owner()
+    if g.is_owner:
+        return None
+    if request.method not in ("GET", "HEAD") or request.endpoint in _OWNER_ONLY_GET_ENDPOINTS:
+        abort(403)
+    return None
+
+
+@bp.app_context_processor
+def _inject_viewer():
+    return {"is_public": not g.get("is_owner", False)}
 
 DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 WORKOUT_TYPES = ["easy", "workout", "long", "rest", "race", "other"]
@@ -242,6 +264,8 @@ def index():
     today = date.today()
     plan = load_plan()
     birthdays = _load_sorted_birthdays()
+    if not g.is_owner:
+        birthdays = mask_birthdays(birthdays)
 
     default_tab = (request.args.get("tab") or "running").lower()
     if default_tab not in ("running", "birthdays", "kindle"):
@@ -381,7 +405,12 @@ def running_week(week_num: int):
 
 @bp.route("/kindle/image")
 def kindle_image():
-    response = send_file(Config.OUTPUT_IMAGE_PATH, mimetype="image/png")
+    # Public visitors get the copy rendered with birthday names masked (see main.py); if it
+    # doesn't exist yet, 404 rather than fall back to the unmasked image.
+    path = Config.OUTPUT_IMAGE_PATH if g.is_owner else Config.PUBLIC_OUTPUT_IMAGE_PATH
+    if not path.exists():
+        abort(404)
+    response = send_file(path, mimetype="image/png")
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
     return response
 

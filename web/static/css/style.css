@@ -426,6 +426,15 @@ button, input[type=text] { font-size: 16px }
   margin-bottom: .75rem;
 }
 
+/* Public (read-only) view: everything inside a disabled .public-lock is greyed out and inert */
+.public-lock { border: 0; padding: 0; margin: 0; min-width: 0 }
+.public-lock[disabled] .btn,
+.public-lock[disabled] input,
+.public-lock[disabled] select,
+.public-lock[disabled] textarea { opacity: .45; pointer-events: none; animation: none }
+.public-lock[disabled] .kindle-device__screen { cursor: default }
+
 /* Kindle RUNNING section mode toggle (plan vs. last run) */
 .running-mode-toggle { display: inline-flex; align-items: center; gap: .35rem; margin: 0 }
+.running-mode-toggle__value { font-size: .85rem; font-weight: 600 }
 .running-mode-toggle__label { font-size: .72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-right: .15rem }

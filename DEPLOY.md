@@ -160,6 +160,26 @@ steps depend on Cloudflare's current tooling — check their docs):
   `/etc/cloudflared/` or `~/.cloudflared/`).
 - A DNS route from your chosen hostname to the tunnel.
 
+### Public read-only view vs. the owner
+
+The app serves two views from the same tunnel (`web/access.py`):
+- **Owner (full access):** requests through the tunnel that carry a valid
+  Cloudflare Access JWT (`Cf-Access-Jwt-Assertion`), plus anything that
+  reaches port 5000 directly on the home network (including the Kindle's
+  taps).
+- **Public (read-only):** every other tunnel request. Writes and the `/tap` /
+  week-edit pages return 403, birthday names are masked as Xs, and the Kindle
+  preview serves `output/dashboard_public.png` (rendered with masked names).
+
+Setup:
+1. Keep the existing hostname behind the Access application (owner).
+2. Add a second public hostname on the same tunnel pointing at
+   `localhost:5000`, with **no** Access application on it (public).
+3. In `.env`, set `CF_ACCESS_TEAM_DOMAIN` (e.g. `yourteam.cloudflareaccess.com`,
+   under Zero Trust → Settings) and `CF_ACCESS_AUD` (the Access application's
+   "Application Audience (AUD) Tag", on its Overview tab). If either is unset,
+   every tunnel visitor — including you — gets the public view.
+
 **Action item, not done here:** back up whatever credentials/config file
 `cloudflared` is actually using on the current Pi to a private, non-git
 location (password manager, encrypted note) before this hardware is

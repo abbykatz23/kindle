@@ -18,6 +18,7 @@ from integrations.intervals_api import (
     is_run_completed_today,
 )
 from utils.kindle_state import get_selected_date, get_view, get_week_offset
+from utils.privacy import mask_birthdays
 from utils.plan import (
     get_plan_week_bounds,
     get_todays_run_plan,
@@ -41,6 +42,7 @@ def _format_now(now: datetime) -> str:
 def run(push: bool = True) -> None:
     today = date.today()
     view = get_view()
+    public_img = None  # set below for views that show birthday names
 
     if view == "running":
         week_offset = get_week_offset()
@@ -84,7 +86,9 @@ def run(push: bool = True) -> None:
         )
 
     elif view == "birthdays":
-        img = render_birthdays_detail(load_birthdays(), today)
+        all_birthdays = load_birthdays()
+        img = render_birthdays_detail(all_birthdays, today)
+        public_img = render_birthdays_detail(mask_birthdays(all_birthdays), today)
 
     else:
         last_refreshed_label = _format_now(datetime.now())
@@ -117,10 +121,9 @@ def run(push: bool = True) -> None:
             run_route = get_or_fetch_route(today)
             actual_run = get_todays_run_detail()
 
-        img = render_dashboard(
+        dashboard_kwargs = dict(
             run=run_plan,
             run_completed=run_completed,
-            birthdays=birthdays,
             last_refreshed_label=last_refreshed_label,
             run_feedback=run_feedback,
             route=run_route,
@@ -129,8 +132,12 @@ def run(push: bool = True) -> None:
             last_run=last_run,
             last_run_route=last_run_route,
         )
+        img = render_dashboard(birthdays=birthdays, **dashboard_kwargs)
+        public_img = render_dashboard(birthdays=mask_birthdays(birthdays), **dashboard_kwargs)
 
     image_path = save_dashboard(img)
+    # The web UI's public (non-owner) view shows this copy; only birthday names differ.
+    save_dashboard(public_img if public_img is not None else img, Config.PUBLIC_OUTPUT_IMAGE_PATH)
     print(f"Dashboard saved to {image_path} (view={view})")
 
     if push:

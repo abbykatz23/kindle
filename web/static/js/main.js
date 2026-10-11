@@ -729,7 +729,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         kindleScreen.addEventListener('click', (e) => {
-            if (!screenHomography) return;
+            if (!screenHomography || !tapUrl) return; // no tap URL in the public read-only view
             const rect = kindlePhoto.getBoundingClientRect();
             const [sx, sy] = photoToScreen(e.clientX - rect.left, e.clientY - rect.top);
             if (sx < 0 || sx > nativeWidth || sy < 0 || sy > nativeHeight) return;
