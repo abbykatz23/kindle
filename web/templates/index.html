@@ -344,8 +344,13 @@
         {# ── Kindle tab: live mirror of the physical device ── #}
         <section id="kindle" class="tab-content" aria-hidden="{% if default_tab == 'kindle' %}false{% else %}true{% endif %}">
             <div class="tab-section-card" style="display:flex;flex-direction:column;align-items:center;">
-                <div class="kindle-device">
+                {# Photo of the real Kindle on the wall; the live render is warped onto its screen.
+                   data-screen-quad = the screen's TL, TR, BR, BL corners as fractions of the photo. #}
+                <div class="kindle-photo" id="kindle-photo"
+                     data-screen-quad="0.18327,0.14759 0.81287,0.14326 0.79273,0.7744 0.21371,0.76516">
+                    <img class="kindle-photo__bg" src="{{ url_for('static', filename='img/kindle_irl.jpg') }}" alt="" draggable="false">
                     <div class="kindle-device__screen" id="kindle-screen"
+                         style="width:{{ dashboard_width }}px;height:{{ dashboard_height }}px;"
                          data-tap-url="{{ url_for('main.tap') }}"
                          data-image-url="{{ url_for('main.kindle_image') }}"
                          data-width="{{ dashboard_width }}"

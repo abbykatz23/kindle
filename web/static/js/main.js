@@ -654,7 +654,53 @@ document.addEventListener("DOMContentLoaded", () => {
         const imageUrl = kindleScreen.dataset.imageUrl;
         const nativeWidth = parseInt(kindleScreen.dataset.width, 10) || 758;
         const nativeHeight = parseInt(kindleScreen.dataset.height, 10) || 1024;
+        const kindlePhoto = document.getElementById('kindle-photo');
         let kindleBusy = false;
+
+        // Homography taking the screen's native box (0..nativeWidth, 0..nativeHeight) onto
+        // the screen quad in the photo, in the photo's current pixel size. Returned as
+        // [a, b, c, d, e, f, g, h] for x' = (ax + by + c) / (gx + hy + 1), y' = (dx + ey + f) / (gx + hy + 1).
+        let screenHomography = null;
+
+        function computeScreenHomography() {
+            const w = kindlePhoto.clientWidth;
+            const h = kindlePhoto.clientHeight;
+            const [[x0, y0], [x1, y1], [x2, y2], [x3, y3]] = kindlePhoto.dataset.screenQuad
+                .trim().split(/\s+/).map((pt) => pt.split(',').map(Number))
+                .map(([fx, fy]) => [fx * w, fy * h]);
+            // Unit square -> quad (Heckbert's closed form), then scale the input by the native size.
+            const dx1 = x1 - x2, dx2 = x3 - x2, dx3 = x0 - x1 + x2 - x3;
+            const dy1 = y1 - y2, dy2 = y3 - y2, dy3 = y0 - y1 + y2 - y3;
+            const den = dx1 * dy2 - dy1 * dx2;
+            const g = (dx3 * dy2 - dy3 * dx2) / den;
+            const hh = (dx1 * dy3 - dy1 * dx3) / den;
+            return [
+                (x1 - x0 + g * x1) / nativeWidth, (x3 - x0 + hh * x3) / nativeHeight, x0,
+                (y1 - y0 + g * y1) / nativeWidth, (y3 - y0 + hh * y3) / nativeHeight, y0,
+                g / nativeWidth, hh / nativeHeight,
+            ];
+        }
+
+        function placeKindleScreen() {
+            if (!kindlePhoto.clientWidth) return; // tab hidden; re-run when it's shown
+            screenHomography = computeScreenHomography();
+            const [a, b, c, d, e, f, g, h] = screenHomography;
+            kindleScreen.style.transform = `matrix3d(${a},${d},0,${g},${b},${e},0,${h},0,0,1,0,${c},${f},0,1)`;
+            kindleScreen.classList.add('is-placed');
+        }
+
+        // Inverse of the homography: a point in the photo (px) -> native screen coords.
+        function photoToScreen(px, py) {
+            const [a, b, c, d, e, f, g, h] = screenHomography;
+            // Solve [a-g*px, b-h*px; d-g*py, e-h*py] [x; y] = [px-c; py-f]
+            const m00 = a - g * px, m01 = b - h * px, m10 = d - g * py, m11 = e - h * py;
+            const r0 = px - c, r1 = py - f;
+            const det = m00 * m11 - m01 * m10;
+            return [(r0 * m11 - m01 * r1) / det, (m00 * r1 - r0 * m10) / det];
+        }
+
+        new ResizeObserver(placeKindleScreen).observe(kindlePhoto);
+        placeKindleScreen();
 
         function setKindleStatus(msg) {
             if (kindleStatus) kindleStatus.textContent = msg || '';
@@ -683,13 +729,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         kindleScreen.addEventListener('click', (e) => {
-            const rect = kindleImg.getBoundingClientRect();
-            const relX = (e.clientX - rect.left) / rect.width;
-            const relY = (e.clientY - rect.top) / rect.height;
-            if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return;
-            const x = Math.round(relX * nativeWidth);
-            const y = Math.round(relY * nativeHeight);
-            sendKindleTap(x, y);
+            if (!screenHomography) return;
+            const rect = kindlePhoto.getBoundingClientRect();
+            const [sx, sy] = photoToScreen(e.clientX - rect.left, e.clientY - rect.top);
+            if (sx < 0 || sx > nativeWidth || sy < 0 || sy > nativeHeight) return;
+            sendKindleTap(Math.round(sx), Math.round(sy));
         });
 
         // The physical Kindle re-renders on its own (30-min scheduler, taps,
