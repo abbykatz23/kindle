@@ -1,10 +1,15 @@
 import json
 import threading
+import time
 import uuid
 
 from config import Config
 
 _lock = threading.Lock()
+
+# Jobs older than this are dropped the next time a job is created, so jobs.json
+# doesn't grow forever. Entries from before created_at existed are dropped too.
+MAX_JOB_AGE_S = 24 * 60 * 60
 
 
 def _path():
@@ -30,7 +35,10 @@ def create(week_label: str) -> str:
     job_id = uuid.uuid4().hex[:12]
     with _lock:
         jobs = _load()
-        jobs[job_id] = {"status": "running", "week_label": week_label, "error": None}
+        cutoff = time.time() - MAX_JOB_AGE_S
+        jobs = {jid: job for jid, job in jobs.items() if job.get("created_at", 0) >= cutoff}
+        jobs[job_id] = {"status": "running", "week_label": week_label, "error": None,
+                        "created_at": time.time()}
         _save(jobs)
     return job_id
 

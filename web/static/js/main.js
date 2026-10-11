@@ -154,6 +154,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     localStorage.removeItem('runningCoachJob');
                     _setRunningCoachLoading(false);
                     alert('Coach error: ' + (data.error || 'Unknown error'));
+                } else if (data.status === 'unknown') {
+                    // Job no longer exists on the server (expired or lost on restart) — stop waiting.
+                    clearInterval(timer);
+                    localStorage.removeItem('runningCoachJob');
+                    _setRunningCoachLoading(false);
                 } else if (data.message) {
                     _setRunningCoachLoading(true, data.message);
                 }
@@ -574,6 +579,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     localStorage.removeItem('claudeGenJob');
                     hideSkeleton();
                     alert('Claude generation failed: ' + (data.error || 'Unknown error'));
+                } else if (data.status === 'unknown') {
+                    // Job no longer exists on the server (expired or lost on restart) — stop waiting.
+                    clearInterval(timer);
+                    localStorage.removeItem('claudeGenJob');
+                    hideSkeleton();
                 } else if (data.message) {
                     const skelMsg = document.querySelector('#running-skeleton .skel-status');
                     if (skelMsg) skelMsg.innerHTML = `<span class="spinner"></span>${data.message}`;
