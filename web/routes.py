@@ -267,9 +267,9 @@ def index():
     if not g.is_owner:
         birthdays = mask_birthdays(birthdays)
 
-    default_tab = (request.args.get("tab") or "running").lower()
+    default_tab = (request.args.get("tab") or "kindle").lower()
     if default_tab not in ("running", "birthdays", "kindle"):
-        default_tab = "running"
+        default_tab = "kindle"
 
     # Running plan — new data model: {active: {...}, archived: [...]}
     running_section = plan.get("running", {})
