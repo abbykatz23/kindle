@@ -112,20 +112,24 @@ def get_upcoming_birthdays(today: date, days_ahead: int = 7) -> list[dict]:
     upcoming = []
     for entry in load_birthdays():
         month, day = map(int, entry["date"].split("-"))
-        if month == 2 and day == 29 and not calendar.isleap(today.year):
-            birthday = date(today.year, 3, 1)
-        else:
-            try:
-                birthday = date(today.year, month, day)
-            except ValueError:
-                continue
-        delta = (birthday - today).days
-        if 0 <= delta <= days_ahead:
-            upcoming.append({
-                **entry,
-                "days_until": delta,
-                "formatted_date": f"{birthday.strftime('%B')} {_ordinal(birthday.day)}",
-            })
+        # Check this year and next so late-December lookaheads catch early-January birthdays.
+        for year in (today.year, today.year + 1):
+            if month == 2 and day == 29 and not calendar.isleap(year):
+                birthday = date(year, 3, 1)
+            else:
+                try:
+                    birthday = date(year, month, day)
+                except ValueError:
+                    break
+            delta = (birthday - today).days
+            if 0 <= delta <= days_ahead:
+                upcoming.append({
+                    **entry,
+                    "days_until": delta,
+                    "formatted_date": f"{birthday.strftime('%B')} {_ordinal(birthday.day)}",
+                })
+                break
+    upcoming.sort(key=lambda b: b["days_until"])
     return upcoming
 
 
